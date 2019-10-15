@@ -5,6 +5,10 @@
 #define TTC_HB_ID 0x00FFDFC8
 #define TTC_RESPONSE_HB_ID 0x00FFDF64
 #define TTC_READINESS_CONFIRM_ID 0x000EFC864
+#define ADVANTECH_READY_ID 0x00EF64C8
+#define VELO_FRAME_ID 0xDDDD
+#define ANGLE_FRAME_ID 0xDDDD
+#define PROTO_FRAME_ID 0xDDDD
 
 TTComm::TTComm()
 {
@@ -57,8 +61,6 @@ void TTComm::vSendHB()
     message.data[6] = 0;
     message.data[7] = 0;
     _CanHandler.iSendFrame(&message);
-    std::cout << "Sending: ";
-    std::cout << (int)_u8HbVal << std::endl;
 }
 
 int TTComm::iCorrectHBReceived()
@@ -71,8 +73,6 @@ int TTComm::iCorrectHBReceived()
         {
             if(_u8HbVal+1 == message.data[0])
             {
-                std::cout << "Received: ";
-                std::cout << (int)message.data[0] << std::endl;
                 _u8HbVal+=2;
                 return 0;
             }
@@ -80,34 +80,60 @@ int TTComm::iCorrectHBReceived()
             {
                 return -2;
             }
-
         }
-        std::cout << "rec frame" << std::endl;
     }
     return -1;
 }
 
-int TTComm::iWaitForTTControlReadiness()
+int TTComm::iReceiveCanFrames()
 {
     can_frame message;
     while(_CanHandler.bReceiveFrame(&message))
     {
-        if(TTC_READINESS_CONFIRM_ID&0xFFFFFFF == ((message.can_id)&(0xFFFFFFF)) && message.data[0] == 0x20)
+        if((VELO_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
         {
-            if(message.data[1]==0x01)
-            {
-                return 0;
-            }
+            _VelocitiesFrames.push(message);
         }
-        else
+        if((ANGLE_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
         {
-            return -2;
+            _AnglesFrame.push(message);
+        }
+        if((PROTO_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
+        {
+            _AnglesFrame.push(message);
         }
     }
-    return -1;
+    return 0;
 }
 
-bool TTComm::bConfirmAdvantechReaqdiness()
+void TTComm::vConfirmAdvantechReadiness()
 {
-    return true;
+    //Set sending cycle to 1s:
+    can_frame message;
+    message.can_id = ADVANTECH_READY_ID;
+    message.can_dlc = 8;
+    message.data[0] = 0x20;
+    message.data[1] = 0x64;
+    message.data[2] = 0;
+    message.data[3] = 0;
+    message.data[4] = 0;
+    message.data[5] = 0;
+    message.data[6] = 0;
+    message.data[7] = 0;
+    _CanHandler.iSendFrame(&message);
 }
+
+
+/*       std::cout << std::hex << (int)message.can_id << std::endl; 
+        if((TTC_READINESS_CONFIRM_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
+        {
+            std::cout << "ok" << std::endl;
+            if(message.data[1]==0x01 && message.data[0] == 0x20)
+            {
+                std::cout << "o2k" << std::endl;    
+            }
+            else
+            {
+            }
+        }
+ */
