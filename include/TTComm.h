@@ -11,4 +11,7 @@ public:
     bool bWaitForHandshake();
     void vSendHB();
     int iCorrectHBReceived();
+
+    int iWaitForTTControlReadiness();
+    bool bConfirmAdvantechReaqdiness();
 };

@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <ros/console.h>
 #include <TTComm.h>
 
 int main(int argc, char **argv)
@@ -6,7 +7,7 @@ int main(int argc, char **argv)
     double start;
     ros::init(argc, argv, "ttcontrol_communication_protocol");
     ros::NodeHandle n;
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(100);
     TTComm commHandler;
     
     //Handshake loop
@@ -35,22 +36,35 @@ int main(int argc, char **argv)
     commHandler.vSendHB();
     start = ros::Time::now().toSec();
     bool bResponseToHb =false;
+    int iRet = -5;
     while(ros::ok())
     {
-        if((commHandler.iCorrectHBReceived()==0))
+        iRet = commHandler.iCorrectHBReceived();
+        if(iRet==0)
         {
             bResponseToHb=true;
         }
+        else if(iRet == -2)
+        {
+            ROS_ERROR("[HS/HB node] Wrong heart beat value received");
+            return -1;
+        }
 
-        if(bResponseToHb && (start - ros::Time::now().toSec()) >= 0.150)
+        if(bResponseToHb && (ros::Time::now().toSec() - start) >= 0.150)
         {
             commHandler.vSendHB();
             start = ros::Time::now().toSec();
             bResponseToHb=false;
         }
+
+        if((ros::Time::now().toSec() - start) > 0.320)
+        {
+             ROS_ERROR("[HS/HB node] Timeout");
+             return -2;
+        }
         
         ros::spinOnce();
 	    loop_rate.sleep();
     }
-
+    return 0;
 }

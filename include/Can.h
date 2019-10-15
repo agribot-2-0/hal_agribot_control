@@ -1,11 +1,11 @@
 #pragma once
 
 #include <sstream>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <unistd.h>
 #include <iostream>
-#include <string.h>
+#include <cstring>
 #include <net/if.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -18,7 +18,7 @@
 class Can
 {
 private:
-    int _iFd;
+    int _iFileDesc;
 public:
     Can();
     //return: if 0 - config success, below 0 - config failed
@@ -27,9 +27,9 @@ public:
     bool bReceiveFrame(can_frame* frame);
     //example can frame to send:
     //frame.can_id  = 0x123;
-	//frame.can_dlc = 8;
-	//frame.data[0] = 0x1;
-	//...
-	//frame.data[7] = 0x8;
+    //frame.can_dlc = 8;
+    //frame.data[0] = 0x1;
+    //...
+    //frame.data[7] = 0x8;
     int iSendFrame(can_frame* frame);
 };

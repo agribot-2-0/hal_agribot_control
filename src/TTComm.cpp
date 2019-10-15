@@ -1,9 +1,10 @@
 #include"../include/TTComm.h"
 
 #define TTC_HANDSHAKE_ID 0x00EF64C8
-#define TTC_RESPONSE_HANDSHAKE_ID 0x00EFC864
+#define TTC_RESPONSE_HANDSHAKE_ID 0x000EFC864
 #define TTC_HB_ID 0x00FFDFC8
 #define TTC_RESPONSE_HB_ID 0x00FFDF64
+#define TTC_READINESS_CONFIRM_ID 0x000EFC864
 
 TTComm::TTComm()
 {
@@ -31,7 +32,7 @@ void TTComm::vSendHanshake()
 bool TTComm::bWaitForHandshake()
 {
     can_frame message;
-    if(_CanHandler.bReceiveFrame(&message))
+    while(_CanHandler.bReceiveFrame(&message))
     {
         if(((message.can_id)&(0xFFFF)) == (TTC_RESPONSE_HANDSHAKE_ID&(0xFFFF)))
         {
@@ -64,18 +65,49 @@ int TTComm::iCorrectHBReceived()
 {
     can_frame message;
 
-    if(_CanHandler.bReceiveFrame(&message))
+    while(_CanHandler.bReceiveFrame(&message))
     {
         if(((message.can_id)&(0xFFFF)) == (TTC_RESPONSE_HB_ID&(0xFFFF)))
         {
             if(_u8HbVal+1 == message.data[0])
             {
                 std::cout << "Received: ";
-                std::cout << (int)_u8HbVal << std::endl;
+                std::cout << (int)message.data[0] << std::endl;
                 _u8HbVal+=2;
                 return 0;
             }
+            else //wrong hb value
+            {
+                return -2;
+            }
+
+        }
+        std::cout << "rec frame" << std::endl;
+    }
+    return -1;
+}
+
+int TTComm::iWaitForTTControlReadiness()
+{
+    can_frame message;
+    while(_CanHandler.bReceiveFrame(&message))
+    {
+        if(TTC_READINESS_CONFIRM_ID&0xFFFFFFF == ((message.can_id)&(0xFFFFFFF)) && message.data[0] == 0x20)
+        {
+            if(message.data[1]==0x01)
+            {
+                return 0;
+            }
+        }
+        else
+        {
+            return -2;
         }
     }
     return -1;
+}
+
+bool TTComm::bConfirmAdvantechReaqdiness()
+{
+    return true;
 }
