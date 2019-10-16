@@ -18,7 +18,8 @@ public:
     void vSendHB();
     int iCorrectHBReceived();
 
-    void iReceiveCanFrames();
+    void vReceiveCanFrames();
     int iParseCanFrames();
     void vConfirmAdvantechReadiness();
+    void vSendVelocities(float fLeftVelo, float fRightVelo);
 };

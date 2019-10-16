@@ -9,6 +9,7 @@ project(ttcontrol_communication_protocol)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  agribot_msgs
 )
 
 ## System dependencies are found with CMake's conventions

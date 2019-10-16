@@ -9,6 +9,7 @@
 #define VELO_FRAME_ID 0x00FFD064
 #define ANGLE_FRAME_ID 0xDDDD
 #define PROTOCOL_FRAME_ID 0x000EFC864
+#define VELOCITY_CONTROL_FRAME_ID 0x00FFD0C8
 
 TTComm::TTComm()
 {
@@ -85,7 +86,7 @@ int TTComm::iCorrectHBReceived()
     return -1;
 }
 
-void TTComm::iReceiveCanFrames()
+void TTComm::vReceiveCanFrames()
 {
     can_frame message;
     while(_CanHandler.bReceiveFrame(&message))
@@ -154,6 +155,26 @@ void TTComm::vConfirmAdvantechReadiness()
     _CanHandler.iSendFrame(&message);
 }
 
+
+
+void TTComm::vSendVelocities(float fLeftVelo, float fRightVelo)
+{
+    //Set sending cycle to 1s:
+    fLeftVelo*=100;
+    fRightVelo*=100;
+    can_frame message;
+    message.can_id = VELOCITY_CONTROL_FRAME_ID;
+    message.can_dlc = 8;
+    message.data[0] = (uint8_t)(((uint16_t)fLeftVelo)>>8);
+    message.data[1] = (uint8_t)fLeftVelo;
+    message.data[2] = (uint8_t)(((uint16_t)fRightVelo)>>8);
+    message.data[3] = (uint8_t)fRightVelo;
+    message.data[4] = 0x0;
+    message.data[5] = 0x0;
+    message.data[6] = 0x0;
+    message.data[7] = 0x0;
+    _CanHandler.iSendFrame(&message);
+}
 
 /*       std::cout << std::hex << (int)message.can_id << std::endl; 
         if((TTC_READINESS_CONFIRM_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
