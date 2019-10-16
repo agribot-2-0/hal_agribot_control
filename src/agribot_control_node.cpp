@@ -17,6 +17,9 @@ int main(int argc, char **argv)
     while(ros::ok())
     {
         commHandler.iReceiveCanFrames();
+        commHandler.iParseCanFrames();
+
+        
         ros::spinOnce();
         loop_rate.sleep();
     }

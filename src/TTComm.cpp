@@ -1,4 +1,4 @@
-#include"../include/TTComm.h"
+#include<TTComm.h>
 
 #define TTC_HANDSHAKE_ID 0x00EF64C8
 #define TTC_RESPONSE_HANDSHAKE_ID 0x000EFC864
@@ -6,9 +6,9 @@
 #define TTC_RESPONSE_HB_ID 0x00FFDF64
 #define TTC_READINESS_CONFIRM_ID 0x000EFC864
 #define ADVANTECH_READY_ID 0x00EF64C8
-#define VELO_FRAME_ID 0xDDDD
+#define VELO_FRAME_ID 0x00FFD064
 #define ANGLE_FRAME_ID 0xDDDD
-#define PROTO_FRAME_ID 0xDDDD
+#define PROTOCOL_FRAME_ID 0x000EFC864
 
 TTComm::TTComm()
 {
@@ -85,26 +85,57 @@ int TTComm::iCorrectHBReceived()
     return -1;
 }
 
-int TTComm::iReceiveCanFrames()
+void TTComm::iReceiveCanFrames()
 {
     can_frame message;
     while(_CanHandler.bReceiveFrame(&message))
     {
+        _FramesQueue.push(message);
+    }
+}
+
+int TTComm::iParseCanFrames()
+{
+    can_frame message;
+    while(!_FramesQueue.empty())
+    {
+        message = _FramesQueue.front();
         if((VELO_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
         {
-            _VelocitiesFrames.push(message);
+            _FrontCart.vSetLeftTrackVelo(((float)(((uint16_t)(message.data[0]&0x7F))<<8 | message.data[1]))*0.01);
+            if(message.data[0]&0x80)
+            {
+                _FrontCart.vSetLeftTrackVelo(-_FrontCart.fGetLeftTrackVelo());
+            }
+            _FrontCart.vSetRightTrackVelo(((float)(((uint16_t)(message.data[2]&0x7F))<<8 | message.data[3]))*0.01);
+            if(message.data[0]&0x80)
+            {
+                _FrontCart.vSetRightTrackVelo(-_FrontCart.fGetRightTrackVelo());
+            }
+            _BackCart.vSetLeftTrackVelo(((float)(((uint16_t)(message.data[4]&0x7F))<<8 | message.data[5]))*0.01);
+            if(message.data[4]&0x80)
+            {
+                _BackCart.vSetLeftTrackVelo(-_BackCart.fGetLeftTrackVelo());
+            }
+            _BackCart.vSetRightTrackVelo(((float)(((uint16_t)(message.data[6]&0x7F))<<8 | message.data[7]))*0.01);
+            if(message.data[6]&0x80)
+            {
+                _BackCart.vSetRightTrackVelo(-_BackCart.fGetRightTrackVelo());
+            }
         }
         if((ANGLE_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
         {
-            _AnglesFrame.push(message);
+            
         }
-        if((PROTO_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
+        if((PROTOCOL_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
         {
-            _AnglesFrame.push(message);
+            
         }
+        _FramesQueue.pop();
     }
     return 0;
 }
+
 
 void TTComm::vConfirmAdvantechReadiness()
 {

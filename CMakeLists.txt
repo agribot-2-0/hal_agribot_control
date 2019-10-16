@@ -202,8 +202,8 @@ include_directories(
 )
 
 link_directories("${PROJECT_SOURCE_DIR}")
-add_executable(ttcontrol_communication_protocol src/Can.cpp src/TTComm.cpp src/ttcontrol_communication_protocol.cpp)
-add_executable(agribot_control_node src/Can.cpp src/TTComm.cpp src/agribot_control_node.cpp)
+add_executable(ttcontrol_communication_protocol src/Can.cpp src/TTComm.cpp src/CartStatus.cpp src/ttcontrol_communication_protocol.cpp)
+add_executable(agribot_control_node src/Can.cpp src/TTComm.cpp src/CartStatus.cpp src/agribot_control_node.cpp)
 
 target_link_libraries(ttcontrol_communication_protocol ${catkin_LIBRARIES})
 
