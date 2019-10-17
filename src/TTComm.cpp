@@ -1,14 +1,13 @@
 #include<TTComm.h>
 
-#define TTC_HANDSHAKE_ID 0x00EF64C8
-#define TTC_RESPONSE_HANDSHAKE_ID 0x000EFC864
+
+#define PROTOCOL_FRAME_ID 0x000EFC864
+#define PROTOCOL_RESPONSE_FRAME_ID 0x00EF64C8
 #define TTC_HB_ID 0x00FFDFC8
 #define TTC_RESPONSE_HB_ID 0x00FFDF64
-#define TTC_READINESS_CONFIRM_ID 0x000EFC864
-#define ADVANTECH_READY_ID 0x00EF64C8
 #define VELO_FRAME_ID 0x00FFD064
-#define ANGLE_FRAME_ID 0xDDDD
-#define PROTOCOL_FRAME_ID 0x000EFC864
+#define FRONT_ANGLE_ID 0xaa20
+#define BACK_ANGLE_ID 0xaa21
 #define VELOCITY_CONTROL_FRAME_ID 0x00FFD0C8
 
 TTComm::TTComm()
@@ -21,7 +20,7 @@ void TTComm::vSendHanshake()
 {
     //Set sending cycle to 1s:
     can_frame message;
-    message.can_id = TTC_HANDSHAKE_ID;
+    message.can_id = PROTOCOL_RESPONSE_FRAME_ID;
     message.can_dlc = 8;
     message.data[0] = 0x10;
     message.data[1] = 0;
@@ -39,7 +38,7 @@ bool TTComm::bWaitForHandshake()
     can_frame message;
     while(_CanHandler.bReceiveFrame(&message))
     {
-        if(((message.can_id)&(0xFFFF)) == (TTC_RESPONSE_HANDSHAKE_ID&(0xFFFF)))
+        if(((message.can_id)&(0xFFFF)) == (PROTOCOL_FRAME_ID&(0xFFFF)))
         {
             return true;
         }
@@ -95,8 +94,9 @@ void TTComm::vReceiveCanFrames()
     }
 }
 
-int TTComm::iParseCanFrames()
+uint8_t TTComm::u8ParseCanFrames()
 {
+    uint8_t u8Status=0;
     can_frame message;
     while(!_FramesQueue.empty())
     {
@@ -123,18 +123,43 @@ int TTComm::iParseCanFrames()
             {
                 _BackCart.vSetRightTrackVelo(-_BackCart.fGetRightTrackVelo());
             }
+            u8Status|=VELOCITIES_MASK;
         }
-        if((ANGLE_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
+        if((FRONT_ANGLE_ID&(0xFFFF)) == ((message.can_id)&(0xFFFF)))
         {
-            
+            u8Status|=FRONT_ANGLE_MASK;
+        }
+        if((BACK_ANGLE_ID&(0xFFFF)) == ((message.can_id)&(0xFFFF)))
+        {
+            u8Status|=BACK_ANGLE_MASK;
         }
         if((PROTOCOL_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
         {
-            
+            u8Status|=PROTOCOL_MASK;
         }
         _FramesQueue.pop();
     }
-    return 0;
+    return u8Status;
+}
+
+bool TTComm::bWaritForTTControlReadiness()
+{
+    can_frame message;
+    while(_CanHandler.bReceiveFrame(&message))
+    {
+        if((PROTOCOL_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
+        {
+            if(message.data[1]==0x01 && message.data[0] == 0x20)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+    }
+    return false;
 }
 
 
@@ -142,7 +167,7 @@ void TTComm::vConfirmAdvantechReadiness()
 {
     //Set sending cycle to 1s:
     can_frame message;
-    message.can_id = ADVANTECH_READY_ID;
+    message.can_id = PROTOCOL_RESPONSE_FRAME_ID;
     message.can_dlc = 8;
     message.data[0] = 0x20;
     message.data[1] = 0x64;
@@ -157,35 +182,24 @@ void TTComm::vConfirmAdvantechReadiness()
 
 
 
-void TTComm::vSendVelocities(float fLeftVelo, float fRightVelo)
+void TTComm::vSendVelocities(float fFrontLeft, float fFrontRight, float fBackLeft, float fBackRight)
 {
     //Set sending cycle to 1s:
-    fLeftVelo*=100;
-    fRightVelo*=100;
+    fFrontLeft*=100;
+    fFrontRight*=100;
+    fBackLeft*=100;
+    fBackRight*=100;
     can_frame message;
     message.can_id = VELOCITY_CONTROL_FRAME_ID;
     message.can_dlc = 8;
-    message.data[0] = (uint8_t)(((uint16_t)fLeftVelo)>>8);
-    message.data[1] = (uint8_t)fLeftVelo;
-    message.data[2] = (uint8_t)(((uint16_t)fRightVelo)>>8);
-    message.data[3] = (uint8_t)fRightVelo;
-    message.data[4] = 0x0;
-    message.data[5] = 0x0;
-    message.data[6] = 0x0;
-    message.data[7] = 0x0;
+    message.data[0] = (uint8_t)(((uint16_t)fFrontLeft)>>8);
+    message.data[1] = (uint8_t)fFrontLeft;
+    message.data[2] = (uint8_t)(((uint16_t)fFrontRight)>>8);
+    message.data[3] = (uint8_t)fFrontRight;
+    message.data[4] = (uint8_t)(((uint16_t)fBackLeft)>>8);
+    message.data[5] = (uint8_t)fBackLeft;;
+    message.data[6] = (uint8_t)(((uint16_t)fBackRight)>>8);
+    message.data[7] = (uint8_t)fBackRight;;
     _CanHandler.iSendFrame(&message);
 }
 
-/*       std::cout << std::hex << (int)message.can_id << std::endl; 
-        if((TTC_READINESS_CONFIRM_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
-        {
-            std::cout << "ok" << std::endl;
-            if(message.data[1]==0x01 && message.data[0] == 0x20)
-            {
-                std::cout << "o2k" << std::endl;    
-            }
-            else
-            {
-            }
-        }
- */
