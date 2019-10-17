@@ -6,16 +6,20 @@
 #define VELOCITIES_MASK 0x01
 #define FRONT_ANGLE_MASK 0x02
 #define BACK_ANGLE_MASK 0x04
-#define PROTOCOL_MASK 0x08
+#define AUTOMATIC_STATE_REQUEST_MASK 0x10
+#define AUTOMATIC_STATE_REQUEST_ERROR_MASK 0x20
+
+#define TTC_OK 0x01
 
 class TTComm
 {
     Can _CanHandler;
-    uint8_t _u8HbVal; 
+    uint8_t _u8HbVal;
     std::queue<can_frame> _FramesQueue;
     CartsStatus _Cart;
     float _fFrontCartAngle;
     float _fBackCartAngle;
+    uint8_t _iErrCode = TTC_OK;
 public:
     TTComm();
     void vSendHanshake();
@@ -31,5 +35,5 @@ public:
     CartsStatus GetCartsStatus();
     float fGetFrontCartAngle();
     float fGetBackCartAngle();
-
+    int iGetErrorCode();
 };

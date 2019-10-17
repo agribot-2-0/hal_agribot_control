@@ -5,9 +5,10 @@
 #define TTC_HB_ID 0x00FFDFC8
 #define TTC_RESPONSE_HB_ID 0x00FFDF64
 #define VELO_FRAME_ID 0x00FFD064
-#define FRONT_ANGLE_ID 0xaa20
-#define BACK_ANGLE_ID 0xaa21
+#define FRONT_ANGLE_ID 0xAA20
+#define BACK_ANGLE_ID 0xAA21
 #define VELOCITY_CONTROL_FRAME_ID 0x00FFD0C8
+#define TTC_AUTOMATIC_MODE_REQUEST 0x20
 
 TTComm::TTComm()
 {
@@ -107,7 +108,7 @@ uint8_t TTComm::u8ParseCanFrames()
                 _Cart.vSetFrontLinear(-_Cart.fGetFrontLinear());
             }
             _Cart.vSetFrontAngular(((float)(((uint16_t)(message.data[2]&0x7F))<<8 | message.data[3]))*0.01);
-            if(message.data[0]&0x80)
+            if(message.data[2]&0x80)
             {
                 _Cart.vSetFrontAngular(-_Cart.fGetFrontAngular());
             }
@@ -137,33 +138,23 @@ uint8_t TTComm::u8ParseCanFrames()
         }
         if((PROTOCOL_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
         {
-            u8Status|=PROTOCOL_MASK;
+            if(message.data[0] == TTC_AUTOMATIC_MODE_REQUEST)
+            {
+                if(message.data[1]==TTC_OK)
+                {
+                    u8Status|=AUTOMATIC_STATE_REQUEST_MASK;
+                }
+                else
+                {
+                    _iErrCode = message.data[1];
+                    u8Status|=AUTOMATIC_STATE_REQUEST_ERROR_MASK;
+                }
+            }
         }
         _FramesQueue.pop();
     }
     return u8Status;
 }
-
-bool TTComm::bWaritForTTControlReadiness()
-{
-    can_frame message;
-    while(_CanHandler.bReceiveFrame(&message))
-    {
-        if((PROTOCOL_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
-        {
-            if(message.data[1]==0x01 && message.data[0] == 0x20)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-    }
-    return false;
-}
-
 
 void TTComm::vConfirmAdvantechReadiness()
 {
@@ -181,8 +172,6 @@ void TTComm::vConfirmAdvantechReadiness()
     message.data[7] = 0;
     _CanHandler.iSendFrame(&message);
 }
-
-
 
 void TTComm::vSendVelocities(float fFrontLinear, float fFrontAngular, float fBackLinear, float fBackAngular)
 {
@@ -218,4 +207,9 @@ float TTComm::fGetFrontCartAngle()
 float TTComm::fGetBackCartAngle()
 {
     return _fBackCartAngle;
+}
+
+int TTComm::iGetErrorCode()
+{
+    return _iErrCode;
 }

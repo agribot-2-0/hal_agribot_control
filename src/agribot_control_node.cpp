@@ -33,15 +33,6 @@ int main(int argc, char **argv)
     //Run diagnostic routine, 
     //wait for ttcontrol control request,
     //confirm it
-    /*
-    while(!commHandler.bWaritForTTControlReadiness())
-    {
-        ros::spinOnce();
-        loop_rate.sleep();
-    }
-    commHandler.vConfirmAdvantechReadiness();
-    */
-
     int iRet=-5;
     while(ros::ok())
     {
@@ -50,7 +41,6 @@ int main(int argc, char **argv)
         
         if((u8Status&VELOCITIES_MASK)==VELOCITIES_MASK)
         {
-            //Publish velicities
             std::cout << "Velocities received" << std::endl;
             CartsStatus cartStatus = commHandler.GetCartsStatus();
             AgribotCaterpillarMsg.front_linear = cartStatus.fGetFrontLinear();
@@ -61,24 +51,30 @@ int main(int argc, char **argv)
         }
         if((u8Status&FRONT_ANGLE_MASK)==FRONT_ANGLE_MASK)
         {
-            //Publish front angle
             std::cout << "Front angle received" << std::endl;
             FrontAngleMsg.data = commHandler.fGetFrontCartAngle();
             FrontCartAnglePublisher.publish(FrontAngleMsg);
         }
         if((u8Status&BACK_ANGLE_MASK)==BACK_ANGLE_MASK)
         {
-            //Publish front angle
             std::cout << "Back angle received" << std::endl;
             BackAngleMsg.data = commHandler.fGetBackCartAngle();
             BackCartAnglePublisher.publish(BackAngleMsg);
         }
-        if((u8Status&PROTOCOL_MASK)==PROTOCOL_MASK)
+        if((u8Status&AUTOMATIC_STATE_REQUEST_MASK)==AUTOMATIC_STATE_REQUEST_MASK)
         {
-            //React properly to protocol frame
-            std::cout << "--- Protocol ---" << std::endl;
+            //Mobile app: automatic request(should advantech listen to this message?)
+            //TTC: all diagnostics went smoothly and im ready to enter automatic mode
+            //Advantech: run diagnostic routine
+            //Advantech: confirm it to TTC
+            std::cout << "Protocol frame received" << std::endl;
+            commHandler.vConfirmAdvantechReadiness();
         }
-
+        if((u8Status&AUTOMATIC_STATE_REQUEST_ERROR_MASK)==AUTOMATIC_STATE_REQUEST_ERROR_MASK)
+        {
+            ROS_ERROR("Automatic state request error: %d", commHandler.iGetErrorCode());
+        }
+        
         std::cout << "Next loop" << std::endl;
 
         ros::spinOnce();
