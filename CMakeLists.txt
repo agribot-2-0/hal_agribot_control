@@ -9,6 +9,7 @@ project(ttcontrol_communication_protocol)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  std_msgs
   agribot_msgs
 )
 
@@ -189,7 +190,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_ttcontrol_communication_protocol.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/heartbeat_node.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
@@ -203,9 +204,8 @@ include_directories(
 )
 
 link_directories("${PROJECT_SOURCE_DIR}")
-add_executable(ttcontrol_communication_protocol src/Can.cpp src/TTComm.cpp src/CartStatus.cpp src/ttcontrol_communication_protocol.cpp)
-add_executable(agribot_control_node src/Can.cpp src/TTComm.cpp src/CartStatus.cpp src/agribot_control_node.cpp)
+add_executable(heartbeat_node src/Can.cpp src/TTComm.cpp src/CartsStatus.cpp src/heartbeat_node.cpp)
+add_executable(agribot_control_node src/Can.cpp src/TTComm.cpp src/CartsStatus.cpp src/agribot_control_node.cpp)
 
-target_link_libraries(ttcontrol_communication_protocol ${catkin_LIBRARIES})
-
+target_link_libraries(heartbeat_node ${catkin_LIBRARIES})
 target_link_libraries(agribot_control_node ${catkin_LIBRARIES})

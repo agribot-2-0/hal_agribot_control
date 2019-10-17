@@ -1,6 +1,5 @@
 #include<TTComm.h>
 
-
 #define PROTOCOL_FRAME_ID 0x000EFC864
 #define PROTOCOL_RESPONSE_FRAME_ID 0x00EF64C8
 #define TTC_HB_ID 0x00FFDFC8
@@ -66,7 +65,6 @@ void TTComm::vSendHB()
 int TTComm::iCorrectHBReceived()
 {
     can_frame message;
-
     while(_CanHandler.bReceiveFrame(&message))
     {
         if(((message.can_id)&(0xFFFF)) == (TTC_RESPONSE_HB_ID&(0xFFFF)))
@@ -103,34 +101,38 @@ uint8_t TTComm::u8ParseCanFrames()
         message = _FramesQueue.front();
         if((VELO_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
         {
-            _FrontCart.vSetLeftTrackVelo(((float)(((uint16_t)(message.data[0]&0x7F))<<8 | message.data[1]))*0.01);
+            _Cart.vSetFrontLinear(((float)(((uint16_t)(message.data[0]&0x7F))<<8 | message.data[1]))*0.01);
             if(message.data[0]&0x80)
             {
-                _FrontCart.vSetLeftTrackVelo(-_FrontCart.fGetLeftTrackVelo());
+                _Cart.vSetFrontLinear(-_Cart.fGetFrontLinear());
             }
-            _FrontCart.vSetRightTrackVelo(((float)(((uint16_t)(message.data[2]&0x7F))<<8 | message.data[3]))*0.01);
+            _Cart.vSetFrontAngular(((float)(((uint16_t)(message.data[2]&0x7F))<<8 | message.data[3]))*0.01);
             if(message.data[0]&0x80)
             {
-                _FrontCart.vSetRightTrackVelo(-_FrontCart.fGetRightTrackVelo());
+                _Cart.vSetFrontAngular(-_Cart.fGetFrontAngular());
             }
-            _BackCart.vSetLeftTrackVelo(((float)(((uint16_t)(message.data[4]&0x7F))<<8 | message.data[5]))*0.01);
+            _Cart.vSetBackLinear(((float)(((uint16_t)(message.data[4]&0x7F))<<8 | message.data[5]))*0.01);
             if(message.data[4]&0x80)
             {
-                _BackCart.vSetLeftTrackVelo(-_BackCart.fGetLeftTrackVelo());
+                _Cart.vSetBackLinear(-_Cart.fGetBackLinear());
             }
-            _BackCart.vSetRightTrackVelo(((float)(((uint16_t)(message.data[6]&0x7F))<<8 | message.data[7]))*0.01);
+            _Cart.vSetBackAngular(((float)(((uint16_t)(message.data[6]&0x7F))<<8 | message.data[7]))*0.01);
             if(message.data[6]&0x80)
             {
-                _BackCart.vSetRightTrackVelo(-_BackCart.fGetRightTrackVelo());
+                _Cart.vSetBackAngular(-_Cart.fGetBackAngular());
             }
             u8Status|=VELOCITIES_MASK;
         }
         if((FRONT_ANGLE_ID&(0xFFFF)) == ((message.can_id)&(0xFFFF)))
         {
+            _fFrontCartAngle = ((float)(((uint32_t)message.data[2])<<16 | ((uint32_t)message.data[1])<<8 
+            | ((uint32_t)message.data[0])))*0.216-180;
             u8Status|=FRONT_ANGLE_MASK;
         }
         if((BACK_ANGLE_ID&(0xFFFF)) == ((message.can_id)&(0xFFFF)))
         {
+            _fBackCartAngle = ((float)(((uint32_t)message.data[2])<<16 | ((uint32_t)message.data[1])<<8 
+            | ((uint32_t)message.data[0])))*0.216-180;
             u8Status|=BACK_ANGLE_MASK;
         }
         if((PROTOCOL_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
@@ -182,24 +184,38 @@ void TTComm::vConfirmAdvantechReadiness()
 
 
 
-void TTComm::vSendVelocities(float fFrontLeft, float fFrontRight, float fBackLeft, float fBackRight)
+void TTComm::vSendVelocities(float fFrontLinear, float fFrontAngular, float fBackLinear, float fBackAngular)
 {
     //Set sending cycle to 1s:
-    fFrontLeft*=100;
-    fFrontRight*=100;
-    fBackLeft*=100;
-    fBackRight*=100;
+    fFrontLinear*=100;
+    fFrontAngular*=100000;
+    fBackLinear*=100;
+    fBackAngular*=100000;
     can_frame message;
     message.can_id = VELOCITY_CONTROL_FRAME_ID;
     message.can_dlc = 8;
-    message.data[0] = (uint8_t)(((uint16_t)fFrontLeft)>>8);
-    message.data[1] = (uint8_t)fFrontLeft;
-    message.data[2] = (uint8_t)(((uint16_t)fFrontRight)>>8);
-    message.data[3] = (uint8_t)fFrontRight;
-    message.data[4] = (uint8_t)(((uint16_t)fBackLeft)>>8);
-    message.data[5] = (uint8_t)fBackLeft;;
-    message.data[6] = (uint8_t)(((uint16_t)fBackRight)>>8);
-    message.data[7] = (uint8_t)fBackRight;;
+    message.data[0] = (uint8_t)(((uint16_t)fFrontLinear)>>8);
+    message.data[1] = (uint8_t)fFrontLinear;
+    message.data[2] = (uint8_t)(((uint16_t)fFrontAngular)>>8);
+    message.data[3] = (uint8_t)fFrontAngular;
+    message.data[4] = (uint8_t)(((uint16_t)fBackLinear)>>8);
+    message.data[5] = (uint8_t)fBackLinear;;
+    message.data[6] = (uint8_t)(((uint16_t)fBackAngular)>>8);
+    message.data[7] = (uint8_t)fBackAngular;;
     _CanHandler.iSendFrame(&message);
 }
 
+CartsStatus TTComm::GetCartsStatus()
+{
+    return _Cart;
+}
+
+float TTComm::fGetFrontCartAngle()
+{
+    return _fFrontCartAngle;
+}
+
+float TTComm::fGetBackCartAngle()
+{
+    return _fBackCartAngle;
+}

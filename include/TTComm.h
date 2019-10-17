@@ -1,6 +1,6 @@
 #pragma once
 #include <Can.h>
-#include <CartStatus.h>
+#include <CartsStatus.h>
 #include <queue>
 
 #define VELOCITIES_MASK 0x01
@@ -13,9 +13,9 @@ class TTComm
     Can _CanHandler;
     uint8_t _u8HbVal; 
     std::queue<can_frame> _FramesQueue;
-    CartStatus _FrontCart;
-    CartStatus _BackCart;
-    int iState;
+    CartsStatus _Cart;
+    float _fFrontCartAngle;
+    float _fBackCartAngle;
 public:
     TTComm();
     void vSendHanshake();
@@ -27,5 +27,9 @@ public:
     uint8_t u8ParseCanFrames();
     void vConfirmAdvantechReadiness();
     bool bWaritForTTControlReadiness();
-    void vSendVelocities(float fFrontLeft, float fFrontRight, float fBackLeft, float fBackRight);
+    void vSendVelocities(float fFrontLinear, float fFrontAngular, float fBackLinear, float fBackAngular);
+    CartsStatus GetCartsStatus();
+    float fGetFrontCartAngle();
+    float fGetBackCartAngle();
+
 };
