@@ -126,20 +126,22 @@ uint8_t TTComm::u8ParseCanFrames()
         }
         if((FRONT_ANGLE_ID&(0xFFFF)) == ((message.can_id)&(0xFFFF)))
         {
-            _fFrontCartAngle = ((float)(((uint32_t)message.data[2])<<16 | ((uint32_t)message.data[1])<<8 
-            | ((uint32_t)message.data[0])))*0.216-180;
+            _fFrontCartAngle = ((float)(((int32_t)message.data[2])<<16 | ((int32_t)message.data[1])<<8 
+            | ((int32_t)message.data[0])))*0.214-180;
             u8Status|=FRONT_ANGLE_MASK;
         }
         if((BACK_ANGLE_ID&(0xFFFF)) == ((message.can_id)&(0xFFFF)))
         {
-            _fBackCartAngle = ((float)(((uint32_t)message.data[2])<<16 | ((uint32_t)message.data[1])<<8 
-            | ((uint32_t)message.data[0])))*0.216-180;
+            _fBackCartAngle = ((float)(((int32_t)message.data[2])<<16 | ((int32_t)message.data[1])<<8 
+            | ((int32_t)message.data[0])))*0.214-180;
             u8Status|=BACK_ANGLE_MASK;
         }
         if((PROTOCOL_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
         {
+            std::cout <<"lel" <<std::endl;
             if(message.data[0] == TTC_AUTOMATIC_MODE_REQUEST)
             {
+                std::cout <<"lel2" <<std::endl;
                 if(message.data[1]==TTC_OK)
                 {
                     u8Status|=AUTOMATIC_STATE_REQUEST_MASK;
@@ -176,21 +178,55 @@ void TTComm::vConfirmAdvantechReadiness()
 void TTComm::vSendVelocities(float fFrontLinear, float fFrontAngular, float fBackLinear, float fBackAngular)
 {
     //Set sending cycle to 1s:
-    fFrontLinear*=100;
-    fFrontAngular*=100000;
-    fBackLinear*=100;
-    fBackAngular*=100000;
+    int16_t i16FrontLinear=(100*fFrontLinear);
+    int16_t i16FrontAngular=(100*fFrontAngular);
+    int16_t i16BackLinear=(100*fBackLinear);
+    int16_t i16BackAngular=(100*fBackAngular);
+
     can_frame message;
     message.can_id = VELOCITY_CONTROL_FRAME_ID;
     message.can_dlc = 8;
-    message.data[0] = (uint8_t)(((uint16_t)fFrontLinear)>>8);
-    message.data[1] = (uint8_t)fFrontLinear;
-    message.data[2] = (uint8_t)(((uint16_t)fFrontAngular)>>8);
-    message.data[3] = (uint8_t)fFrontAngular;
-    message.data[4] = (uint8_t)(((uint16_t)fBackLinear)>>8);
-    message.data[5] = (uint8_t)fBackLinear;;
-    message.data[6] = (uint8_t)(((uint16_t)fBackAngular)>>8);
-    message.data[7] = (uint8_t)fBackAngular;;
+    message.data[0] = (uint8_t)((i16FrontLinear&0xFF00)>>8);
+    if(i16FrontLinear<0)
+    {
+        i16FrontLinear=32768-i16FrontLinear;
+        message.data[0] = (uint8_t)((i16FrontLinear&0xFF00)>>8);
+        message.data[0]|=0x80;
+    }
+    message.data[1] = (uint8_t)i16FrontLinear;
+
+    message.data[2] = (uint8_t)((i16FrontAngular)>>8);
+    if(i16FrontAngular<0)
+    {
+        i16FrontAngular=32768-i16FrontAngular;
+        message.data[2] = (uint8_t)((i16FrontAngular&0xFF00)>>8);
+        message.data[2] |= 0x80;
+    }
+    message.data[3] = (uint8_t)i16FrontAngular;
+
+    message.data[4] = (uint8_t)((i16BackLinear&0xFF00)>>8);
+    if(i16BackLinear<0)
+    {
+        i16BackLinear = 32768-i16BackLinear;
+        message.data[4] |= (uint8_t)((i16BackLinear&0xFF00)>>8);
+        message.data[4] = 0x80;
+    }
+    message.data[5] = (uint8_t)i16BackLinear;;
+
+    message.data[6] = (uint8_t)((i16BackAngular&0xFF00)>>8);
+    if(i16BackAngular<0)
+    {
+        i16BackAngular = 32768-i16BackAngular;
+        message.data[6] |= (uint8_t)((i16BackAngular&0xFF00)>>8);
+        message.data[6] = 0x80;
+    }
+    message.data[7] = (uint8_t)i16BackAngular;;
+
+    std::cout << std::hex << i16FrontLinear << std::endl;
+    std::cout << std::hex << i16FrontAngular << std::endl;
+    std::cout << std::hex << i16BackLinear << std::endl;
+    std::cout << std::hex << i16BackAngular << std::endl;
+
     _CanHandler.iSendFrame(&message);
 }
 
