@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 #include <ros/console.h>
-#include <TTCommHB.h>
+#include <hal_ttcontrol_communication/TTCommHB.h>
 
 int main(int argc, char **argv)
 {

@@ -2,7 +2,7 @@
 #include <ros/console.h>
 #include <agribot_msgs/AgribotCaterpillar.h>
 #include <std_msgs/Float32.h>
-#include <TTCommControl.h>
+#include <hal_ttcontrol_communication/TTCommControl.h>
 
 TTCommControl CommHandlerControl;
 

@@ -1,6 +1,6 @@
 #pragma once
-#include <Can.h>
-#include <CartsStatus.h>
+#include <hal_ttcontrol_communication/Can.h>
+#include <hal_ttcontrol_communication/CartsStatus.h>
 #include <queue>
 
 #define VELOCITIES_MASK 0x01
