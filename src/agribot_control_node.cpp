@@ -4,11 +4,11 @@
 #include <std_msgs/Float32.h>
 #include <TTCommControl.h>
 
-TTCommControl commHandler;
+TTCommControl CommHandlerControl;
 
-void frontCallback(const agribot_msgs::AgribotCaterpillar msg)
+void frontCallback(const agribot_msgs::AgribotCaterpillar& msg)
 {
-    commHandler.vSendVelocities(msg.front_linear, msg.front_angular, msg.back_linear, msg.back_angular);
+    CommHandlerControl.vSendVelocities(msg.front_linear, msg.front_angular, msg.back_linear, msg.back_angular);
 }
 
 int main(int argc, char **argv)
@@ -27,11 +27,11 @@ int main(int argc, char **argv)
 
     while(ros::ok())
     {
-        commHandler.vReceiveCanFrames();
-        u8Status=commHandler.u8ParseCanFrames();
+        CommHandlerControl.vReceiveCanFrames();
+        u8Status=CommHandlerControl.u8ParseCanFrames();
         if((u8Status&VELOCITIES_MASK)==VELOCITIES_MASK)
         {
-            CartsStatus cartStatus = commHandler.GetCartsStatus();
+            CartsStatus cartStatus = CommHandlerControl.GetCartsStatus();
             AgribotCaterpillarMsg.front_linear = cartStatus.fGetFrontLinear();
             AgribotCaterpillarMsg.front_angular = cartStatus.fGetFrontAngular();
             AgribotCaterpillarMsg.back_linear = cartStatus.fGetBackLinear();
@@ -40,25 +40,22 @@ int main(int argc, char **argv)
         }
         if((u8Status&FRONT_ANGLE_MASK)==FRONT_ANGLE_MASK)
         {
-            FrontAngleMsg.data = commHandler.fGetFrontCartAngle();
+            FrontAngleMsg.data = CommHandlerControl.fGetFrontCartAngle();
             FrontCartAnglePublisher.publish(FrontAngleMsg);
         }
         if((u8Status&BACK_ANGLE_MASK)==BACK_ANGLE_MASK)
         {
-            BackAngleMsg.data = commHandler.fGetBackCartAngle();
+            BackAngleMsg.data = CommHandlerControl.fGetBackCartAngle();
             BackCartAnglePublisher.publish(BackAngleMsg);
         }
         if((u8Status&AUTOMATIC_STATE_REQUEST_MASK)==AUTOMATIC_STATE_REQUEST_MASK)
         {
-            //Mobile app: automatic request(should advantech listen to this message?)
-            //TTC: all diagnostics went smoothly and im ready to enter automatic mode
-            //Advantech: run diagnostic routine
-            //Advantech: confirm it to TTC
-            commHandler.vConfirmAdvantechReadiness();
+            //TODO: Implement some diagnostics
+            CommHandlerControl.vConfirmAdvantechReadiness();
         }
         if((u8Status&AUTOMATIC_STATE_REQUEST_ERROR_MASK)==AUTOMATIC_STATE_REQUEST_ERROR_MASK)
         {
-            ROS_ERROR("Automatic state request error: %d", commHandler.iGetErrorCode());
+            ROS_ERROR("Automatic state request error: %d", CommHandlerControl.iGetErrorCode());
         }
         ros::spinOnce();
         loop_rate.sleep();

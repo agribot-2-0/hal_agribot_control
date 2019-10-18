@@ -2,13 +2,10 @@
 
 #define PROTOCOL_FRAME_ID 0x000EFC864
 #define PROTOCOL_RESPONSE_FRAME_ID 0x00EF64C8
-#define TTC_HB_ID 0x00FFDFC8
-#define TTC_RESPONSE_HB_ID 0x00FFDF64
 #define VELO_FRAME_ID 0x00FFD064
 #define FRONT_ANGLE_ID 0xAA20
 #define BACK_ANGLE_ID 0xAA21
 #define VELOCITY_CONTROL_FRAME_ID 0x00FFD0C8
-#define TTC_AUTOMATIC_MODE_REQUEST 0x20
 
 TTCommControl::TTCommControl()
 {
@@ -57,22 +54,20 @@ uint8_t TTCommControl::u8ParseCanFrames()
         }
         if((FRONT_ANGLE_ID&(0xFFFF)) == ((message.can_id)&(0xFFFF)))
         {
-            _fFrontCartAngle = ((float)(((int32_t)message.data[2])<<16 | ((int32_t)message.data[1])<<8 
+            _fFrontCartAngle = ((float)(((int32_t)message.data[2])<<16 | ((int32_t)message.data[1])<<8
             | ((int32_t)message.data[0])))*0.214-180;
             u8Status|=FRONT_ANGLE_MASK;
         }
         if((BACK_ANGLE_ID&(0xFFFF)) == ((message.can_id)&(0xFFFF)))
         {
-            _fBackCartAngle = ((float)(((int32_t)message.data[2])<<16 | ((int32_t)message.data[1])<<8 
+            _fBackCartAngle = ((float)(((int32_t)message.data[2])<<16 | ((int32_t)message.data[1])<<8
             | ((int32_t)message.data[0])))*0.214-180;
             u8Status|=BACK_ANGLE_MASK;
         }
         if((PROTOCOL_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
         {
-            std::cout <<"lel" <<std::endl;
             if(message.data[0] == TTC_AUTOMATIC_MODE_REQUEST)
             {
-                std::cout <<"lel2" <<std::endl;
                 if(message.data[1]==TTC_OK)
                 {
                     u8Status|=AUTOMATIC_STATE_REQUEST_MASK;
@@ -151,12 +146,6 @@ void TTCommControl::vSendVelocities(float fFrontLinear, float fFrontAngular, flo
         message.data[6] = 0x80;
     }
     message.data[7] = (uint8_t)i16BackAngular;;
-
-    std::cout << std::hex << i16FrontLinear << std::endl;
-    std::cout << std::hex << i16FrontAngular << std::endl;
-    std::cout << std::hex << i16BackLinear << std::endl;
-    std::cout << std::hex << i16BackAngular << std::endl;
-
     _CanHandler.iSendFrame(&message);
 }
 

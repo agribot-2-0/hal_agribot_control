@@ -9,5 +9,5 @@ public:
     void vSendHanshake();
     bool bWaitForHandshake();
     void vSendHB();
-    int iCorrectHBReceived();
+    int iHBReceived();
 };

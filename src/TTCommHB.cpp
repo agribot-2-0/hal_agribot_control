@@ -56,7 +56,7 @@ void TTCommHB::vSendHB()
     _CanHandler.iSendFrame(&message);
 }
 
-int TTCommHB::iCorrectHBReceived()
+int TTCommHB::iHBReceived()
 {
     can_frame message;
     while(_CanHandler.bReceiveFrame(&message))
@@ -68,7 +68,7 @@ int TTCommHB::iCorrectHBReceived()
                 _u8HbVal+=2;
                 return 0;
             }
-            else //wrong hb value
+            else
             {
                 return -2;
             }

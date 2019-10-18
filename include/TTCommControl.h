@@ -10,11 +10,11 @@
 #define AUTOMATIC_STATE_REQUEST_ERROR_MASK 0x20
 
 #define TTC_OK 0x01
+#define TTC_AUTOMATIC_MODE_REQUEST 0x20
 
 class TTCommControl
 {
     Can _CanHandler;
-    uint8_t _u8HbVal;
     std::queue<can_frame> _FramesQueue;
     CartsStatus _Cart;
     float _fFrontCartAngle;

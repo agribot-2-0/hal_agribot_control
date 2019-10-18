@@ -4,67 +4,62 @@
 
 int main(int argc, char **argv)
 {
-    double start;
-    ros::init(argc, argv, "ttcontrol_communication_protocol");
+    double dStart;
+    ros::init(argc, argv, "heartbeat");
     ros::NodeHandle n;
     ros::Rate loop_rate(10);
-    TTCommHB commHandler;
-    
-    //Handshake loop
-    commHandler.vSendHanshake();
-    start = ros::Time::now().toSec();
+    TTCommHB CommHandlerHB;
+
+    CommHandlerHB.vSendHanshake();
+    dStart = ros::Time::now().toSec();
     while(ros::ok())
     {
-        if((ros::Time::now().toSec()-start) >= 5)
+        if((ros::Time::now().toSec()-dStart) >= 5)
         {
-            std::cout << "Resending handshake" << std::endl;
-            commHandler.vSendHanshake();
-            start = ros::Time::now().toSec();
+            ROS_WARN("[HB Node]No response from TTControl. Resending handshake");
+            CommHandlerHB.vSendHanshake();
+            dStart = ros::Time::now().toSec();
         }
-        
-        if(commHandler.bWaitForHandshake())
+        if(CommHandlerHB.bWaitForHandshake())
         {
-            std::cout <<"response recived!" << std::endl;
             break;
         }
-        
         ros::spinOnce();
         loop_rate.sleep();
     }
 
-    std::cout << "enter HB phase:" << std::endl;
-    commHandler.vSendHB();
-    start = ros::Time::now().toSec();
+    ROS_INFO("[HB Node]Handshake completed. Entering HB phase.");
+    CommHandlerHB.vSendHB();
+    dStart = ros::Time::now().toSec();
     bool bResponseToHb =false;
     int iRet = -5;
     while(ros::ok())
     {
-        iRet = commHandler.iCorrectHBReceived();
+        iRet = CommHandlerHB.iHBReceived();
         if(iRet==0)
         {
             bResponseToHb=true;
         }
         else if(iRet == -2)
         {
-            ROS_ERROR("[TTControl] Wrong heart beat value received");
+            ROS_ERROR("[HB Node] Wrong heart beat value received");
             return -1;
         }
-
-        if(bResponseToHb && (ros::Time::now().toSec() - start) >= 0.150)
+        if(bResponseToHb && (ros::Time::now().toSec() - dStart) >= 0.150)
         {
-            commHandler.vSendHB();
-            start = ros::Time::now().toSec();
+            CommHandlerHB.vSendHB();
+            dStart = ros::Time::now().toSec();
             bResponseToHb=false;
         }
 
-        if((ros::Time::now().toSec() - start) > 0.320)
+        if((ros::Time::now().toSec() - dStart) > 0.320)
         {
-            ROS_ERROR("[TTControl] Herat beat timeout");
+            ROS_ERROR("[HB Node] Herat beat timeout");
             return -2;
         }
-        
+
         ros::spinOnce();
-	    loop_rate.sleep();
+        loop_rate.sleep();
     }
     return 0;
 }
