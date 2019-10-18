@@ -1,4 +1,4 @@
-#include<TTComm.h>
+#include<TTCommControl.h>
 
 #define PROTOCOL_FRAME_ID 0x000EFC864
 #define PROTOCOL_RESPONSE_FRAME_ID 0x00EF64C8
@@ -10,81 +10,12 @@
 #define VELOCITY_CONTROL_FRAME_ID 0x00FFD0C8
 #define TTC_AUTOMATIC_MODE_REQUEST 0x20
 
-TTComm::TTComm()
+TTCommControl::TTCommControl()
 {
     _CanHandler.iInitialize("can0");
-    _u8HbVal = 0;
 }
 
-void TTComm::vSendHanshake()
-{
-    //Set sending cycle to 1s:
-    can_frame message;
-    message.can_id = PROTOCOL_RESPONSE_FRAME_ID;
-    message.can_dlc = 8;
-    message.data[0] = 0x10;
-    message.data[1] = 0;
-    message.data[2] = 0; //write
-    message.data[3] = 0;
-    message.data[4] = 0;
-    message.data[5] = 0;
-    message.data[6] = 0;
-    message.data[7] = 0;
-    _CanHandler.iSendFrame(&message);
-}
-
-bool TTComm::bWaitForHandshake()
-{
-    can_frame message;
-    while(_CanHandler.bReceiveFrame(&message))
-    {
-        if(((message.can_id)&(0xFFFF)) == (PROTOCOL_FRAME_ID&(0xFFFF)))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-void TTComm::vSendHB()
-{
-    //Set sending cycle to 1s:
-    can_frame message;
-    message.can_id = TTC_HB_ID;
-    message.can_dlc = 8;
-    message.data[0] = (this->_u8HbVal);
-    message.data[1] = 0;
-    message.data[2] = 0; //write
-    message.data[3] = 0;
-    message.data[4] = 0;
-    message.data[5] = 0;
-    message.data[6] = 0;
-    message.data[7] = 0;
-    _CanHandler.iSendFrame(&message);
-}
-
-int TTComm::iCorrectHBReceived()
-{
-    can_frame message;
-    while(_CanHandler.bReceiveFrame(&message))
-    {
-        if(((message.can_id)&(0xFFFF)) == (TTC_RESPONSE_HB_ID&(0xFFFF)))
-        {
-            if(_u8HbVal+1 == message.data[0])
-            {
-                _u8HbVal+=2;
-                return 0;
-            }
-            else //wrong hb value
-            {
-                return -2;
-            }
-        }
-    }
-    return -1;
-}
-
-void TTComm::vReceiveCanFrames()
+void TTCommControl::vReceiveCanFrames()
 {
     can_frame message;
     while(_CanHandler.bReceiveFrame(&message))
@@ -93,7 +24,7 @@ void TTComm::vReceiveCanFrames()
     }
 }
 
-uint8_t TTComm::u8ParseCanFrames()
+uint8_t TTCommControl::u8ParseCanFrames()
 {
     uint8_t u8Status=0;
     can_frame message;
@@ -158,9 +89,8 @@ uint8_t TTComm::u8ParseCanFrames()
     return u8Status;
 }
 
-void TTComm::vConfirmAdvantechReadiness()
+void TTCommControl::vConfirmAdvantechReadiness()
 {
-    //Set sending cycle to 1s:
     can_frame message;
     message.can_id = PROTOCOL_RESPONSE_FRAME_ID;
     message.can_dlc = 8;
@@ -175,7 +105,7 @@ void TTComm::vConfirmAdvantechReadiness()
     _CanHandler.iSendFrame(&message);
 }
 
-void TTComm::vSendVelocities(float fFrontLinear, float fFrontAngular, float fBackLinear, float fBackAngular)
+void TTCommControl::vSendVelocities(float fFrontLinear, float fFrontAngular, float fBackLinear, float fBackAngular)
 {
     //Set sending cycle to 1s:
     int16_t i16FrontLinear=(100*fFrontLinear);
@@ -230,22 +160,22 @@ void TTComm::vSendVelocities(float fFrontLinear, float fFrontAngular, float fBac
     _CanHandler.iSendFrame(&message);
 }
 
-CartsStatus TTComm::GetCartsStatus()
+CartsStatus TTCommControl::GetCartsStatus()
 {
     return _Cart;
 }
 
-float TTComm::fGetFrontCartAngle()
+float TTCommControl::fGetFrontCartAngle()
 {
     return _fFrontCartAngle;
 }
 
-float TTComm::fGetBackCartAngle()
+float TTCommControl::fGetBackCartAngle()
 {
     return _fBackCartAngle;
 }
 
-int TTComm::iGetErrorCode()
+int TTCommControl::iGetErrorCode()
 {
     return _iErrCode;
 }

@@ -2,9 +2,9 @@
 #include <ros/console.h>
 #include <agribot_msgs/AgribotCaterpillar.h>
 #include <std_msgs/Float32.h>
-#include <TTComm.h>
+#include <TTCommControl.h>
 
-TTComm commHandler;
+TTCommControl commHandler;
 
 void frontCallback(const agribot_msgs::AgribotCaterpillar msg)
 {

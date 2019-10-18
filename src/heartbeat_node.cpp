@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 #include <ros/console.h>
-#include <TTComm.h>
+#include <TTCommHB.h>
 
 int main(int argc, char **argv)
 {
@@ -8,14 +8,14 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "ttcontrol_communication_protocol");
     ros::NodeHandle n;
     ros::Rate loop_rate(10);
-    TTComm commHandler;
+    TTCommHB commHandler;
     
     //Handshake loop
     commHandler.vSendHanshake();
     start = ros::Time::now().toSec();
     while(ros::ok())
     {
-        if( (ros::Time::now().toSec()-start) >= 5)
+        if((ros::Time::now().toSec()-start) >= 5)
         {
             std::cout << "Resending handshake" << std::endl;
             commHandler.vSendHanshake();
@@ -29,7 +29,7 @@ int main(int argc, char **argv)
         }
         
         ros::spinOnce();
-	    loop_rate.sleep();
+        loop_rate.sleep();
     }
 
     std::cout << "enter HB phase:" << std::endl;

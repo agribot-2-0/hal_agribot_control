@@ -11,7 +11,7 @@
 
 #define TTC_OK 0x01
 
-class TTComm
+class TTCommControl
 {
     Can _CanHandler;
     uint8_t _u8HbVal;
@@ -21,11 +21,7 @@ class TTComm
     float _fBackCartAngle;
     uint8_t _iErrCode = TTC_OK;
 public:
-    TTComm();
-    void vSendHanshake();
-    bool bWaitForHandshake();
-    void vSendHB();
-    int iCorrectHBReceived();
+    TTCommControl();
 
     void vReceiveCanFrames();
     uint8_t u8ParseCanFrames();
