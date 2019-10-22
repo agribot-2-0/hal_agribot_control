@@ -68,14 +68,14 @@ uint8_t TTCommControl::u8ParseCanFrames()
         {
             if(message.data[0] == TTC_AUTOMATIC_MODE_REQUEST)
             {
-                if(message.data[1]==TTC_OK)
+                if(message.data[1] == TTC_OK)
                 {
-                    u8Status|=AUTOMATIC_STATE_REQUEST_MASK;
+                    u8Status |= AUTOMATIC_STATE_REQUEST_MASK;
                 }
                 else
                 {
                     _iErrCode = message.data[1];
-                    u8Status|=AUTOMATIC_STATE_REQUEST_ERROR_MASK;
+                    u8Status |= AUTOMATIC_STATE_REQUEST_ERROR_MASK;
                 }
             }
         }
@@ -103,16 +103,16 @@ void TTCommControl::vConfirmAdvantechReadiness()
 void TTCommControl::vSendVelocities(float fFrontLinear, float fFrontAngular, float fBackLinear, float fBackAngular)
 {
     //Set sending cycle to 1s:
-    int16_t i16FrontLinear=(100*fFrontLinear);
-    int16_t i16FrontAngular=(100*fFrontAngular);
-    int16_t i16BackLinear=(100*fBackLinear);
-    int16_t i16BackAngular=(100*fBackAngular);
+    int16_t i16FrontLinear = (100*fFrontLinear);
+    int16_t i16FrontAngular = (100*fFrontAngular);
+    int16_t i16BackLinear = (100*fBackLinear);
+    int16_t i16BackAngular = (100*fBackAngular);
 
     can_frame message;
     message.can_id = VELOCITY_CONTROL_FRAME_ID;
     message.can_dlc = 8;
     message.data[0] = (uint8_t)((i16FrontLinear&0xFF00)>>8);
-    if(i16FrontLinear<0)
+    if(i16FrontLinear < 0)
     {
         i16FrontLinear=32768-i16FrontLinear;
         message.data[0] = (uint8_t)((i16FrontLinear&0xFF00)>>8);
@@ -121,7 +121,7 @@ void TTCommControl::vSendVelocities(float fFrontLinear, float fFrontAngular, flo
     message.data[1] = (uint8_t)i16FrontLinear;
 
     message.data[2] = (uint8_t)((i16FrontAngular)>>8);
-    if(i16FrontAngular<0)
+    if(i16FrontAngular < 0)
     {
         i16FrontAngular=32768-i16FrontAngular;
         message.data[2] = (uint8_t)((i16FrontAngular&0xFF00)>>8);
@@ -139,7 +139,7 @@ void TTCommControl::vSendVelocities(float fFrontLinear, float fFrontAngular, flo
     message.data[5] = (uint8_t)i16BackLinear;;
 
     message.data[6] = (uint8_t)((i16BackAngular&0xFF00)>>8);
-    if(i16BackAngular<0)
+    if(i16BackAngular < 0)
     {
         i16BackAngular = 32768-i16BackAngular;
         message.data[6] |= (uint8_t)((i16BackAngular&0xFF00)>>8);

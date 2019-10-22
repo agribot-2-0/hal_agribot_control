@@ -36,7 +36,7 @@ int main(int argc, char **argv)
     while(ros::ok())
     {
         iRet = CommHandlerHB.iHBReceived();
-        if(iRet==0)
+        if(iRet == 0)
         {
             bResponseToHb=true;
         }

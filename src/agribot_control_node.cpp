@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     {
         CommHandlerControl.vReceiveCanFrames();
         u8Status=CommHandlerControl.u8ParseCanFrames();
-        if((u8Status&VELOCITIES_MASK)==VELOCITIES_MASK)
+        if((u8Status&VELOCITIES_MASK) == VELOCITIES_MASK)
         {
             CartsStatus cartStatus = CommHandlerControl.GetCartsStatus();
             AgribotCaterpillarMsg.front_linear = cartStatus.fGetFrontLinear();
@@ -38,22 +38,22 @@ int main(int argc, char **argv)
             AgribotCaterpillarMsg.back_angular = cartStatus.fGetBackAngular();
             CartsStatusPublisher.publish(AgribotCaterpillarMsg);
         }
-        if((u8Status&FRONT_ANGLE_MASK)==FRONT_ANGLE_MASK)
+        if((u8Status&FRONT_ANGLE_MASK) == FRONT_ANGLE_MASK)
         {
             FrontAngleMsg.data = CommHandlerControl.fGetFrontCartAngle();
             FrontCartAnglePublisher.publish(FrontAngleMsg);
         }
-        if((u8Status&BACK_ANGLE_MASK)==BACK_ANGLE_MASK)
+        if((u8Status&BACK_ANGLE_MASK) == BACK_ANGLE_MASK)
         {
             BackAngleMsg.data = CommHandlerControl.fGetBackCartAngle();
             BackCartAnglePublisher.publish(BackAngleMsg);
         }
-        if((u8Status&AUTOMATIC_STATE_REQUEST_MASK)==AUTOMATIC_STATE_REQUEST_MASK)
+        if((u8Status&AUTOMATIC_STATE_REQUEST_MASK) == AUTOMATIC_STATE_REQUEST_MASK)
         {
             //TODO: Implement some diagnostics
             CommHandlerControl.vConfirmAdvantechReadiness();
         }
-        if((u8Status&AUTOMATIC_STATE_REQUEST_ERROR_MASK)==AUTOMATIC_STATE_REQUEST_ERROR_MASK)
+        if((u8Status&AUTOMATIC_STATE_REQUEST_ERROR_MASK) == AUTOMATIC_STATE_REQUEST_ERROR_MASK)
         {
             ROS_ERROR("Automatic state request error: %d", CommHandlerControl.iGetErrorCode());
         }
