@@ -22,7 +22,7 @@ class TTCommControl
     float _fBackCartAngle;
     uint8_t _iErrCode = TTC_OK;
 public:
-    TTCommControl();
+    TTCommControl(char* pchCanChannel);
 
     void vReceiveCanFrames();
     uint8_t u8ParseCanFrames();

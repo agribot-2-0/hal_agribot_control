@@ -5,9 +5,9 @@
 #define TTC_HB_ID 0x00FFDFC8
 #define TTC_RESPONSE_HB_ID 0x00FFDF64
 
-TTCommHB::TTCommHB()
+TTCommHB::TTCommHB(char* pchCanChannel)
 {
-    _CanHandler.iInitialize("can0");
+    _CanHandler.iInitialize(pchCanChannel);
     _u8HbVal = 0;
 }
 
@@ -27,7 +27,7 @@ void TTCommHB::vSendHanshake()
     _CanHandler.iSendFrame(&message);
 }
 
-bool TTCommHB::bWaitForHandshake()
+bool TTCommHB::bIsHandshakeReceived()
 {
     can_frame message;
     while(_CanHandler.bReceiveFrame(&message))
@@ -66,11 +66,11 @@ int TTCommHB::iHBReceived()
             if(_u8HbVal+1 == message.data[0])
             {
                 _u8HbVal+=2;
-                return 0;
+                return CORRECT_HB_RECEIVED;
             }
             else
             {
-                return -2;
+                return WRONG_HB_RECEIVED;
             }
         }
     }
