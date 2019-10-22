@@ -1,5 +1,6 @@
 #pragma once
-#include <hal_ttcontrol_communication/Can.h>
+
+#include <agribot_common/Can.h>
 #include <hal_ttcontrol_communication/CartsStatus.h>
 #include <queue>
 

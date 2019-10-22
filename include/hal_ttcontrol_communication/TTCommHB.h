@@ -1,4 +1,6 @@
-#include <hal_ttcontrol_communication/Can.h>
+#pragma once
+
+#include <agribot_common/Can.h>
 
 class TTCommHB
 {
