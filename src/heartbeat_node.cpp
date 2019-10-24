@@ -18,12 +18,14 @@ int main(int argc, char **argv)
     dStart = ros::Time::now().toSec();
     while(ros::ok())
     {
+        //if there is no response after RESEND_HANDSHAKE_INTERVAL seconds
         if((ros::Time::now().toSec()-dStart) >= RESEND_HANDSHAKE_INTERVAL)
         {
             ROS_WARN("[HB Node] No response from TTControl. Resending handshake");
             CommHandlerHB.vSendHanshake();
             dStart = ros::Time::now().toSec();
         }
+        //if TTC "shook our hand"
         if(CommHandlerHB.bIsHandshakeReceived())
         {
             break;
@@ -40,15 +42,18 @@ int main(int argc, char **argv)
     while(ros::ok())
     {
         iRet = CommHandlerHB.iHBReceived();
+        //if HB received in iHBReceived() method is correct
         if(iRet == CORRECT_HB_RECEIVED)
         {
             bRespondToHb = true;
         }
+        //if HB received in iHBReceived() in wrong
         else if(iRet == WRONG_HB_RECEIVED)
         {
             ROS_ERROR("[HB Node] Wrong heart beat value received");
             return -1;
         }
+        //if HB is received and HB_RESPONSE_INTERVAL seconds passed
         if(bRespondToHb && (ros::Time::now().toSec() - dStart) >= HB_RESPONSE_INTERVAL)
         {
             CommHandlerHB.vSendHB();
@@ -56,6 +61,7 @@ int main(int argc, char **argv)
             bRespondToHb = false;
         }
 
+        //if TTC dint respond in HB_TIMEOUT seconds
         if((ros::Time::now().toSec() - dStart) > HB_TIMEOUT)
         {
             ROS_ERROR("[HB Node] Herat beat timeout");

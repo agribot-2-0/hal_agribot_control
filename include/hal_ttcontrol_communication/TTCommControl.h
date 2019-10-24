@@ -23,7 +23,7 @@ class TTCommControl
     uint8_t _iErrCode = TTC_OK;
 public:
     TTCommControl(char* pchCanChannel);
-
+    ~TTCommControl();
     void vReceiveCanFrames();
     uint8_t u8ParseCanFrames();
     void vConfirmAdvantechReadiness();

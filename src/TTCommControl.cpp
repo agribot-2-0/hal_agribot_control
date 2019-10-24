@@ -1,5 +1,8 @@
 #include <hal_ttcontrol_communication/TTCommControl.h>
 
+//mask used for extracting address and source, without PG
+#define ADDR_MASK 0xFFFF
+
 #define PROTOCOL_FRAME_ID 0x000EFC864
 #define PROTOCOL_RESPONSE_FRAME_ID 0x00EF64C8
 #define VELO_FRAME_ID 0x00FFD064
@@ -9,6 +12,13 @@
 
 #define SIGN_BIT 0x80
 #define DATA_BITS 0x7F
+
+//Encode velocity frame coming from TTC - check TTC-Advantech protocol DS for more info
+#define VELO_FRAME_ENCODE_CONST 100
+//Decode velocity frame coming from TTC - check TTC-Advantech protocol DS for more info
+#define VELO_FRAME_DECODE_CONST 0.01
+//Decode angle frame - check inclinometer DS for more info
+#define ANGLE_FRAME_DECODE_CONST 0.214-180
 
 TTCommControl::TTCommControl(char* pchCanChannel)
 {
@@ -24,6 +34,14 @@ void TTCommControl::vReceiveCanFrames()
     }
 }
 
+TTCommControl::~TTCommControl()
+{
+    while(!_FramesQueue.empty())
+    {
+        _FramesQueue.pop();
+    }
+}
+
 uint8_t TTCommControl::u8ParseCanFrames()
 {
     uint8_t u8Status = 0;
@@ -31,50 +49,58 @@ uint8_t TTCommControl::u8ParseCanFrames()
     while(!_FramesQueue.empty())
     {
         message = _FramesQueue.front();
-        if((VELO_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
+        //if there is velocities frame in _FramesQueue
+        if((VELO_FRAME_ID&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
-            _Cart.vSetFrontLinear(((float)(((uint16_t)(message.data[0]&DATA_BITS))<<8|message.data[1]))*0.01);
-            if(message.data[0]&SIGN_BIT)
+            _Cart.vSetFrontLinear(((float)(((uint16_t)(message.data[0]&DATA_BITS))<<8|message.data[1]))*VELO_FRAME_DECODE_CONST);
+            //if there is sign bit present, change sign of velocity
+            if(message.data[0]&SIGN_BIT) 
             {
                 _Cart.vSetFrontLinear(-_Cart.fGetFrontLinear());
             }
-            _Cart.vSetFrontAngular(((float)(((uint16_t)(message.data[2]&DATA_BITS))<<8|message.data[3]))*0.01);
+            _Cart.vSetFrontAngular(((float)(((uint16_t)(message.data[2]&DATA_BITS))<<8|message.data[3]))*VELO_FRAME_DECODE_CONST);
             if(message.data[2]&SIGN_BIT)
             {
                 _Cart.vSetFrontAngular(-_Cart.fGetFrontAngular());
             }
-            _Cart.vSetBackLinear(((float)(((uint16_t)(message.data[4]&DATA_BITS))<<8|message.data[5]))*0.01);
+            _Cart.vSetBackLinear(((float)(((uint16_t)(message.data[4]&DATA_BITS))<<8|message.data[5]))*VELO_FRAME_DECODE_CONST);
             if(message.data[4]&SIGN_BIT)
             {
                 _Cart.vSetBackLinear(-_Cart.fGetBackLinear());
             }
-            _Cart.vSetBackAngular(((float)(((uint16_t)(message.data[6]&DATA_BITS))<<8|message.data[7]))*0.01);
+            _Cart.vSetBackAngular(((float)(((uint16_t)(message.data[6]&DATA_BITS))<<8|message.data[7]))*VELO_FRAME_DECODE_CONST);
             if(message.data[6]&SIGN_BIT)
             {
                 _Cart.vSetBackAngular(-_Cart.fGetBackAngular());
             }
             u8Status |= VELOCITIES_MASK;
         }
-        if((FRONT_ANGLE_ID&(0xFFFF)) == ((message.can_id)&(0xFFFF)))
+        //if there is front cart angle frame in _FramesQueue
+        if((FRONT_ANGLE_ID&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
             _fFrontCartAngle = ((float)(((int32_t)message.data[2])<<16|((int32_t)message.data[1])<<8
-            |((int32_t)message.data[0])))*0.214-180;
+            |((int32_t)message.data[0])))*ANGLE_FRAME_DECODE_CONST;
             u8Status |= FRONT_ANGLE_MASK;
         }
-        if((BACK_ANGLE_ID&(0xFFFF)) == ((message.can_id)&(0xFFFF)))
+        //if there is back cart angle frame in _FramesQueue
+        if((BACK_ANGLE_ID&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
             _fBackCartAngle = ((float)(((int32_t)message.data[2])<<16|((int32_t)message.data[1])<<8
-            |((int32_t)message.data[0])))*0.214-180;
+            |((int32_t)message.data[0])))*ANGLE_FRAME_DECODE_CONST;
             u8Status |= BACK_ANGLE_MASK;
         }
-        if((PROTOCOL_FRAME_ID&(0xFFFFFF)) == ((message.can_id)&(0xFFFFFF)))
+        //if there is protocol frame in _FramesQueue
+        if((PROTOCOL_FRAME_ID&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
+            //if there is a request for entering automatic mode
             if(message.data[0] == TTC_AUTOMATIC_MODE_REQUEST)
             {
+                //if TTC said that it is ready for entering automatic mode
                 if(message.data[1] == TTC_OK)
                 {
                     u8Status |= AUTOMATIC_STATE_REQUEST_MASK;
                 }
+                //if TTC send some error while entering automatic mode
                 else
                 {
                     _iErrCode = message.data[1];
@@ -105,19 +131,23 @@ void TTCommControl::vConfirmAdvantechReadiness()
 
 void TTCommControl::vSendVelocities(float fFrontLinear, float fFrontAngular, float fBackLinear, float fBackAngular)
 {
-    int16_t i16FrontLinear = (100*fFrontLinear);
-    int16_t i16FrontAngular = (100*fFrontAngular);
-    int16_t i16BackLinear = (100*fBackLinear);
-    int16_t i16BackAngular = (100*fBackAngular);
+    int16_t i16FrontLinear = (VELO_FRAME_ENCODE_CONST*fFrontLinear);
+    int16_t i16FrontAngular = (VELO_FRAME_ENCODE_CONST*fFrontAngular);
+    int16_t i16BackLinear = (VELO_FRAME_ENCODE_CONST*fBackLinear);
+    int16_t i16BackAngular = (VELO_FRAME_ENCODE_CONST*fBackAngular);
 
     can_frame message;
     message.can_id = VELOCITY_CONTROL_FRAME_ID;
     message.can_dlc = 8;
     message.data[0] = (uint8_t)((i16FrontLinear&0xFF00)>>8);
+    
+    //if sending velo is below zero
     if(i16FrontLinear < 0)
     {
+        //perform below substraction to achive inversed number
         i16FrontLinear=32768-i16FrontLinear;
         message.data[0] = (uint8_t)((i16FrontLinear&0xFF00)>>8);
+        //toggle sign bit
         message.data[0] |= SIGN_BIT;
     }
     message.data[1] = (uint8_t)i16FrontLinear;
