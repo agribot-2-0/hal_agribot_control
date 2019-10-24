@@ -19,6 +19,7 @@
 #define VELO_FRAME_DECODE_CONST 0.01
 //Decode angle frame - check inclinometer DS for more info
 #define ANGLE_FRAME_DECODE_CONST 0.214-180
+#define INVERSE_INT16_CONST 32768
 
 TTCommControl::TTCommControl(char* pchCanChannel)
 {
@@ -145,7 +146,7 @@ void TTCommControl::vSendVelocities(float fFrontLinear, float fFrontAngular, flo
     if(i16FrontLinear < 0)
     {
         //perform below substraction to achive inversed number
-        i16FrontLinear=32768-i16FrontLinear;
+        i16FrontLinear=INVERSE_INT16_CONST-i16FrontLinear;
         message.data[0] = (uint8_t)((i16FrontLinear&0xFF00)>>8);
         //toggle sign bit
         message.data[0] |= SIGN_BIT;
@@ -155,7 +156,7 @@ void TTCommControl::vSendVelocities(float fFrontLinear, float fFrontAngular, flo
     message.data[2] = (uint8_t)((i16FrontAngular)>>8);
     if(i16FrontAngular < 0)
     {
-        i16FrontAngular=32768-i16FrontAngular;
+        i16FrontAngular=INVERSE_INT16_CONST-i16FrontAngular;
         message.data[2] = (uint8_t)((i16FrontAngular&0xFF00)>>8);
         message.data[2] |= SIGN_BIT;
     }
@@ -164,7 +165,7 @@ void TTCommControl::vSendVelocities(float fFrontLinear, float fFrontAngular, flo
     message.data[4] = (uint8_t)((i16BackLinear&0xFF00)>>8);
     if(i16BackLinear < 0)
     {
-        i16BackLinear = 32768-i16BackLinear;
+        i16BackLinear = INVERSE_INT16_CONST-i16BackLinear;
         message.data[4] |= (uint8_t)((i16BackLinear&0xFF00)>>8);
         message.data[4] = SIGN_BIT;
     }
@@ -173,7 +174,7 @@ void TTCommControl::vSendVelocities(float fFrontLinear, float fFrontAngular, flo
     message.data[6] = (uint8_t)((i16BackAngular&0xFF00)>>8);
     if(i16BackAngular < 0)
     {
-        i16BackAngular = 32768-i16BackAngular;
+        i16BackAngular = INVERSE_INT16_CONST-i16BackAngular;
         message.data[6] |= (uint8_t)((i16BackAngular&0xFF00)>>8);
         message.data[6] = SIGN_BIT;
     }
