@@ -21,6 +21,59 @@
 #define ANGLE_FRAME_DECODE_CONST 0.214-180
 #define INVERSE_INT16_CONST 32768
 
+void TTCommControl::vPrepareVelocitiesFrame(can_frame* Frame, float f16Velocity, uint8_t u8StartBit)
+{
+    int16_t i16Velocity = (VELO_FRAME_ENCODE_CONST*f16Velocity);
+
+    (*Frame).data[u8StartBit] = (uint8_t)((i16Velocity&0xFF00)>>8);
+    //if sending velo is below zero
+    if(i16Velocity < 0)
+    {
+        //perform below substraction to achive inversed number
+        i16Velocity=INVERSE_INT16_CONST-i16Velocity;
+        (*Frame).data[u8StartBit] = (uint8_t)((i16Velocity&0xFF00)>>8);
+        //toggle sign bit
+        (*Frame).data[u8StartBit] |= SIGN_BIT;
+    }
+    (*Frame).data[u8StartBit+1] = (uint8_t)i16Velocity;
+}
+
+void TTCommControl::vSetVelocities(eVelocities eVelo, can_frame Frame)
+{
+    switch(eVelo)
+    {
+    case FRONT_LINEAR:
+        _Cart.vSetFrontLinear(((float)(((uint16_t)(Frame.data[0]&DATA_BITS))<<8|Frame.data[1]))*VELO_FRAME_DECODE_CONST);
+        //if there is sign bit present, change sign of velocity
+        if(Frame.data[0]&SIGN_BIT) 
+        {
+            _Cart.vSetFrontLinear(-_Cart.fGetFrontLinear());
+        }
+        break;
+    case FRONT_ANGULAR:
+        _Cart.vSetFrontAngular(((float)(((uint16_t)(Frame.data[2]&DATA_BITS))<<8|Frame.data[3]))*VELO_FRAME_DECODE_CONST);
+        if(Frame.data[2]&SIGN_BIT)
+        {
+            _Cart.vSetFrontAngular(-_Cart.fGetFrontAngular());
+        }
+        break;
+    case BACK_LINEAR:
+        _Cart.vSetBackLinear(((float)(((uint16_t)(Frame.data[4]&DATA_BITS))<<8|Frame.data[5]))*VELO_FRAME_DECODE_CONST);
+        if(Frame.data[4]&SIGN_BIT)
+        {
+            _Cart.vSetBackLinear(-_Cart.fGetBackLinear());
+        }
+        break;
+    case BACK_ANGULAR:
+        _Cart.vSetBackAngular(((float)(((uint16_t)(Frame.data[6]&DATA_BITS))<<8|Frame.data[7]))*VELO_FRAME_DECODE_CONST);
+        if(Frame.data[6]&SIGN_BIT)
+        {
+            _Cart.vSetBackAngular(-_Cart.fGetBackAngular());
+        }
+        break;
+    }
+}
+
 TTCommControl::TTCommControl(char* pchCanChannel)
 {
     _CanHandler.iInitialize(pchCanChannel);
@@ -53,27 +106,10 @@ uint8_t TTCommControl::u8ParseCanFrames()
         //if there is velocities frame in _FramesQueue
         if((VELO_FRAME_ID&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
-            _Cart.vSetFrontLinear(((float)(((uint16_t)(message.data[0]&DATA_BITS))<<8|message.data[1]))*VELO_FRAME_DECODE_CONST);
-            //if there is sign bit present, change sign of velocity
-            if(message.data[0]&SIGN_BIT) 
-            {
-                _Cart.vSetFrontLinear(-_Cart.fGetFrontLinear());
-            }
-            _Cart.vSetFrontAngular(((float)(((uint16_t)(message.data[2]&DATA_BITS))<<8|message.data[3]))*VELO_FRAME_DECODE_CONST);
-            if(message.data[2]&SIGN_BIT)
-            {
-                _Cart.vSetFrontAngular(-_Cart.fGetFrontAngular());
-            }
-            _Cart.vSetBackLinear(((float)(((uint16_t)(message.data[4]&DATA_BITS))<<8|message.data[5]))*VELO_FRAME_DECODE_CONST);
-            if(message.data[4]&SIGN_BIT)
-            {
-                _Cart.vSetBackLinear(-_Cart.fGetBackLinear());
-            }
-            _Cart.vSetBackAngular(((float)(((uint16_t)(message.data[6]&DATA_BITS))<<8|message.data[7]))*VELO_FRAME_DECODE_CONST);
-            if(message.data[6]&SIGN_BIT)
-            {
-                _Cart.vSetBackAngular(-_Cart.fGetBackAngular());
-            }
+            vSetVelocities(FRONT_LINEAR,message);
+            vSetVelocities(FRONT_ANGULAR,message);
+            vSetVelocities(BACK_LINEAR,message);
+            vSetVelocities(BACK_ANGULAR,message);
             u8Status |= VELOCITIES_MASK;
         }
         //if there is front cart angle frame in _FramesQueue
@@ -132,53 +168,13 @@ void TTCommControl::vConfirmAdvantechReadiness()
 
 void TTCommControl::vSendVelocities(float fFrontLinear, float fFrontAngular, float fBackLinear, float fBackAngular)
 {
-    int16_t i16FrontLinear = (VELO_FRAME_ENCODE_CONST*fFrontLinear);
-    int16_t i16FrontAngular = (VELO_FRAME_ENCODE_CONST*fFrontAngular);
-    int16_t i16BackLinear = (VELO_FRAME_ENCODE_CONST*fBackLinear);
-    int16_t i16BackAngular = (VELO_FRAME_ENCODE_CONST*fBackAngular);
-
     can_frame message;
     message.can_id = VELOCITY_CONTROL_FRAME_ID;
     message.can_dlc = 8;
-    message.data[0] = (uint8_t)((i16FrontLinear&0xFF00)>>8);
-    
-    //if sending velo is below zero
-    if(i16FrontLinear < 0)
-    {
-        //perform below substraction to achive inversed number
-        i16FrontLinear=INVERSE_INT16_CONST-i16FrontLinear;
-        message.data[0] = (uint8_t)((i16FrontLinear&0xFF00)>>8);
-        //toggle sign bit
-        message.data[0] |= SIGN_BIT;
-    }
-    message.data[1] = (uint8_t)i16FrontLinear;
-
-    message.data[2] = (uint8_t)((i16FrontAngular)>>8);
-    if(i16FrontAngular < 0)
-    {
-        i16FrontAngular=INVERSE_INT16_CONST-i16FrontAngular;
-        message.data[2] = (uint8_t)((i16FrontAngular&0xFF00)>>8);
-        message.data[2] |= SIGN_BIT;
-    }
-    message.data[3] = (uint8_t)i16FrontAngular;
-
-    message.data[4] = (uint8_t)((i16BackLinear&0xFF00)>>8);
-    if(i16BackLinear < 0)
-    {
-        i16BackLinear = INVERSE_INT16_CONST-i16BackLinear;
-        message.data[4] |= (uint8_t)((i16BackLinear&0xFF00)>>8);
-        message.data[4] = SIGN_BIT;
-    }
-    message.data[5] = (uint8_t)i16BackLinear;;
-
-    message.data[6] = (uint8_t)((i16BackAngular&0xFF00)>>8);
-    if(i16BackAngular < 0)
-    {
-        i16BackAngular = INVERSE_INT16_CONST-i16BackAngular;
-        message.data[6] |= (uint8_t)((i16BackAngular&0xFF00)>>8);
-        message.data[6] = SIGN_BIT;
-    }
-    message.data[7] = (uint8_t)i16BackAngular;;
+    vPrepareVelocitiesFrame(&message, fFrontLinear, 0);
+    vPrepareVelocitiesFrame(&message, fFrontAngular, 2);
+    vPrepareVelocitiesFrame(&message, fBackLinear, 4);
+    vPrepareVelocitiesFrame(&message, fBackAngular, 6);
     _CanHandler.iSendFrame(&message);
 }
 

@@ -13,6 +13,8 @@
 #define TTC_OK 0x01
 #define TTC_AUTOMATIC_MODE_REQUEST 0x20
 
+enum eVelocities {FRONT_LINEAR, FRONT_ANGULAR, BACK_LINEAR, BACK_ANGULAR};
+
 class TTCommControl
 {
     Can _CanHandler;
@@ -21,6 +23,8 @@ class TTCommControl
     float _fFrontCartAngle;
     float _fBackCartAngle;
     uint8_t _iErrCode = TTC_OK;
+    void vPrepareVelocitiesFrame(can_frame* Frame, float f16Velocity, uint8_t u8StartBit);
+    void vSetVelocities(eVelocities velo, can_frame Frame);
 public:
     TTCommControl(char* pchCanChannel);
     ~TTCommControl();
