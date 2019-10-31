@@ -5,6 +5,7 @@
 #define RESEND_HANDSHAKE_INTERVAL 5
 #define HB_RESPONSE_INTERVAL 0.150
 #define HB_TIMEOUT 0.320
+#define USED_CAN "can0"
 
 int main(int argc, char **argv)
 {
@@ -12,7 +13,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "heartbeat");
     ros::NodeHandle n;
     ros::Rate loop_rate(10);
-    TTCommHB CommHandlerHB("can0");
+    TTCommHB CommHandlerHB(USED_CAN);
 
     CommHandlerHB.vSendHanshake();
     dStart = ros::Time::now().toSec();

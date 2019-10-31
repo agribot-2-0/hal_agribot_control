@@ -21,52 +21,65 @@
 #define ANGLE_FRAME_DECODE_CONST 0.214-180
 #define INVERSE_INT16_CONST 32768
 
+#define GET_SECOND_BYTE 0xFF00
+
 void TTCommControl::vPrepareVelocitiesFrame(can_frame* Frame, float f16Velocity, uint8_t u8StartBit)
 {
     int16_t i16Velocity = (VELO_FRAME_ENCODE_CONST*f16Velocity);
 
-    (*Frame).data[u8StartBit] = (uint8_t)((i16Velocity&0xFF00)>>8);
+    (*Frame).data[u8StartBit] = (uint8_t)((i16Velocity&GET_SECOND_BYTE)>>8);
     //if sending velo is below zero
     if(i16Velocity < 0)
     {
         //perform below substraction to achive inversed number
         i16Velocity=INVERSE_INT16_CONST-i16Velocity;
-        (*Frame).data[u8StartBit] = (uint8_t)((i16Velocity&0xFF00)>>8);
+        (*Frame).data[u8StartBit] = (uint8_t)((i16Velocity&GET_SECOND_BYTE)>>8);
         //toggle sign bit
         (*Frame).data[u8StartBit] |= SIGN_BIT;
     }
     (*Frame).data[u8StartBit+1] = (uint8_t)i16Velocity;
 }
 
-void TTCommControl::vSetVelocities(eVelocities eVelo, can_frame Frame)
+float TTCommControl::fDecodeVelocitiy(uint8_t u8StartBit, can_frame Frame)
+{
+    return ((float)(((uint16_t)(Frame.data[u8StartBit]&DATA_BITS))<<8|Frame.data[u8StartBit+1]))*VELO_FRAME_DECODE_CONST;
+}
+
+float TTCommControl::fDecodeAngle(can_frame Frame)
+{
+    return ((float)(((int32_t)Frame.data[2])<<16|((int32_t)Frame.data[1])<<8
+           |((int32_t)Frame.data[0])))*ANGLE_FRAME_DECODE_CONST;
+}
+
+void TTCommControl::vSetVelocitiy(eVelocities eVelo, can_frame Frame)
 {
     switch(eVelo)
     {
     case FRONT_LINEAR:
-        _Cart.vSetFrontLinear(((float)(((uint16_t)(Frame.data[0]&DATA_BITS))<<8|Frame.data[1]))*VELO_FRAME_DECODE_CONST);
+        _Cart.vSetFrontLinear(fDecodeVelocitiy(FRONT_LINEAR,Frame));
         //if there is sign bit present, change sign of velocity
-        if(Frame.data[0]&SIGN_BIT) 
+        if(Frame.data[FRONT_LINEAR]&SIGN_BIT) 
         {
             _Cart.vSetFrontLinear(-_Cart.fGetFrontLinear());
         }
         break;
     case FRONT_ANGULAR:
-        _Cart.vSetFrontAngular(((float)(((uint16_t)(Frame.data[2]&DATA_BITS))<<8|Frame.data[3]))*VELO_FRAME_DECODE_CONST);
-        if(Frame.data[2]&SIGN_BIT)
+        _Cart.vSetFrontAngular(fDecodeVelocitiy(FRONT_ANGULAR,Frame));
+        if(Frame.data[FRONT_ANGULAR]&SIGN_BIT)
         {
             _Cart.vSetFrontAngular(-_Cart.fGetFrontAngular());
         }
         break;
     case BACK_LINEAR:
-        _Cart.vSetBackLinear(((float)(((uint16_t)(Frame.data[4]&DATA_BITS))<<8|Frame.data[5]))*VELO_FRAME_DECODE_CONST);
-        if(Frame.data[4]&SIGN_BIT)
+        _Cart.vSetBackLinear(fDecodeVelocitiy(BACK_LINEAR,Frame));
+        if(Frame.data[BACK_LINEAR]&SIGN_BIT)
         {
             _Cart.vSetBackLinear(-_Cart.fGetBackLinear());
         }
         break;
     case BACK_ANGULAR:
-        _Cart.vSetBackAngular(((float)(((uint16_t)(Frame.data[6]&DATA_BITS))<<8|Frame.data[7]))*VELO_FRAME_DECODE_CONST);
-        if(Frame.data[6]&SIGN_BIT)
+        _Cart.vSetBackAngular(fDecodeVelocitiy(BACK_ANGULAR,Frame));
+        if(Frame.data[BACK_ANGULAR]&SIGN_BIT)
         {
             _Cart.vSetBackAngular(-_Cart.fGetBackAngular());
         }
@@ -106,24 +119,22 @@ uint8_t TTCommControl::u8ParseCanFrames()
         //if there is velocities frame in _FramesQueue
         if((VELO_FRAME_ID&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
-            vSetVelocities(FRONT_LINEAR,message);
-            vSetVelocities(FRONT_ANGULAR,message);
-            vSetVelocities(BACK_LINEAR,message);
-            vSetVelocities(BACK_ANGULAR,message);
+            vSetVelocitiy(FRONT_LINEAR,message);
+            vSetVelocitiy(FRONT_ANGULAR,message);
+            vSetVelocitiy(BACK_LINEAR,message);
+            vSetVelocitiy(BACK_ANGULAR,message);
             u8Status |= VELOCITIES_MASK;
         }
         //if there is front cart angle frame in _FramesQueue
         if((FRONT_ANGLE_ID&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
-            _fFrontCartAngle = ((float)(((int32_t)message.data[2])<<16|((int32_t)message.data[1])<<8
-            |((int32_t)message.data[0])))*ANGLE_FRAME_DECODE_CONST;
+            _fFrontCartAngle = fDecodeAngle(message);
             u8Status |= FRONT_ANGLE_MASK;
         }
         //if there is back cart angle frame in _FramesQueue
         if((BACK_ANGLE_ID&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
-            _fBackCartAngle = ((float)(((int32_t)message.data[2])<<16|((int32_t)message.data[1])<<8
-            |((int32_t)message.data[0])))*ANGLE_FRAME_DECODE_CONST;
+            _fBackCartAngle = fDecodeAngle(message);
             u8Status |= BACK_ANGLE_MASK;
         }
         //if there is protocol frame in _FramesQueue

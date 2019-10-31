@@ -4,7 +4,9 @@
 #include <std_msgs/Float32.h>
 #include <hal_ttcontrol_communication/TTCommControl.h>
 
-TTCommControl CommHandlerControl("can0");
+#define USED_CAN "can0"
+
+TTCommControl CommHandlerControl(USED_CAN);
 
 void frontCallback(const agribot_msgs::AgribotCaterpillar& msg)
 {
