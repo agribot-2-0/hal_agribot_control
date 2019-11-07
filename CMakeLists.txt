@@ -49,6 +49,9 @@ add_executable(agribot_control_node ${CMAKE_SOURCE_DIR}/agribot_common/src/Can.c
 target_link_libraries(heartbeat_node ${catkin_LIBRARIES})
 target_link_libraries(agribot_control_node ${catkin_LIBRARIES})
 
+add_dependencies(heartbeat_node ${catkin_EXPORTED_TARGETS})
+add_dependencies(agribot_control_node ${catkin_EXPORTED_TARGETS})
+
 #############
 ## Install ##
 #############
