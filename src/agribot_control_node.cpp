@@ -58,6 +58,7 @@ int main(int argc, char **argv)
         {
             //TODO: Implement some diagnostics
             ROS_INFO("Received automatic mode request");
+            usleep(100000);
             CommHandlerControl.vConfirmAdvantechReadiness();
         }
         //if automatic state request error frame received in u8ParseCanFrames() method
