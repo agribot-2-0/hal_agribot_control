@@ -5,6 +5,7 @@
 #include <hal_ttcontrol_communication/TTCommControl.h>
 
 #define USED_CAN "can0"
+#define WAIT_FOR_TTCONTROL 100000
 
 TTCommControl CommHandlerControl(USED_CAN);
 
@@ -58,7 +59,7 @@ int main(int argc, char **argv)
         {
             //TODO: Implement some diagnostics
             ROS_INFO("Received automatic mode request");
-            usleep(100000);
+            usleep(WAIT_FOR_TTCONTROL);
             CommHandlerControl.vConfirmAdvantechReadiness();
         }
         //if automatic state request error frame received in u8ParseCanFrames() method
