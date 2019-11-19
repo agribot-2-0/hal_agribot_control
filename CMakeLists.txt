@@ -2,7 +2,7 @@
 ## Set minimum required version of cmake, project name and compile options ##
 #############################################################################
 cmake_minimum_required(VERSION 2.8.3)
-project(ttcontrol_communication_protocol)
+project(hal_agribot_control)
 
 #############################################################################
 ## Find catkin packages and libraries for catkin and system dependencies   ##
@@ -27,7 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
 ###################################
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES ttcontrol_communication_protocol
+#  LIBRARIES hal_agribot_control
 #  CATKIN_DEPENDS roscpp
 #  DEPENDS system_lib
 )

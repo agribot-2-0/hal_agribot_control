@@ -1,0 +1,4 @@
+<launch>
+    <node name="heartbeat_node" pkg="hal_agribot_control" type="heartbeat_node" />
+    <node name="agribot_control_node" pkg="hal_agribot_control" type="agribot_control_node" />
+</launch>
