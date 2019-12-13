@@ -39,12 +39,12 @@ catkin_package(
 include_directories(
  include
  ${catkin_INCLUDE_DIRS}
- ${CMAKE_SOURCE_DIR}/agribot_common/include
+ ${agribot_common_SOURCE_DIR}/include
 )
 
 link_directories("${PROJECT_SOURCE_DIR}")
-add_executable(heartbeat_node ${CMAKE_SOURCE_DIR}/agribot_common/src/Can.cpp src/TTCommHB.cpp src/CartsStatus.cpp src/heartbeat_node.cpp)
-add_executable(agribot_control_node ${CMAKE_SOURCE_DIR}/agribot_common/src/Can.cpp src/TTCommControl.cpp src/CartsStatus.cpp src/agribot_control_node.cpp)
+add_executable(heartbeat_node ${agribot_common_SOURCE_DIR}/src/Can.cpp src/TTCommHB.cpp src/CartsStatus.cpp src/heartbeat_node.cpp)
+add_executable(agribot_control_node ${agribot_common_SOURCE_DIR}/src/Can.cpp src/TTCommControl.cpp src/CartsStatus.cpp src/agribot_control_node.cpp)
 
 target_link_libraries(heartbeat_node ${catkin_LIBRARIES})
 target_link_libraries(agribot_control_node ${catkin_LIBRARIES})
