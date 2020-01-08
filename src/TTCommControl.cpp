@@ -17,7 +17,7 @@
 //Encode velocity frame coming from TTC - check TTC-Advantech protocol DS for more info
 #define VELO_FRAME_ENCODE_CONST 1000
 //Decode velocity frame coming from TTC - check TTC-Advantech protocol DS for more info
-#define VELO_FRAME_DECODE_CONST 0.01
+#define VELO_FRAME_DECODE_CONST 0.001
 //Decode angle frame - check inclinometer DS for more info
 #define ANGLE_FRAME_DECODE_CONST (0.214-180)
 #define INVERSE_INT16_CONST 32768
