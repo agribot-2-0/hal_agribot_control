@@ -9,23 +9,24 @@
 #define FRONT_ANGLE_ID 0xAA20
 #define BACK_ANGLE_ID 0xAA21
 #define VELOCITY_CONTROL_FRAME_ID 0x00FFD0C8
+#define DEG_TO_RAD (M_PI/180)
 
 #define SIGN_BIT 0x80
 #define DATA_BITS 0x7F
 
 //Encode velocity frame coming from TTC - check TTC-Advantech protocol DS for more info
-#define VELO_FRAME_ENCODE_CONST 100
+#define VELO_FRAME_ENCODE_CONST 1000
 //Decode velocity frame coming from TTC - check TTC-Advantech protocol DS for more info
 #define VELO_FRAME_DECODE_CONST 0.01
 //Decode angle frame - check inclinometer DS for more info
-#define ANGLE_FRAME_DECODE_CONST 0.214-180
+#define ANGLE_FRAME_DECODE_CONST (0.214-180)
 #define INVERSE_INT16_CONST 32768
 
 #define GET_SECOND_BYTE 0xFF00
 
-void TTCommControl::vPrepareVelocitiesFrame(can_frame* Frame, float f16Velocity, uint8_t u8StartBit)
+void TTCommControl::vPrepareVelocitiesFrame(can_frame* Frame, float fVelocity, uint8_t u8StartBit)
 {
-    int16_t i16Velocity = (VELO_FRAME_ENCODE_CONST*f16Velocity);
+    int16_t i16Velocity = (VELO_FRAME_ENCODE_CONST*fVelocity);
 
     (*Frame).data[u8StartBit] = (uint8_t)((i16Velocity&GET_SECOND_BYTE)>>8);
     //if sending velo is below zero
@@ -64,7 +65,7 @@ void TTCommControl::vSetVelocitiy(eVelocities eVelo, can_frame Frame)
         }
         break;
     case FRONT_ANGULAR:
-        _Cart.vSetFrontAngular(fDecodeVelocitiy(FRONT_ANGULAR,Frame));
+        _Cart.vSetFrontAngular(fDecodeVelocitiy(FRONT_ANGULAR,Frame)*DEG_TO_RAD);
         if(Frame.data[FRONT_ANGULAR]&SIGN_BIT)
         {
             _Cart.vSetFrontAngular(-_Cart.fGetFrontAngular());
@@ -78,7 +79,7 @@ void TTCommControl::vSetVelocitiy(eVelocities eVelo, can_frame Frame)
         }
         break;
     case BACK_ANGULAR:
-        _Cart.vSetBackAngular(fDecodeVelocitiy(BACK_ANGULAR,Frame));
+        _Cart.vSetBackAngular(fDecodeVelocitiy(BACK_ANGULAR,Frame)*DEG_TO_RAD);
         if(Frame.data[BACK_ANGULAR]&SIGN_BIT)
         {
             _Cart.vSetBackAngular(-_Cart.fGetBackAngular());
@@ -128,13 +129,13 @@ uint8_t TTCommControl::u8ParseCanFrames()
         //if there is front cart angle frame in _FramesQueue
         if((FRONT_ANGLE_ID&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
-            _fFrontCartAngle = fDecodeAngle(message);
+            _fFrontCartAngle = fDecodeAngle(message)*DEG_TO_RAD;
             u8Status |= FRONT_ANGLE_MASK;
         }
         //if there is back cart angle frame in _FramesQueue
         if((BACK_ANGLE_ID&ADDR_MASK) == (message.can_id&ADDR_MASK))
         {
-            _fBackCartAngle = fDecodeAngle(message);
+            _fBackCartAngle = fDecodeAngle(message)*DEG_TO_RAD;
             u8Status |= BACK_ANGLE_MASK;
         }
         //if there is protocol frame in _FramesQueue

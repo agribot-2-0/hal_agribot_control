@@ -3,6 +3,7 @@
 #include <agribot_common/Can.h>
 #include <hal_ttcontrol_communication/CartsStatus.h>
 #include <queue>
+#include <math.h>
 
 #define VELOCITIES_MASK 0x01
 #define FRONT_ANGLE_MASK 0x02
