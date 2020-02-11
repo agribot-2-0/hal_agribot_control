@@ -19,7 +19,7 @@
 //Decode velocity frame coming from TTC - check TTC-Advantech protocol DS for more info
 #define VELO_FRAME_DECODE_CONST 0.001
 //Decode angle frame - check inclinometer DS for more info
-#define ANGLE_FRAME_DECODE_CONST (0.214-180)
+#define ANGLE_FRAME_DECODE_CONST 0.214-180
 #define INVERSE_INT16_CONST 32768
 
 #define GET_SECOND_BYTE 0xFF00
@@ -50,6 +50,7 @@ float TTCommControl::fDecodeAngle(can_frame Frame)
 {
     return ((float)(((int32_t)Frame.data[2])<<16|((int32_t)Frame.data[1])<<8
            |((int32_t)Frame.data[0])))*ANGLE_FRAME_DECODE_CONST;
+
 }
 
 void TTCommControl::vSetVelocitiy(eVelocities eVelo, can_frame Frame)
