@@ -36,6 +36,8 @@ int main(int argc, char **argv)
         if((u8Status&VELOCITIES_MASK) == VELOCITIES_MASK)
         {
             CartsStatus cartStatus = CommHandlerControl.GetCartsStatus();
+            AgribotCaterpillarMsg.header.stamp = ros::Time::now();
+            AgribotCaterpillarMsg.header.frame_id = "hal_caterpillar_feedback";
             AgribotCaterpillarMsg.front_linear = cartStatus.fGetFrontLinear();
             AgribotCaterpillarMsg.front_angular = cartStatus.fGetFrontAngular();
             AgribotCaterpillarMsg.back_linear = cartStatus.fGetBackLinear();

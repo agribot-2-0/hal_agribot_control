@@ -26,6 +26,7 @@ int main(int argc, char **argv)
         ConnectionStatePublisher.publish(msg);
         CommHandlerHB.vSendHanshake();
         dStart = ros::Time::now().toSec();
+
         while(ros::ok())
         {
             //if there is no response after RESEND_HANDSHAKE_INTERVAL seconds
