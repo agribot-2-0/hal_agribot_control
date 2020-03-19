@@ -17,31 +17,33 @@ int main(int argc, char **argv)
     ros::Rate loop_rate(10);
     TTCommHB CommHandlerHB(USED_CAN);
 
-    ros::Publisher ConnectionStatePublisher = n.advertise<std_msgs::String>("/agribot/ttcontrol/connection_state",1);
+    ros::Publisher ConnectionStatePublisher =
+        n.advertise<std_msgs::String>("/agribot/ttcontrol/connection_state", 1);
     std_msgs::String msg;
-    msg.data="connecting";
-    while(ros::ok())
+    msg.data = "connecting";
+    while (ros::ok())
     {
-        msg.data="connecting";
+        msg.data = "connecting";
         ConnectionStatePublisher.publish(msg);
         CommHandlerHB.vSendHanshake();
         dStart = ros::Time::now().toSec();
 
-        while(ros::ok())
+        while (ros::ok())
         {
-            //if there is no response after RESEND_HANDSHAKE_INTERVAL seconds
-            if((ros::Time::now().toSec()-dStart) >= RESEND_HANDSHAKE_INTERVAL)
+            // if there is no response after RESEND_HANDSHAKE_INTERVAL seconds
+            if ((ros::Time::now().toSec()-dStart) >= RESEND_HANDSHAKE_INTERVAL)
             {
-                ROS_WARN("[HB Node] No response from TTControl. Resending handshake");
+                ROS_WARN("[HB Node] No response from TTControl."
+                         "Resending handshake");
                 CommHandlerHB.vSendHanshake();
                 dStart = ros::Time::now().toSec();
-                msg.data="connecting";
+                msg.data = "connecting";
                 ConnectionStatePublisher.publish(msg);
             }
-            //if TTC "shook our hand"
-            if(CommHandlerHB.bIsHandshakeReceived())
+            // if TTC "shook our hand"
+            if (CommHandlerHB.bIsHandshakeReceived())
             {
-                msg.data="connected";
+                msg.data = "connected";
                 ConnectionStatePublisher.publish(msg);
                 break;
             }
@@ -54,26 +56,27 @@ int main(int argc, char **argv)
         dStart = ros::Time::now().toSec();
         bool bRespondToHb = false;
         int iRet = -5;
-        while(ros::ok())
+        while (ros::ok())
         {
             iRet = CommHandlerHB.iHBReceived();
-            //if HB received in iHBReceived() method is correct
-            if(iRet == CORRECT_HB_RECEIVED)
+            // if HB received in iHBReceived() method is correct
+            if (iRet == CORRECT_HB_RECEIVED)
             {
-                msg.data="connected";
+                msg.data = "connected";
                 ConnectionStatePublisher.publish(msg);
                 bRespondToHb = true;
             }
-            //if HB received in iHBReceived() in wrong
-            else if(iRet == WRONG_HB_RECEIVED)
+            // if HB received in iHBReceived() in wrong
+            else if (iRet == WRONG_HB_RECEIVED)
             {
                 ROS_ERROR("[HB Node] Wrong heart beat value received");
                 msg.data = "disconnected";
                 ConnectionStatePublisher.publish(msg);
                 break;
             }
-            //if HB is received and HB_RESPONSE_INTERVAL seconds passed
-            if(bRespondToHb && (ros::Time::now().toSec() - dStart) >= HB_RESPONSE_INTERVAL)
+            // if HB is received and HB_RESPONSE_INTERVAL seconds passed
+            if (bRespondToHb && (ros::Time::now().toSec() - dStart) >=
+                HB_RESPONSE_INTERVAL)
             {
                 CommHandlerHB.vSendHB();
                 dStart = ros::Time::now().toSec();
@@ -82,8 +85,8 @@ int main(int argc, char **argv)
                 bRespondToHb = false;
             }
 
-            //if TTC dint respond in HB_TIMEOUT seconds
-            if((ros::Time::now().toSec() - dStart) > HB_TIMEOUT)
+            // if TTC dint respond in HB_TIMEOUT seconds
+            if ((ros::Time::now().toSec() - dStart) > HB_TIMEOUT)
             {
                 ROS_ERROR("[HB Node] Heart beat timeout");
                 msg.data = "disconnected";

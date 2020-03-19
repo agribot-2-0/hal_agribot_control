@@ -1,6 +1,6 @@
 #include <hal_ttcontrol_communication/TTCommHB.h>
 
-//mask used for extracting address and source, without PG
+// mask used for extracting address and source, without PG
 #define ADDR_MASK 0xFFFF
 
 #define HANDSHAKE_DATA 0x10
@@ -35,13 +35,13 @@ void TTCommHB::vSendHanshake()
 bool TTCommHB::bIsHandshakeReceived()
 {
     can_frame message;
-    while(_CanHandler.bReceiveFrame(&message))
+    while (_CanHandler.bReceiveFrame(&message))
     {
-        //if protocol frame availible
-        if((message.can_id&ADDR_MASK) == (PROTOCOL_FRAME_ID&ADDR_MASK))
+        // if protocol frame availible
+        if ((message.can_id&ADDR_MASK) == (PROTOCOL_FRAME_ID&ADDR_MASK))
         {
-            //if it is handshake confirmation
-            if(message.data[0] == HANDSHAKE_DATA)
+            // if it is handshake confirmation
+            if (message.data[0] == HANDSHAKE_DATA)
             {
                 return true;
             }
@@ -69,18 +69,18 @@ void TTCommHB::vSendHB()
 int TTCommHB::iHBReceived()
 {
     can_frame message;
-    while(_CanHandler.bReceiveFrame(&message))
+    while (_CanHandler.bReceiveFrame(&message))
     {
-        //if hb frame received
-        if((message.can_id&ADDR_MASK) == (TTC_RESPONSE_HB_ID&ADDR_MASK))
+        // if hb frame received
+        if ((message.can_id&ADDR_MASK) == (TTC_RESPONSE_HB_ID&ADDR_MASK))
         {
-            //if it is expected hb value
-            if(_u8HbVal+1 == message.data[0])
+            // if it is expected hb value
+            if (_u8HbVal+1 == message.data[0])
             {
-                _u8HbVal+=2;
+                _u8HbVal += 2;
                 return CORRECT_HB_RECEIVED;
             }
-            //if it is wrong hb value
+            // if it is wrong hb value
             else
             {
                 return WRONG_HB_RECEIVED;
