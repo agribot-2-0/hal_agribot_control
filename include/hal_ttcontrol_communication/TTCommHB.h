@@ -9,8 +9,8 @@ class TTCommHB
 {
     Can _CanHandler;
     uint8_t _u8HbVal;
-public:
-    TTCommHB(char* pchCanChannel);
+ public:
+    explicit TTCommHB(char* pchCanChannel);
     void vSendHanshake();
     bool bIsHandshakeReceived();
     void vSendHB();
