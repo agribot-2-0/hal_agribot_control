@@ -1,3 +1,7 @@
+/*
+* Copyright (C) 2020 Agribot. All rights reserved.
+*/
+
 #include <hal_ttcontrol_communication/TTCommControl.h>
 
 // mask used for extracting address and source, without PG
