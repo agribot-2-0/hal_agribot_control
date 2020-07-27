@@ -19,4 +19,5 @@ class TTCommHB
     bool bIsHandshakeReceived();
     void vSendHB();
     int iHBReceived();
+    void vResetCnt();
 };
