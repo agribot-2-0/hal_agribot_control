@@ -60,6 +60,7 @@ int main(int argc, char **argv)
         dStart = ros::Time::now().toSec();
         bool bRespondToHb = false;
         int iRet = -5;
+        CommHandlerHB.vResetCnt();
         while (ros::ok())
         {
             iRet = CommHandlerHB.iHBReceived();

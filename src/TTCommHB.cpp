@@ -93,3 +93,8 @@ int TTCommHB::iHBReceived()
     }
     return -1;
 }
+
+void TTCommHB::vResetCnt()
+{
+    _u8HbVal = 0;
+}
