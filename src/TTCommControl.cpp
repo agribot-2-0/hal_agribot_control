@@ -127,16 +127,16 @@ TTCommControl::~TTCommControl()
 
 int TTCommControl::iParseEncoderSum(can_frame Frame)
 {
-    int temp=0;
-    temp = Frame.data[1] + (Frame.data[2]<<8) + (Frame.data[3]<<16) + (Frame.data[4]<<24);
-    if(Frame.data[0]&ENCODER_SIGN_BIT)
-    {
-        return -temp;
-    }
-    else
-    {
-        return temp;
-    }
+  int temp = 0;
+  temp = Frame.data[1] + (Frame.data[2] << 8) + (Frame.data[3] << 16) + (Frame.data[4] << 24);
+  if (Frame.data[0] & ENCODER_SIGN_BIT)
+  {
+    return -temp;
+  }
+  else
+  {
+    return temp;
+  }
 }
 
 void TTCommControl::vSetEncoderSum(can_frame Frame)
