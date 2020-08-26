@@ -6,6 +6,7 @@
 #include <ros/console.h>
 #include <agribot_msgs/AgribotCaterpillar.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Int32.h>
 #include <hal_ttcontrol_communication/TTCommControl.h>
 
 #define USED_CAN "can0"
@@ -33,9 +34,18 @@ int main(int argc, char **argv)
         n.advertise<std_msgs::Float32>("/agribot/encoder/cart/front", 1);
     ros::Publisher BackCartAnglePublisher =
         n.advertise<std_msgs::Float32>("/agribot/encoder/cart/back", 1);
+    ros::Publisher FrontLeftEncoderPublisher =
+        n.advertise<std_msgs::Int32>("/agribot/encoder/front/left", 1);
+    ros::Publisher FrontRightEncoderPublisher =
+        n.advertise<std_msgs::Int32>("/agribot/encoder/front/right", 1);
+    ros::Publisher BackLeftEncoderPublisher =
+        n.advertise<std_msgs::Int32>("/agribot/encoder/back/left", 1);
+    ros::Publisher BackRightEncoderPublisher =
+        n.advertise<std_msgs::Int32>("/agribot/encoder/back/right", 1);
     agribot_msgs::AgribotCaterpillar AgribotCaterpillarMsg;
     std_msgs::Float32 FrontAngleMsg;
     std_msgs::Float32 BackAngleMsg;
+    std_msgs::Int32 EncoderSum;
     uint8_t u8Status = 0x00;
 
     while (ros::ok())
@@ -66,7 +76,17 @@ int main(int argc, char **argv)
             BackAngleMsg.data = CommHandlerControl.fGetBackCartAngle();
             BackCartAnglePublisher.publish(BackAngleMsg);
         }
-
+        if  ((u8Status&ENCODER_SUM_MASK) == ENCODER_SUM_MASK)
+        {
+            EncoderSum.data = CommHandlerControl.GetCartsStatus().iGetFrontLeftEncoderSum();
+            FrontLeftEncoderPublisher.publish(EncoderSum);
+            EncoderSum.data = CommHandlerControl.GetCartsStatus().iGetFrontRightEncoderSum();
+            FrontRightEncoderPublisher.publish(EncoderSum);
+            EncoderSum.data = CommHandlerControl.GetCartsStatus().iGetBackLeftEncoderSum();
+            BackLeftEncoderPublisher.publish(EncoderSum);
+            EncoderSum.data = CommHandlerControl.GetCartsStatus().iGetBackRightEncoderSum();
+            BackRightEncoderPublisher.publish(EncoderSum);
+        }
         // if automatic state request frame received in u8ParseCanFrames()
         // method
         if ((u8Status&AUTOMATIC_STATE_REQUEST_MASK) ==

@@ -13,6 +13,7 @@
 #define VELOCITIES_MASK 0x01
 #define FRONT_ANGLE_MASK 0x02
 #define BACK_ANGLE_MASK 0x04
+#define ENCODER_SUM_MASK 0x08
 #define AUTOMATIC_STATE_REQUEST_MASK 0x10
 #define AUTOMATIC_STATE_REQUEST_ERROR_MASK 0x20
 
@@ -35,6 +36,8 @@ class TTCommControl
     float fDecodeVelocitiy(uint8_t u8StartBit, can_frame Frame);
     float fDecodeAngle(can_frame Frame);
     void vSetVelocitiy(eVelocities velo, can_frame Frame);
+    void vSetEncoderSum(can_frame Frame);
+    int iParseEncoderSum(can_frame Frame);
  public:
     explicit TTCommControl(char* pchCanChannel);
     ~TTCommControl();

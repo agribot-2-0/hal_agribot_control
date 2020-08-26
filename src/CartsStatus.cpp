@@ -43,3 +43,43 @@ float CartsStatus::fGetBackAngular()
 {
     return _fBackAngular;
 }
+
+void CartsStatus::vSetFrontLeftEncoderSum(int value)
+{
+    _iFrontLeftEncoderSum = value;
+}
+
+void CartsStatus::vSetFrontRightEncoderSum(int value)
+{
+    _iFrontRightEncoderSum = value;
+}
+
+void CartsStatus::vSetBackLeftEncoderSum(int value)
+{
+    _iBackLeftEncoderSum = value;
+}
+
+void CartsStatus::vSetBackRightEncoderSum(int value)
+{
+    _iBackRightEncoderSum = value;
+}
+
+int CartsStatus::iGetFrontLeftEncoderSum()
+{
+    return _iFrontLeftEncoderSum;
+}
+
+int CartsStatus::iGetFrontRightEncoderSum()
+{
+    return _iFrontRightEncoderSum;
+}
+
+int CartsStatus::iGetBackLeftEncoderSum()
+{
+    return _iBackLeftEncoderSum;
+}
+
+int CartsStatus::iGetBackRightEncoderSum()
+{
+    return _iBackRightEncoderSum;
+}
