@@ -68,10 +68,10 @@ int main(int argc, char** argv)
     }
     if ((u8Status & ENCODER_SUM_MASK) == ENCODER_SUM_MASK)
     {
-      EncoderSum.front_left = CommHandlerControl.GetCartsStatus().iGetFrontLeftEncoderSum();
-      EncoderSum.front_right = CommHandlerControl.GetCartsStatus().iGetFrontRightEncoderSum();
-      EncoderSum.back_left = CommHandlerControl.GetCartsStatus().iGetBackLeftEncoderSum();
-      EncoderSum.back_right = CommHandlerControl.GetCartsStatus().iGetBackRightEncoderSum();
+      EncoderSum.front_left = (2 * M_PI * CommHandlerControl.GetCartsStatus().iGetFrontLeftEncoderSum()) / 36;
+      EncoderSum.front_right = (2 * M_PI * CommHandlerControl.GetCartsStatus().iGetFrontRightEncoderSum()) / 36;
+      EncoderSum.back_left = (2 * M_PI * CommHandlerControl.GetCartsStatus().iGetBackLeftEncoderSum()) / 36;
+      EncoderSum.back_right = (2 * M_PI * CommHandlerControl.GetCartsStatus().iGetBackRightEncoderSum()) / 36;
       EncoderPublisher.publish(EncoderSum);
     }
     // if automatic state request frame received in u8ParseCanFrames()
