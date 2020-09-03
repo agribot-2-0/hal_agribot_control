@@ -10,8 +10,8 @@
 #include <std_msgs/Float32.h>
 #include <std_msgs/Int32.h>
 
-#define USED_CAN "can0"
-#define WAIT_FOR_TTCONTROL 100000
+constexpr char USED_CAN[] = "can0";
+constexpr int WAIT_FOR_TTCONTROL = 100000;
 
 TTCommControl CommHandlerControl(USED_CAN);
 
@@ -23,7 +23,21 @@ void frontCallback(const agribot_msgs::AgribotCaterpillar& msg)
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "agribot_control");
-  ros::NodeHandle n;
+  ros::NodeHandle n("~");
+
+  if (n.hasParam("impulses_per_revolution"))
+  {
+    double impulsesPerRevolution;
+    n.getParam("impulses_per_revolution", impulsesPerRevolution);
+    CommHandlerControl.setImpulsesPerRevolution(impulsesPerRevolution);
+  }
+  else
+  {
+    ROS_FATAL_STREAM("[HAL Agribot Control] Missing impulses_per_revolution parameter. Exiting...");
+    n.shutdown();
+    exit(0);
+  }
+
   ros::Rate loop_rate(10);
   ros::Subscriber sub = n.subscribe("/agribot/control/caterpillar", 1000, frontCallback);
   ros::Publisher CartsStatusPublisher =
@@ -68,10 +82,10 @@ int main(int argc, char** argv)
     }
     if ((u8Status & ENCODER_SUM_MASK) == ENCODER_SUM_MASK)
     {
-      EncoderSum.front_left = (2 * M_PI * CommHandlerControl.GetCartsStatus().iGetFrontLeftEncoderSum()) / 36;
-      EncoderSum.front_right = (2 * M_PI * CommHandlerControl.GetCartsStatus().iGetFrontRightEncoderSum()) / 36;
-      EncoderSum.back_left = (2 * M_PI * CommHandlerControl.GetCartsStatus().iGetBackLeftEncoderSum()) / 36;
-      EncoderSum.back_right = (2 * M_PI * CommHandlerControl.GetCartsStatus().iGetBackRightEncoderSum()) / 36;
+      EncoderSum.front_left = CommHandlerControl.GetCartsStatus().iGetFrontLeftEncoderSum();
+      EncoderSum.front_right = CommHandlerControl.GetCartsStatus().iGetFrontRightEncoderSum();
+      EncoderSum.back_left = CommHandlerControl.GetCartsStatus().iGetBackLeftEncoderSum();
+      EncoderSum.back_right = CommHandlerControl.GetCartsStatus().iGetBackRightEncoderSum();
       EncoderPublisher.publish(EncoderSum);
     }
     // if automatic state request frame received in u8ParseCanFrames()

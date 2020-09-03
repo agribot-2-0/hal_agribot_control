@@ -103,9 +103,14 @@ void TTCommControl::vSetVelocitiy(eVelocities eVelo, can_frame Frame)
   }
 }
 
-TTCommControl::TTCommControl(char* pchCanChannel)
+TTCommControl::TTCommControl(const char* pchCanChannel)
 {
   _CanHandler.iInitialize(pchCanChannel);
+}
+
+void TTCommControl::setImpulsesPerRevolution(int impulses)
+{
+  _Cart.setImpulsesPerRevolution(impulses);
 }
 
 void TTCommControl::vReceiveCanFrames()

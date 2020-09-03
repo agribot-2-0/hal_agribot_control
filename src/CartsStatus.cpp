@@ -1,85 +1,102 @@
 /*
-* Copyright (C) 2020 Agribot. All rights reserved.
-*/
+ * Copyright (C) 2020 Agribot. All rights reserved.
+ */
 
 #include <hal_ttcontrol_communication/CartsStatus.h>
 
 void CartsStatus::vSetFrontLinear(float fVelo)
 {
-    _fFrontLinear = fVelo;
+  _fFrontLinear = fVelo;
 }
 
 void CartsStatus::vSetFrontAngular(float fVelo)
 {
-    _fFrontAngular = fVelo;
+  _fFrontAngular = fVelo;
 }
 
 void CartsStatus::vSetBackLinear(float fVelo)
 {
-    _fBackLinear = fVelo;
+  _fBackLinear = fVelo;
 }
 
 void CartsStatus::vSetBackAngular(float fVelo)
 {
-    _fBackAngular = fVelo;
+  _fBackAngular = fVelo;
 }
 
 float CartsStatus::fGetFrontLinear()
 {
-    return _fFrontLinear;
+  return _fFrontLinear;
 }
 
 float CartsStatus::fGetFrontAngular()
 {
-    return _fFrontAngular;
+  return _fFrontAngular;
 }
 
 float CartsStatus::fGetBackLinear()
 {
-    return _fBackLinear;
+  return _fBackLinear;
 }
 
 float CartsStatus::fGetBackAngular()
 {
-    return _fBackAngular;
+  return _fBackAngular;
 }
 
 void CartsStatus::vSetFrontLeftEncoderSum(int value)
 {
-    _iFrontLeftEncoderSum = value;
+  _iFrontLeftEncoderSum = value;
 }
 
 void CartsStatus::vSetFrontRightEncoderSum(int value)
 {
-    _iFrontRightEncoderSum = value;
+  _iFrontRightEncoderSum = value;
 }
 
 void CartsStatus::vSetBackLeftEncoderSum(int value)
 {
-    _iBackLeftEncoderSum = value;
+  _iBackLeftEncoderSum = value;
 }
 
 void CartsStatus::vSetBackRightEncoderSum(int value)
 {
-    _iBackRightEncoderSum = value;
+  _iBackRightEncoderSum = value;
 }
 
-int CartsStatus::iGetFrontLeftEncoderSum()
+double CartsStatus::iGetFrontLeftEncoderSum()
 {
-    return _iFrontLeftEncoderSum;
+  return impulsesToRadians(_iFrontLeftEncoderSum);
 }
 
-int CartsStatus::iGetFrontRightEncoderSum()
+double CartsStatus::iGetFrontRightEncoderSum()
 {
-    return _iFrontRightEncoderSum;
+  return impulsesToRadians(_iFrontRightEncoderSum);
 }
 
-int CartsStatus::iGetBackLeftEncoderSum()
+double CartsStatus::iGetBackLeftEncoderSum()
 {
-    return _iBackLeftEncoderSum;
+  return impulsesToRadians(_iBackLeftEncoderSum);
 }
 
-int CartsStatus::iGetBackRightEncoderSum()
+double CartsStatus::iGetBackRightEncoderSum()
 {
-    return _iBackRightEncoderSum;
+  return impulsesToRadians(_iBackRightEncoderSum);
+}
+
+void CartsStatus::setImpulsesPerRevolution(int impulses)
+{
+  if (impulses < 0)
+  {
+    _impulsesPerRevolution = 1;
+  }
+  else
+  {
+    _impulsesPerRevolution = impulses;
+  }
+}
+
+double CartsStatus::impulsesToRadians(int impulses)
+{
+  return (2 * PI * impulses) / _impulsesPerRevolution;
 }
