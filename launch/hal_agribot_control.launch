@@ -1,6 +1,8 @@
 <launch>
+    <arg name="encoder_impulses_per_revolution" default="36" />
+
     <node name="heartbeat_node" pkg="hal_agribot_control" type="heartbeat_node" />
     <node name="agribot_control_node" pkg="hal_agribot_control" type="agribot_control_node" >
-        <param name="impulses_per_revolution"              value="36"/>
+        <param name="impulses_per_revolution" type="double" value="$(arg encoder_impulses_per_revolution)"/>
     </node>
 </launch>
