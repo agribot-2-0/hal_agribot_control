@@ -1,6 +1,6 @@
 /*
-* Copyright (C) 2020 Agribot. All rights reserved.
-*/
+ * Copyright (C) 2020 Agribot. All rights reserved.
+ */
 
 #pragma once
 
@@ -11,13 +11,14 @@
 
 class TTCommHB
 {
-    Can _CanHandler;
-    uint8_t _u8HbVal;
- public:
-    explicit TTCommHB(char* pchCanChannel);
-    void vSendHanshake();
-    bool bIsHandshakeReceived();
-    void vSendHB();
-    int iHBReceived();
-    void vResetCnt();
+  Can _CanHandler;
+  uint8_t _u8HbVal;
+
+public:
+  explicit TTCommHB(const char* pchCanChannel);
+  void vSendHanshake();
+  bool bIsHandshakeReceived();
+  void vSendHB();
+  int iHBReceived();
+  void vResetCnt();
 };

@@ -2,16 +2,16 @@
 * Copyright (C) 2020 Agribot. All rights reserved.
 */
 
-#include <ros/ros.h>
-#include <ros/console.h>
-#include <std_msgs/String.h>
 #include <hal_ttcontrol_communication/TTCommHB.h>
+#include <ros/console.h>
+#include <ros/ros.h>
+#include <std_msgs/String.h>
 #include <string>
 
 #define RESEND_HANDSHAKE_INTERVAL 5
 #define HB_RESPONSE_INTERVAL 0.150
 #define HB_TIMEOUT 0.320
-#define USED_CAN "can0"
+constexpr char used_can[] = "can0";
 
 int main(int argc, char **argv)
 {
@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "heartbeat");
     ros::NodeHandle n;
     ros::Rate loop_rate(10);
-    TTCommHB CommHandlerHB(USED_CAN);
+    TTCommHB CommHandlerHB(used_can);
 
     ros::Publisher ConnectionStatePublisher =
         n.advertise<std_msgs::String>("/agribot/ttcontrol/connection_state", 1);
@@ -35,7 +35,7 @@ int main(int argc, char **argv)
         while (ros::ok())
         {
             // if there is no response after RESEND_HANDSHAKE_INTERVAL seconds
-            if ((ros::Time::now().toSec()-dStart) >= RESEND_HANDSHAKE_INTERVAL)
+            if ((ros::Time::now().toSec() - dStart) >= RESEND_HANDSHAKE_INTERVAL)
             {
                 ROS_WARN("[HB Node] No response from TTControl."
                          "Resending handshake");
@@ -81,7 +81,7 @@ int main(int argc, char **argv)
             }
             // if HB is received and HB_RESPONSE_INTERVAL seconds passed
             if (bRespondToHb && (ros::Time::now().toSec() - dStart) >=
-                HB_RESPONSE_INTERVAL)
+                                    HB_RESPONSE_INTERVAL)
             {
                 CommHandlerHB.vSendHB();
                 dStart = ros::Time::now().toSec();
