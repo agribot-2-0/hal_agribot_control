@@ -82,6 +82,7 @@ int main(int argc, char** argv)
     }
     if ((u8Status & ENCODER_SUM_MASK) == ENCODER_SUM_MASK)
     {
+      EncoderSum.header.stamp = ros::Time::now();
       EncoderSum.front_left = CommHandlerControl.GetCartsStatus().iGetFrontLeftEncoderSum();
       EncoderSum.front_right = CommHandlerControl.GetCartsStatus().iGetFrontRightEncoderSum();
       EncoderSum.back_left = CommHandlerControl.GetCartsStatus().iGetBackLeftEncoderSum();
