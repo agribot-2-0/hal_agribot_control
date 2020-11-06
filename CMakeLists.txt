@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   agribot_msgs
   agribot_common
+  dynamic_reconfigure
 )
 
 ################################################
@@ -21,7 +22,9 @@ find_package(catkin REQUIRED COMPONENTS
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
 ################################################
-
+generate_dynamic_reconfigure_options(
+  cfg/TTControlParameters.cfg
+)
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -40,6 +43,7 @@ include_directories(
  include
  ${catkin_INCLUDE_DIRS}
  ${agribot_common_SOURCE_DIR}/include
+ ${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake
 )
 
 link_directories("${PROJECT_SOURCE_DIR}")

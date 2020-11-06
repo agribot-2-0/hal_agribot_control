@@ -198,6 +198,31 @@ void TTCommControl::vSendVelocities(float fFrontLinear, float fFrontAngular, flo
   _CanHandler.iSendFrame(&message);
 }
 
+void TTCommControl::vSendSignalsParameters(int ditter_period, int ditter_amplitude, int encoder_period)
+{
+  can_frame message;
+}
+
+void TTCommControl::vSendFrontPIDTranslationParameters(double front_kp_t, double front_kd_t, double front_acc_t)
+{
+  can_frame message;
+}
+
+void TTCommControl::vSendFrontPIDRotationParameters(double front_kp_r, double front_kd_r, double front_acc_r)
+{
+  can_frame message;
+}
+
+void TTCommControl::vSendBackPIDTranslationParameters(double back_kp_t, double back_kd_t, double back_acc_t)
+{
+  can_frame message;
+}
+
+void TTCommControl::vSendBackPIDRotationParameters(double back_kp_r, double back_kd_r, double back_acc_r)
+{
+  can_frame message;
+}
+
 CartsStatus TTCommControl::GetCartsStatus()
 {
   return _Cart;
