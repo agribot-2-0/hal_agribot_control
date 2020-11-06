@@ -5,30 +5,30 @@
 #include <hal_ttcontrol_communication/TTCommControl.h>
 
 // mask used for extracting address and source, without PG
-#define ADDR_MASK 0xFFFF
+constexpr uint ADDR_MASK = 0xFFFF;
 
-#define PROTOCOL_FRAME_ID 0x000EFC864
-#define PROTOCOL_RESPONSE_FRAME_ID 0x00EF64C8
-#define VELO_FRAME_ID 0x00FFD064
-#define FRONT_ANGLE_ID 0xAA20
-#define BACK_ANGLE_ID 0xAA21
-#define VELOCITY_CONTROL_FRAME_ID 0x00FFD0C8
-#define DEG_TO_RAD (M_PI / 180)
+constexpr uint PROTOCOL_FRAME_ID = 0x00EFC864;
+constexpr uint PROTOCOL_RESPONSE_FRAME_ID = 0x00EF64C8;
+constexpr uint VELO_FRAME_ID = 0x00FFD064;
+constexpr uint FRONT_ANGLE_ID = 0xAA20;
+constexpr uint BACK_ANGLE_ID = 0xAA21;
+constexpr uint VELOCITY_CONTROL_FRAME_ID = 0x00FFD0C8;
+constexpr double DEG_TO_RAD = (M_PI / 180);
 
-#define SIGN_BIT 0x80
-#define DATA_BITS 0x7F
+constexpr uint SIGN_BIT = 0x80;
+constexpr uint DATA_BITS = 0x7F;
 
 // Encode velocity frame coming from TTC - check TTC-Advantech
 // protocol DS for more info
-#define VELO_FRAME_ENCODE_CONST 1000
+constexpr uint VELO_FRAME_ENCODE_CONST = 1000;
 // Decode velocity frame coming from TTC - check TTC-Advantech
 // protocol DS for more info
-#define VELO_FRAME_DECODE_CONST 0.001
+constexpr float VELO_FRAME_DECODE_CONST = 0.001;
 // Decode angle frame - check inclinometer DS for more info
-#define ANGLE_FRAME_DECODE_CONST 0.214 - 180
-#define INVERSE_INT16_CONST 32768
-
-#define GET_SECOND_BYTE 0xFF00
+constexpr float ANGLE_FRAME_DECODE_CONST_MULTIPLIER = 0.214;
+constexpr int ANGLE_FRAME_DECODE_CONST_OFFSET = -180;
+constexpr uint INVERSE_INT16_CONST = 32768;
+constexpr uint GET_SECOND_BYTE = 0xFF00;
 
 void TTCommControl::vPrepareVelocitiesFrame(can_frame* Frame, float fVelocity, uint8_t u8StartBit)
 {
@@ -57,7 +57,8 @@ float TTCommControl::fDecodeAngle(can_frame Frame)
 {
   return (static_cast<float>(((int32_t)Frame.data[2]) << 16 | ((int32_t)Frame.data[1]) << 8 |
                              ((int32_t)Frame.data[0]))) *
-         ANGLE_FRAME_DECODE_CONST;
+             ANGLE_FRAME_DECODE_CONST_MULTIPLIER +
+         ANGLE_FRAME_DECODE_CONST_OFFSET;
 }
 
 void TTCommControl::vSetVelocitiy(eVelocities eVelo, can_frame Frame)
@@ -201,26 +202,38 @@ void TTCommControl::vSendVelocities(float fFrontLinear, float fFrontAngular, flo
 void TTCommControl::vSendSignalsParameters(int ditter_period, int ditter_amplitude, int encoder_period)
 {
   can_frame message;
+  message.can_id = CONFIG_FRAME_CAN_ID;
+  message.can_dlc = 8;
+  message.data[CONFIG_FRAME_TYPE_BYTE] = TTCONTROL_SIGNALS_PARAMS_TYPE;
+  message.data[DITTER_PERIOD_BYTE] = static_cast<uint8_t>(ditter_period);
+  message.data[DITTER_AMPLITUDE_FIRST_BYTE] = static_cast<uint8_t>(ditter_amplitude & 0x00FF);
+  message.data[DITTER_AMPLITUDE_FIRST_BYTE + 1] = static_cast<uint8_t>((ditter_amplitude & 0xFF00) >> 8);
+  message.data[ENCODER_PERIOD_BYTE] = static_cast<uint8_t>(encoder_period);
+  // dont-care bytes
+  message.data[ENCODER_PERIOD_BYTE + 1] = 0xFF;
+  message.data[ENCODER_PERIOD_BYTE + 1] = 0xFF;
+  message.data[ENCODER_PERIOD_BYTE + 1] = 0xFF;
+  _CanHandler.iSendFrame(&message);
 }
 
-void TTCommControl::vSendFrontPIDTranslationParameters(double front_kp_t, double front_kd_t, double front_acc_t)
+void TTCommControl::vSendCartsPIDParameters(double kp, double kd, double acc, uint8_t frame_type)
 {
   can_frame message;
-}
-
-void TTCommControl::vSendFrontPIDRotationParameters(double front_kp_r, double front_kd_r, double front_acc_r)
-{
-  can_frame message;
-}
-
-void TTCommControl::vSendBackPIDTranslationParameters(double back_kp_t, double back_kd_t, double back_acc_t)
-{
-  can_frame message;
-}
-
-void TTCommControl::vSendBackPIDRotationParameters(double back_kp_r, double back_kd_r, double back_acc_r)
-{
-  can_frame message;
+  message.can_id = CONFIG_FRAME_CAN_ID;
+  message.can_dlc = 8;
+  message.data[CONFIG_FRAME_TYPE_BYTE] = frame_type;
+  message.data[KP_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(kp * K_RESOLUTION_MULTIPLIER) & 0x00FF);
+  message.data[KP_FIRST_BYTE + 1] =
+      static_cast<uint8_t>((static_cast<uint>(kp * K_RESOLUTION_MULTIPLIER) & 0xFF00) >> 8);
+  message.data[KD_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(kd * K_RESOLUTION_MULTIPLIER) & 0x00FF);
+  message.data[KD_FIRST_BYTE + 1] =
+      static_cast<uint8_t>((static_cast<uint>(kd * K_RESOLUTION_MULTIPLIER) & 0xFF00) >> 8);
+  message.data[ACC_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(acc * ACC_RESOLUTION_MULTIPLIER) & 0x00FF);
+  message.data[ACC_FIRST_BYTE + 1] =
+      static_cast<uint8_t>((static_cast<uint>(acc * ACC_RESOLUTION_MULTIPLIER) & 0xFF00) >> 8);
+  // dont-care byte
+  message.data[ACC_FIRST_BYTE + 2] = 0xFF;
+  _CanHandler.iSendFrame(&message);
 }
 
 CartsStatus TTCommControl::GetCartsStatus()

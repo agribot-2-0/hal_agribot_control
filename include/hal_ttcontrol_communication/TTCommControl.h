@@ -7,7 +7,6 @@
 #include <agribot_common/Can.h>
 #include <hal_ttcontrol_communication/CartsStatus.h>
 #include <math.h>
-
 #include <queue>
 
 constexpr uint8_t VELOCITIES_MASK = 0x01;
@@ -17,6 +16,12 @@ constexpr uint8_t AUTOMATIC_STATE_REQUEST_MASK = 0x10;
 constexpr uint8_t AUTOMATIC_STATE_REQUEST_ERROR_MASK = 0x20;
 constexpr uint8_t TTC_OK = 0x01;
 constexpr uint8_t TTC_AUTOMATIC_MODE_REQUEST = 0x20;
+
+constexpr uint8_t TTCONTROL_SIGNALS_PARAMS_TYPE = 0;
+constexpr uint8_t TTCONTROL_FRONT_PID_T_PARAMS_TYPE = 1;
+constexpr uint8_t TTCONTROL_FRONT_PID_R_PARAMS_TYPE = 2;
+constexpr uint8_t TTCONTROL_BACK_PID_T_PARAMS_TYPE = 3;
+constexpr uint8_t TTCONTROL_BACK_PID_R_PARAMS_TYPE = 4;
 
 enum eVelocities
 {
@@ -28,13 +33,16 @@ enum eVelocities
 
 class TTCommControl
 {
+  static constexpr uint CONFIG_FRAME_CAN_ID = 0x00FFDBC8;
   static constexpr uint8_t CONFIG_FRAME_TYPE_BYTE = 0;
   static constexpr uint8_t DITTER_PERIOD_BYTE = 1;
   static constexpr uint8_t DITTER_AMPLITUDE_FIRST_BYTE = 2;
-  static constexpr uint8_t ENCODER_BYTE = 4;
-  static constexpr uint8_t KP_T_FIRST_BYTE = 1;
-  static constexpr uint8_t KD_T_FIRST_BYTE = 3;
+  static constexpr uint8_t ENCODER_PERIOD_BYTE = 4;
+  static constexpr uint8_t KP_FIRST_BYTE = 1;
+  static constexpr uint8_t KD_FIRST_BYTE = 3;
   static constexpr uint8_t ACC_FIRST_BYTE = 5;
+  static constexpr uint K_RESOLUTION_MULTIPLIER = 10;
+  static constexpr uint ACC_RESOLUTION_MULTIPLIER = 1000;
 
   Can _CanHandler;
   std::queue<can_frame> _FramesQueue;
@@ -57,10 +65,7 @@ public:
   bool bWaritForTTControlReadiness();
   void vSendVelocities(float fFrontLinear, float fFrontAngular, float fBackLinear, float fBackAngular);
   void vSendSignalsParameters(int ditter_period, int ditter_amplitude, int encoder_period);
-  void vSendFrontPIDTranslationParameters(double front_kp_t, double front_kd_t, double front_acc_t);
-  void vSendFrontPIDRotationParameters(double front_kp_r, double front_kd_r, double front_acc_r);
-  void vSendBackPIDTranslationParameters(double back_kp_t, double back_kd_t, double back_acc_t);
-  void vSendBackPIDRotationParameters(double back_kp_r, double back_kd_r, double back_acc_r);
+  void vSendCartsPIDParameters(double kp, double kd, double acc, uint8_t frame_type);
   CartsStatus GetCartsStatus();
   float fGetFrontCartAngle();
   float fGetBackCartAngle();
