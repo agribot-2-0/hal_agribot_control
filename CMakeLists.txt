@@ -54,8 +54,10 @@ add_executable(agribot_control_node src/TTCommControl.cpp src/CartsStatus.cpp sr
 target_link_libraries(heartbeat_node ${agribot_common_LIBRARIES} ${catkin_LIBRARIES})
 target_link_libraries(agribot_control_node ${agribot_common_LIBRARIES} ${catkin_LIBRARIES})
 
+add_dependencies(agribot_control_node ${PROJECT_NAME}_gencfg)
 add_dependencies(heartbeat_node ${catkin_EXPORTED_TARGETS})
 add_dependencies(agribot_control_node ${catkin_EXPORTED_TARGETS})
+
 
 #############
 ## Install ##
