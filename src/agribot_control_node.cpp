@@ -31,22 +31,26 @@ void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersCo
   if (level & TTCONTROL_FRONT_PID_T_PARAMS_FLAG)
   {
     CommHandlerControl.vSendCartsPIDParameters(config.front_kp_t_double, config.front_kd_t_double,
-                                               config.front_acc_t_double, TTCONTROL_FRONT_PID_T_PARAMS_TYPE);
+                                               config.front_acc_t_double,
+                                               eTTControlParamsType::TTCONTROL_FRONT_PID_T_PARAMS_TYPE);
   }
   if (level & TTCONTROL_FRONT_PID_R_PARAMS_FLAG)
   {
     CommHandlerControl.vSendCartsPIDParameters(config.front_kp_r_double, config.front_kd_r_double,
-                                               config.front_acc_r_double, TTCONTROL_FRONT_PID_R_PARAMS_TYPE);
+                                               config.front_acc_r_double,
+                                               eTTControlParamsType::TTCONTROL_FRONT_PID_R_PARAMS_TYPE);
   }
   if (level & TTCONTROL_BACK_PID_T_PARAMS_FLAG)
   {
     CommHandlerControl.vSendCartsPIDParameters(config.back_kp_t_double, config.back_kd_t_double,
-                                               config.back_acc_t_double, TTCONTROL_BACK_PID_T_PARAMS_TYPE);
+                                               config.back_acc_t_double,
+                                               eTTControlParamsType::TTCONTROL_BACK_PID_T_PARAMS_TYPE);
   }
   if (level & TTCONTROL_BACK_PID_R_PARAMS_FLAG)
   {
     CommHandlerControl.vSendCartsPIDParameters(config.back_kp_r_double, config.back_kd_r_double,
-                                               config.back_acc_r_double, TTCONTROL_BACK_PID_R_PARAMS_TYPE);
+                                               config.back_acc_r_double,
+                                               eTTControlParamsType::TTCONTROL_BACK_PID_R_PARAMS_TYPE);
   }
 }
 
@@ -67,11 +71,11 @@ int main(int argc, char** argv)
   ros::Publisher BackCartAnglePublisher = n.advertise<std_msgs::Float32>("/agribot/encoder/cart/back", 1);
   agribot_msgs::AgribotCaterpillar AgribotCaterpillarMsg;
   dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig> server;
-  dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>::CallbackType f;
+  dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>::CallbackType callback_function_object;
   std_msgs::Float32 FrontAngleMsg;
   std_msgs::Float32 BackAngleMsg;
-  f = boost::bind(&callbackDynamicReconfigure, _1, _2);
-  server.setCallback(f);
+  callback_function_object = boost::bind(&callbackDynamicReconfigure, _1, _2);
+  server.setCallback(callback_function_object);
   uint8_t u8Status = 0x00;
   while (ros::ok())
   {

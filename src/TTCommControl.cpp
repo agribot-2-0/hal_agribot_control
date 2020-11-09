@@ -6,7 +6,7 @@
 
 // mask used for extracting address and source, without PG
 constexpr uint ADDR_MASK = 0xFFFF;
-
+constexpr uint8_t FULL_CAN_FRAME_BYTE_NUMBER = 8;
 constexpr uint PROTOCOL_FRAME_ID = 0x00EFC864;
 constexpr uint PROTOCOL_RESPONSE_FRAME_ID = 0x00EF64C8;
 constexpr uint VELO_FRAME_ID = 0x00FFD064;
@@ -174,7 +174,7 @@ void TTCommControl::vConfirmAdvantechReadiness()
 {
   can_frame message;
   message.can_id = PROTOCOL_RESPONSE_FRAME_ID;
-  message.can_dlc = 8;
+  message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[0] = TTC_AUTOMATIC_MODE_REQUEST;
   message.data[1] = 0x64;  // INFO byte (0x64 - ok)
   message.data[2] = 0;
@@ -190,7 +190,7 @@ void TTCommControl::vSendVelocities(float fFrontLinear, float fFrontAngular, flo
 {
   can_frame message;
   message.can_id = VELOCITY_CONTROL_FRAME_ID;
-  message.can_dlc = 8;
+  message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   vPrepareVelocitiesFrame(&message, fFrontLinear, 0);
   vPrepareVelocitiesFrame(&message, fFrontAngular, 2);
   vPrepareVelocitiesFrame(&message, fBackLinear, 4);
@@ -202,8 +202,8 @@ void TTCommControl::vSendSignalsParameters(int ditter_period, int ditter_amplitu
 {
   can_frame message;
   message.can_id = CONFIG_FRAME_CAN_ID;
-  message.can_dlc = 8;
-  message.data[CONFIG_FRAME_TYPE_BYTE] = TTCONTROL_SIGNALS_PARAMS_TYPE;
+  message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
+  message.data[CONFIG_FRAME_TYPE_BYTE] = static_cast<uint8_t>(eTTControlParamsType::TTCONTROL_SIGNALS_PARAMS_TYPE);
   message.data[DITTER_PERIOD_BYTE] = static_cast<uint8_t>(ditter_period);
   message.data[DITTER_AMPLITUDE_FIRST_BYTE] = static_cast<uint8_t>(ditter_amplitude & 0x00FF);
   message.data[DITTER_AMPLITUDE_FIRST_BYTE + 1] = static_cast<uint8_t>((ditter_amplitude & 0xFF00) >> 8);
@@ -215,12 +215,12 @@ void TTCommControl::vSendSignalsParameters(int ditter_period, int ditter_amplitu
   _CanHandler.iSendFrame(&message);
 }
 
-void TTCommControl::vSendCartsPIDParameters(double kp, double kd, double acc, uint8_t frame_type)
+void TTCommControl::vSendCartsPIDParameters(double kp, double kd, double acc, eTTControlParamsType frame_type)
 {
   can_frame message;
   message.can_id = CONFIG_FRAME_CAN_ID;
-  message.can_dlc = 8;
-  message.data[CONFIG_FRAME_TYPE_BYTE] = frame_type;
+  message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
+  message.data[CONFIG_FRAME_TYPE_BYTE] = static_cast<uint8_t>(frame_type);
   message.data[KP_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(kp * K_RESOLUTION_MULTIPLIER) & 0x00FF);
   message.data[KP_FIRST_BYTE + 1] =
       static_cast<uint8_t>((static_cast<uint>(kp * K_RESOLUTION_MULTIPLIER) & 0xFF00) >> 8);
