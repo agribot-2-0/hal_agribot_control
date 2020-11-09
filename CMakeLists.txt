@@ -58,7 +58,6 @@ add_dependencies(agribot_control_node ${PROJECT_NAME}_gencfg)
 add_dependencies(heartbeat_node ${catkin_EXPORTED_TARGETS})
 add_dependencies(agribot_control_node ${catkin_EXPORTED_TARGETS})
 
-
 #############
 ## Install ##
 #############

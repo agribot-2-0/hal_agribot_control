@@ -57,8 +57,9 @@ float TTCommControl::fDecodeVelocitiy(uint8_t u8StartBit, can_frame Frame)
 float TTCommControl::fDecodeAngle(can_frame Frame)
 {
   return (static_cast<float>(((int32_t)Frame.data[2]) << 16 | ((int32_t)Frame.data[1]) << 8 |
-                             ((int32_t)Frame.data[0]))) * ANGLE_FRAME_DECODE_CONST_MULTIPLIER +
-                             ANGLE_FRAME_DECODE_CONST_OFFSET;
+                             ((int32_t)Frame.data[0]))) *
+             ANGLE_FRAME_DECODE_CONST_MULTIPLIER +
+         ANGLE_FRAME_DECODE_CONST_OFFSET;
 }
 
 void TTCommControl::vSetVelocitiy(eVelocities eVelo, can_frame Frame)
@@ -225,10 +226,11 @@ void TTCommControl::vSendCartsPIDParameters(double kp, double kd, double acc, eT
   message.data[KP_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(kp * K_RESOLUTION_MULTIPLIER) & GET_FIRST_BYTE);
   message.data[KP_FIRST_BYTE + 1] =
       static_cast<uint8_t>((static_cast<uint>(kp * K_RESOLUTION_MULTIPLIER) & GET_SECOND_BYTE) >> 8);
-  message.data[KD_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(kd * K_RESOLUTION_MULTIPLIER) & GET_FIRST_BYTE); 
+  message.data[KD_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(kd * K_RESOLUTION_MULTIPLIER) & GET_FIRST_BYTE);
   message.data[KD_FIRST_BYTE + 1] =
       static_cast<uint8_t>((static_cast<uint>(kd * K_RESOLUTION_MULTIPLIER) & GET_SECOND_BYTE) >> 8);
-  message.data[ACC_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(acc * ACC_RESOLUTION_MULTIPLIER) & GET_FIRST_BYTE);
+  message.data[ACC_FIRST_BYTE] =
+      static_cast<uint8_t>(static_cast<uint>(acc * ACC_RESOLUTION_MULTIPLIER) & GET_FIRST_BYTE);
   message.data[ACC_FIRST_BYTE + 1] =
       static_cast<uint8_t>((static_cast<uint>(acc * ACC_RESOLUTION_MULTIPLIER) & GET_SECOND_BYTE) >> 8);
   // dont-care byte
