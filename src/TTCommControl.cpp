@@ -29,6 +29,7 @@ constexpr float ANGLE_FRAME_DECODE_CONST_MULTIPLIER = 0.214;
 constexpr int ANGLE_FRAME_DECODE_CONST_OFFSET = -180;
 constexpr uint INVERSE_INT16_CONST = 32768;
 constexpr uint GET_SECOND_BYTE = 0xFF00;
+constexpr uint GET_FIRST_BYTE = 0x00FF;
 
 void TTCommControl::vPrepareVelocitiesFrame(can_frame* Frame, float fVelocity, uint8_t u8StartBit)
 {
@@ -205,8 +206,8 @@ void TTCommControl::vSendSignalsParameters(int ditter_period, int ditter_amplitu
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[CONFIG_FRAME_TYPE_BYTE] = static_cast<uint8_t>(eTTControlParamsType::TTCONTROL_SIGNALS_PARAMS_TYPE);
   message.data[DITTER_PERIOD_BYTE] = static_cast<uint8_t>(ditter_period);
-  message.data[DITTER_AMPLITUDE_FIRST_BYTE] = static_cast<uint8_t>(ditter_amplitude & 0x00FF);
-  message.data[DITTER_AMPLITUDE_FIRST_BYTE + 1] = static_cast<uint8_t>((ditter_amplitude & 0xFF00) >> 8);
+  message.data[DITTER_AMPLITUDE_FIRST_BYTE] = static_cast<uint8_t>(ditter_amplitude & GET_FIRST_BYTE);
+  message.data[DITTER_AMPLITUDE_FIRST_BYTE + 1] = static_cast<uint8_t>((ditter_amplitude & GET_SECOND_BYTE) >> 8);
   message.data[ENCODER_PERIOD_BYTE] = static_cast<uint8_t>(encoder_period);
   // dont-care bytes
   message.data[ENCODER_PERIOD_BYTE + 1] = 0xFF;
@@ -221,15 +222,15 @@ void TTCommControl::vSendCartsPIDParameters(double kp, double kd, double acc, eT
   message.can_id = CONFIG_FRAME_CAN_ID;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[CONFIG_FRAME_TYPE_BYTE] = static_cast<uint8_t>(frame_type);
-  message.data[KP_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(kp * K_RESOLUTION_MULTIPLIER) & 0x00FF);
+  message.data[KP_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(kp * K_RESOLUTION_MULTIPLIER) & GET_FIRST_BYTE);
   message.data[KP_FIRST_BYTE + 1] =
-      static_cast<uint8_t>((static_cast<uint>(kp * K_RESOLUTION_MULTIPLIER) & 0xFF00) >> 8);
-  message.data[KD_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(kd * K_RESOLUTION_MULTIPLIER) & 0x00FF);
+      static_cast<uint8_t>((static_cast<uint>(kp * K_RESOLUTION_MULTIPLIER) & GET_SECOND_BYTE) >> 8);
+  message.data[KD_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(kd * K_RESOLUTION_MULTIPLIER) & GET_FIRST_BYTE); 
   message.data[KD_FIRST_BYTE + 1] =
-      static_cast<uint8_t>((static_cast<uint>(kd * K_RESOLUTION_MULTIPLIER) & 0xFF00) >> 8);
-  message.data[ACC_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(acc * ACC_RESOLUTION_MULTIPLIER) & 0x00FF);
+      static_cast<uint8_t>((static_cast<uint>(kd * K_RESOLUTION_MULTIPLIER) & GET_SECOND_BYTE) >> 8);
+  message.data[ACC_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(acc * ACC_RESOLUTION_MULTIPLIER) & GET_FIRST_BYTE);
   message.data[ACC_FIRST_BYTE + 1] =
-      static_cast<uint8_t>((static_cast<uint>(acc * ACC_RESOLUTION_MULTIPLIER) & 0xFF00) >> 8);
+      static_cast<uint8_t>((static_cast<uint>(acc * ACC_RESOLUTION_MULTIPLIER) & GET_SECOND_BYTE) >> 8);
   // dont-care byte
   message.data[ACC_FIRST_BYTE + 2] = 0xFF;
   _CanHandler.iSendFrame(&message);
