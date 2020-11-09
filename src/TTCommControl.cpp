@@ -56,9 +56,8 @@ float TTCommControl::fDecodeVelocitiy(uint8_t u8StartBit, can_frame Frame)
 float TTCommControl::fDecodeAngle(can_frame Frame)
 {
   return (static_cast<float>(((int32_t)Frame.data[2]) << 16 | ((int32_t)Frame.data[1]) << 8 |
-                             ((int32_t)Frame.data[0]))) *
-             ANGLE_FRAME_DECODE_CONST_MULTIPLIER +
-         ANGLE_FRAME_DECODE_CONST_OFFSET;
+                             ((int32_t)Frame.data[0]))) * ANGLE_FRAME_DECODE_CONST_MULTIPLIER +
+                             ANGLE_FRAME_DECODE_CONST_OFFSET;
 }
 
 void TTCommControl::vSetVelocitiy(eVelocities eVelo, can_frame Frame)
@@ -211,8 +210,8 @@ void TTCommControl::vSendSignalsParameters(int ditter_period, int ditter_amplitu
   message.data[ENCODER_PERIOD_BYTE] = static_cast<uint8_t>(encoder_period);
   // dont-care bytes
   message.data[ENCODER_PERIOD_BYTE + 1] = 0xFF;
-  message.data[ENCODER_PERIOD_BYTE + 1] = 0xFF;
-  message.data[ENCODER_PERIOD_BYTE + 1] = 0xFF;
+  message.data[ENCODER_PERIOD_BYTE + 2] = 0xFF;
+  message.data[ENCODER_PERIOD_BYTE + 3] = 0xFF;
   _CanHandler.iSendFrame(&message);
 }
 
