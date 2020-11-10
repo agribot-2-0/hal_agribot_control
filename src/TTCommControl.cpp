@@ -26,7 +26,7 @@ constexpr uint VELO_FRAME_ENCODE_CONST = 1000;
 constexpr float VELO_FRAME_DECODE_CONST = 0.001;
 // Decode angle frame - check inclinometer DS for more info
 constexpr float ANGLE_FRAME_DECODE_CONST_MULTIPLIER = 0.214;
-constexpr int ANGLE_FRAME_DECODE_CONST_OFFSET = -180;
+constexpr float ANGLE_FRAME_DECODE_CONST_OFFSET = -180;
 constexpr uint INVERSE_INT16_CONST = 32768;
 constexpr uint GET_SECOND_BYTE = 0xFF00;
 constexpr uint GET_FIRST_BYTE = 0x00FF;
