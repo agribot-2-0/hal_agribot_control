@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   agribot_msgs
   agribot_common
+  dynamic_reconfigure
 )
 
 ################################################
@@ -21,7 +22,9 @@ find_package(catkin REQUIRED COMPONENTS
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
 ################################################
-
+generate_dynamic_reconfigure_options(
+  cfg/TTControlParameters.cfg
+)
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -40,6 +43,7 @@ include_directories(
  include
  ${catkin_INCLUDE_DIRS}
  ${agribot_common_SOURCE_DIR}/include
+ ${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake
 )
 
 link_directories("${PROJECT_SOURCE_DIR}")
@@ -50,6 +54,7 @@ add_executable(agribot_control_node src/TTCommControl.cpp src/CartsStatus.cpp sr
 target_link_libraries(heartbeat_node ${agribot_common_LIBRARIES} ${catkin_LIBRARIES})
 target_link_libraries(agribot_control_node ${agribot_common_LIBRARIES} ${catkin_LIBRARIES})
 
+add_dependencies(agribot_control_node ${PROJECT_NAME}_gencfg)
 add_dependencies(heartbeat_node ${catkin_EXPORTED_TARGETS})
 add_dependencies(agribot_control_node ${catkin_EXPORTED_TARGETS})
 

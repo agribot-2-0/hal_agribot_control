@@ -5,30 +5,31 @@
 #include <hal_ttcontrol_communication/TTCommControl.h>
 
 // mask used for extracting address and source, without PG
-#define ADDR_MASK 0xFFFF
+constexpr uint ADDR_MASK = 0xFFFF;
+constexpr uint8_t FULL_CAN_FRAME_BYTE_NUMBER = 8;
+constexpr uint PROTOCOL_FRAME_ID = 0x00EFC864;
+constexpr uint PROTOCOL_RESPONSE_FRAME_ID = 0x00EF64C8;
+constexpr uint VELO_FRAME_ID = 0x00FFD064;
+constexpr uint FRONT_ANGLE_ID = 0xAA20;
+constexpr uint BACK_ANGLE_ID = 0xAA21;
+constexpr uint VELOCITY_CONTROL_FRAME_ID = 0x00FFD0C8;
+constexpr double DEG_TO_RAD = (M_PI / 180);
 
-#define PROTOCOL_FRAME_ID 0x000EFC864
-#define PROTOCOL_RESPONSE_FRAME_ID 0x00EF64C8
-#define VELO_FRAME_ID 0x00FFD064
-#define FRONT_ANGLE_ID 0xAA20
-#define BACK_ANGLE_ID 0xAA21
-#define VELOCITY_CONTROL_FRAME_ID 0x00FFD0C8
-#define DEG_TO_RAD (M_PI / 180)
-
-#define SIGN_BIT 0x80
-#define DATA_BITS 0x7F
+constexpr uint SIGN_BIT = 0x80;
+constexpr uint DATA_BITS = 0x7F;
 
 // Encode velocity frame coming from TTC - check TTC-Advantech
 // protocol DS for more info
-#define VELO_FRAME_ENCODE_CONST 1000
+constexpr uint VELO_FRAME_ENCODE_CONST = 1000;
 // Decode velocity frame coming from TTC - check TTC-Advantech
 // protocol DS for more info
-#define VELO_FRAME_DECODE_CONST 0.001
+constexpr float VELO_FRAME_DECODE_CONST = 0.001;
 // Decode angle frame - check inclinometer DS for more info
-#define ANGLE_FRAME_DECODE_CONST 0.214 - 180
-#define INVERSE_INT16_CONST 32768
-
-#define GET_SECOND_BYTE 0xFF00
+constexpr float ANGLE_FRAME_DECODE_CONST_MULTIPLIER = 0.214;
+constexpr float ANGLE_FRAME_DECODE_CONST_OFFSET = -180;
+constexpr uint INVERSE_INT16_CONST = 32768;
+constexpr uint GET_SECOND_BYTE = 0xFF00;
+constexpr uint GET_FIRST_BYTE = 0x00FF;
 
 void TTCommControl::vPrepareVelocitiesFrame(can_frame* Frame, float fVelocity, uint8_t u8StartBit)
 {
@@ -57,7 +58,8 @@ float TTCommControl::fDecodeAngle(can_frame Frame)
 {
   return (static_cast<float>(((int32_t)Frame.data[2]) << 16 | ((int32_t)Frame.data[1]) << 8 |
                              ((int32_t)Frame.data[0]))) *
-         ANGLE_FRAME_DECODE_CONST;
+             ANGLE_FRAME_DECODE_CONST_MULTIPLIER +
+         ANGLE_FRAME_DECODE_CONST_OFFSET;
 }
 
 void TTCommControl::vSetVelocitiy(eVelocities eVelo, can_frame Frame)
@@ -174,7 +176,7 @@ void TTCommControl::vConfirmAdvantechReadiness()
 {
   can_frame message;
   message.can_id = PROTOCOL_RESPONSE_FRAME_ID;
-  message.can_dlc = 8;
+  message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[0] = TTC_AUTOMATIC_MODE_REQUEST;
   message.data[1] = 0x64;  // INFO byte (0x64 - ok)
   message.data[2] = 0;
@@ -190,11 +192,49 @@ void TTCommControl::vSendVelocities(float fFrontLinear, float fFrontAngular, flo
 {
   can_frame message;
   message.can_id = VELOCITY_CONTROL_FRAME_ID;
-  message.can_dlc = 8;
+  message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   vPrepareVelocitiesFrame(&message, fFrontLinear, 0);
   vPrepareVelocitiesFrame(&message, fFrontAngular, 2);
   vPrepareVelocitiesFrame(&message, fBackLinear, 4);
   vPrepareVelocitiesFrame(&message, fBackAngular, 6);
+  _CanHandler.iSendFrame(&message);
+}
+
+void TTCommControl::vSendSignalsParameters(int ditter_period, int ditter_amplitude, int encoder_period)
+{
+  can_frame message;
+  message.can_id = CONFIG_FRAME_CAN_ID;
+  message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
+  message.data[CONFIG_FRAME_TYPE_BYTE] = static_cast<uint8_t>(eTTControlParamsType::TTCONTROL_SIGNALS_PARAMS_TYPE);
+  message.data[DITTER_PERIOD_BYTE] = static_cast<uint8_t>(ditter_period);
+  message.data[DITTER_AMPLITUDE_FIRST_BYTE] = static_cast<uint8_t>(ditter_amplitude & GET_FIRST_BYTE);
+  message.data[DITTER_AMPLITUDE_FIRST_BYTE + 1] = static_cast<uint8_t>((ditter_amplitude & GET_SECOND_BYTE) >> 8);
+  message.data[ENCODER_PERIOD_BYTE] = static_cast<uint8_t>(encoder_period);
+  // dont-care bytes
+  message.data[ENCODER_PERIOD_BYTE + 1] = 0xFF;
+  message.data[ENCODER_PERIOD_BYTE + 2] = 0xFF;
+  message.data[ENCODER_PERIOD_BYTE + 3] = 0xFF;
+  _CanHandler.iSendFrame(&message);
+}
+
+void TTCommControl::vSendCartsPIDParameters(double kp, double kd, double acc, eTTControlParamsType frame_type)
+{
+  can_frame message;
+  message.can_id = CONFIG_FRAME_CAN_ID;
+  message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
+  message.data[CONFIG_FRAME_TYPE_BYTE] = static_cast<uint8_t>(frame_type);
+  message.data[KP_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(kp * K_RESOLUTION_MULTIPLIER) & GET_FIRST_BYTE);
+  message.data[KP_FIRST_BYTE + 1] =
+      static_cast<uint8_t>((static_cast<uint>(kp * K_RESOLUTION_MULTIPLIER) & GET_SECOND_BYTE) >> 8);
+  message.data[KD_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(kd * K_RESOLUTION_MULTIPLIER) & GET_FIRST_BYTE);
+  message.data[KD_FIRST_BYTE + 1] =
+      static_cast<uint8_t>((static_cast<uint>(kd * K_RESOLUTION_MULTIPLIER) & GET_SECOND_BYTE) >> 8);
+  message.data[ACC_FIRST_BYTE] =
+      static_cast<uint8_t>(static_cast<uint>(acc * ACC_RESOLUTION_MULTIPLIER) & GET_FIRST_BYTE);
+  message.data[ACC_FIRST_BYTE + 1] =
+      static_cast<uint8_t>((static_cast<uint>(acc * ACC_RESOLUTION_MULTIPLIER) & GET_SECOND_BYTE) >> 8);
+  // dont-care byte
+  message.data[ACC_FIRST_BYTE + 2] = 0xFF;
   _CanHandler.iSendFrame(&message);
 }
 
