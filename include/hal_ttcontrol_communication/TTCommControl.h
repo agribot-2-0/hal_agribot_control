@@ -43,23 +43,6 @@ enum eVelocities
   BACK_ANGULAR = 6
 };
 
-enum class eTTControlParamsType
-{
-  TTCONTROL_SIGNALS_PARAMS_TYPE = 0,
-  TTCONTROL_FRONT_PID_T_PARAMS_TYPE = 1,
-  TTCONTROL_FRONT_PID_R_PARAMS_TYPE = 2,
-  TTCONTROL_BACK_PID_T_PARAMS_TYPE = 3,
-  TTCONTROL_BACK_PID_R_PARAMS_TYPE = 4,
-  TTCONTROL_FRONT_LEFT_CATERPILLAR_PID_PARAMS_TYPE = 5,
-  TTCONTROL_FRONT_LEFT_CATERPILLAR_SIGNAL_BASE_TYPE = 6,
-  TTCONTROL_FRONT_RIGHT_CATERPILLAR_PID_PARAMS_TYPE = 7,
-  TTCONTROL_FRONT_RIGHT_CATERPILLAR_SIGNAL_BASE_TYPE = 8,
-  TTCONTROL_BACK_LEFT_CATERPILLAR_PID_PARAMS_TYPE = 9,
-  TTCONTROL_BACK_LEFT_CATERPILLAR_SIGNAL_BASE_TYPE = 10,
-  TTCONTROL_BACK_RIGHT_CATERPILLAR_PID_PARAMS_TYPE = 11,
-  TTCONTROL_BACK_RIGHT_CATERPILLAR_SIGNAL_BASE_TYPE = 12
-};
-
 class TTCommControl
 {
   Can _CanHandler;
@@ -74,6 +57,22 @@ class TTCommControl
   void vSetVelocitiy(eVelocities velo, can_frame Frame);
 
 public:
+  const struct eTTControlParamsType
+  {
+    uint8_t TTCONTROL_SIGNALS_PARAMS_TYPE = 0;
+    uint8_t TTCONTROL_FRONT_PID_T_PARAMS_TYPE = 1;
+    uint8_t TTCONTROL_FRONT_PID_R_PARAMS_TYPE = 2;
+    uint8_t TTCONTROL_BACK_PID_T_PARAMS_TYPE = 3;
+    uint8_t TTCONTROL_BACK_PID_R_PARAMS_TYPE = 4;
+    uint8_t TTCONTROL_FRONT_LEFT_CATERPILLAR_PID_PARAMS_TYPE = 5;
+    uint8_t TTCONTROL_FRONT_LEFT_CATERPILLAR_SIGNAL_BASE_TYPE = 6;
+    uint8_t TTCONTROL_FRONT_RIGHT_CATERPILLAR_PID_PARAMS_TYPE = 7;
+    uint8_t TTCONTROL_FRONT_RIGHT_CATERPILLAR_SIGNAL_BASE_TYPE = 8;
+    uint8_t TTCONTROL_BACK_LEFT_CATERPILLAR_PID_PARAMS_TYPE = 9;
+    uint8_t TTCONTROL_BACK_LEFT_CATERPILLAR_SIGNAL_BASE_TYPE = 10;
+    uint8_t TTCONTROL_BACK_RIGHT_CATERPILLAR_PID_PARAMS_TYPE = 11;
+    uint8_t TTCONTROL_BACK_RIGHT_CATERPILLAR_SIGNAL_BASE_TYPE = 12;
+  } TTControlParamsFrameType;
   explicit TTCommControl(const char* pchCanChannel);
   ~TTCommControl();
   void update();
@@ -83,9 +82,9 @@ public:
   bool bWaritForTTControlReadiness();
   void vSendVelocities(float fFrontLinear, float fFrontAngular, float fBackLinear, float fBackAngular);
   void vSendSignalsParameters(int ditter_period, int ditter_amplitude, int encoder_period);
-  void vSendCartsPIDParameters(double kp, double ki, double kd, double acc, eTTControlParamsType frame_type);
-  void vSendCaterpillarPIDParameters(int kp, int ki, int kd, eTTControlParamsType frame_type);
-  void vSendCaterpillarBaseSignal(int forward_base, int backward_base, eTTControlParamsType frame_type);
+  void vSendCartsPIDParameters(double kp, double ki, double kd, double acc, uint8_t frame_type);
+  void vSendCaterpillarPIDParameters(int kp, int ki, int kd, uint8_t frame_type);
+  void vSendCaterpillarBaseSignal(int forward_base, int backward_base, uint8_t frame_type);
   CartsStatus GetCartsStatus();
   float fGetFrontCartAngle();
   float fGetBackCartAngle();
