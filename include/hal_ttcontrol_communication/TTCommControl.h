@@ -6,6 +6,8 @@
 
 #include <agribot_common/Can.h>
 #include <hal_ttcontrol_communication/CartsStatus.h>
+#include <iostream>
+#include <fstream>
 #include <math.h>
 #include <queue>
 
@@ -50,11 +52,18 @@ class TTCommControl
   CartsStatus _Cart;
   float _fFrontCartAngle;
   float _fBackCartAngle;
+  float fFrontCartAngle;
+  float fBackCartAngle;
   uint8_t _iErrCode = TTC_OK;
+  std::string path_to_angle_file;
+  std::string file_name = "angle_data.txt";
+  std::string file_name_backup = "angle_data_backup.txt";
   void vPrepareVelocitiesFrame(can_frame* Frame, float f16Velocity, uint8_t u8StartBit);
   float fDecodeVelocitiy(uint8_t u8StartBit, can_frame Frame);
   float fDecodeAngle(can_frame Frame);
   void vSetVelocitiy(eVelocities velo, can_frame Frame);
+  std::ifstream angle_data_file_input;
+  std::ofstream angle_data_file_output;
 
 public:
   const struct eTTControlParamsType
@@ -80,6 +89,9 @@ public:
   uint8_t u8ParseCanFrames();
   void vConfirmAdvantechReadiness();
   bool bWaritForTTControlReadiness();
+  void vSetPathToAngleDataFile(std::string path_to_file);
+  bool bReadAngleDataFile();
+  bool bWriteAngleDataFile();
   void vSendVelocities(float fFrontLinear, float fFrontAngular, float fBackLinear, float fBackAngular);
   void vSendSignalsParameters(int ditter_period, int ditter_amplitude, int encoder_period);
   void vSendCartsPIDParameters(double kp, double ki, double kd, double acc, uint8_t frame_type);

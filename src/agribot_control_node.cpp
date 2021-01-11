@@ -181,6 +181,9 @@ int main(int argc, char** argv)
   dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>::CallbackType callback_function_object;
   std_msgs::Float32 FrontAngleMsg;
   std_msgs::Float32 BackAngleMsg;
+  std::string path_to_angle_file;
+  n.getParam("path_to_angle_file", path_to_angle_file);
+  CommHandlerControl.vSetPathToAngleDataFile(path_to_angle_file);
   callback_function_object = boost::bind(&callbackDynamicReconfigure, _1, _2);
   server.setCallback(callback_function_object);
   uint8_t u8Status = 0x00;

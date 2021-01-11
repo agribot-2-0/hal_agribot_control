@@ -294,3 +294,69 @@ int TTCommControl::iGetErrorCode()
 {
   return _iErrCode;
 }
+
+void TTCommControl::vSetPathToAngleDataFile(std::string path_to_file)
+{
+  path_to_angle_file = path_to_file;
+}
+
+bool TTCommControl::bReadAngleDataFile()
+{
+  std::string line;
+  std::string number;
+  std::string delimiter_middle = ": ";
+  std::string delimiter_endline = ";";
+  angle_data_file_input.open(path_to_angle_file + file_name);
+  if (!angle_data_file_input.is_open() || angle_data_file_input.fail())
+  {
+    angle_data_file_input.close();
+    printf("\nError : failed to read angle data file content !");
+    return false;
+  }
+
+  std::getline(angle_data_file_input, line);
+  number = line.substr(line.find(delimiter_middle));
+  if (number[0] == ':' && number[1] == ' ' && number.back() == ';')
+  {
+    number = number.substr(2, number.length()-2);
+    fFrontCartAngle = std::stof(number);
+  }
+
+  std::getline(angle_data_file_input, line);
+  number = line.substr(line.find(delimiter_middle));
+  if (number[0] == ':' && number[1] == ' ' && number.back() == ';')
+  {
+    number = number.substr(2, number.length()-2);
+    fBackCartAngle = std::stof(number);
+    std::cout<<"Back := "<< fBackCartAngle << "\n";
+  }
+  angle_data_file_input.close();
+  return true;
+}
+
+bool TTCommControl::bWriteAngleDataFile()
+{
+  bReadAngleDataFile();
+  // save the backup file 
+  angle_data_file_output.open((path_to_angle_file + file_name_backup), std::ios::trunc);
+  if (!angle_data_file_output.is_open())
+  {
+    angle_data_file_output.close();
+    printf("\nError : failed to read angle data file content !");
+    return false;
+  }
+  angle_data_file_output << "front: " << fFrontCartAngle<<";";
+  angle_data_file_output << "back: " << fBackCartAngle<<";";
+  // save the proper file
+  angle_data_file_output.close();
+
+  angle_data_file_output.open((path_to_angle_file + file_name), std::ios::trunc);
+  if (!angle_data_file_output.is_open())
+  {
+    angle_data_file_output.close();
+    printf("\nError : failed to read angle data file content !");
+    return false;
+  }
+  
+  return true;
+}
