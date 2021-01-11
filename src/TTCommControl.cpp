@@ -237,37 +237,37 @@ void TTCommControl::vSendCartsPIDParameters(double kp, double ki, double kd, dou
   _CanHandler.iSendFrame(&message);
 }
 
-void TTCommControl::vSendCaterpillarPIDParameters(int kp, int ki, int kd, uint8_t frame_type)
+void TTCommControl::vSendCaterpillarPIDParameters(uint kp, uint ki, uint kd, uint8_t frame_type)
 {
   can_frame message;
   message.can_id = CONFIG_FRAME_CAN_ID;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[CONFIG_FRAME_TYPE_BYTE] = frame_type;
-  message.data[KP_CATERPILLAR_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(kp) & GET_FIRST_BYTE);
-  message.data[KP_CATERPILLAR_FIRST_BYTE + 1] = static_cast<uint8_t>((static_cast<uint>(kp) & GET_SECOND_BYTE) >> 8);
-  message.data[KI_CATERPILLAR_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(ki) & GET_FIRST_BYTE);
-  message.data[KI_CATERPILLAR_FIRST_BYTE + 1] = static_cast<uint8_t>((static_cast<uint>(ki) & GET_SECOND_BYTE) >> 8);
-  message.data[KD_CATERPILLAR_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(kd) & GET_FIRST_BYTE);
-  message.data[KD_CATERPILLAR_FIRST_BYTE + 1] = static_cast<uint8_t>((static_cast<uint>(kd) & GET_SECOND_BYTE) >> 8);
+  message.data[KP_CATERPILLAR_FIRST_BYTE] = static_cast<uint8_t>(kp & GET_FIRST_BYTE);
+  message.data[KP_CATERPILLAR_FIRST_BYTE + 1] = static_cast<uint8_t>((kp & GET_SECOND_BYTE) >> 8);
+  message.data[KI_CATERPILLAR_FIRST_BYTE] = static_cast<uint8_t>(ki & GET_FIRST_BYTE);
+  message.data[KI_CATERPILLAR_FIRST_BYTE + 1] = static_cast<uint8_t>((ki & GET_SECOND_BYTE) >> 8);
+  message.data[KD_CATERPILLAR_FIRST_BYTE] = static_cast<uint8_t>(kd & GET_FIRST_BYTE);
+  message.data[KD_CATERPILLAR_FIRST_BYTE + 1] = static_cast<uint8_t>((kd & GET_SECOND_BYTE) >> 8);
   // dont care byte
   message.data[KD_CATERPILLAR_FIRST_BYTE + 2] = 0xFF;
   _CanHandler.iSendFrame(&message);
 }
 
-void TTCommControl::vSendCaterpillarBaseSignal(int forward_base, int backward_base, uint8_t frame_type)
+void TTCommControl::vSendCaterpillarBaseSignal(uint forward_base, uint backward_base, uint8_t frame_type)
 {
   can_frame message;
   message.can_id = CONFIG_FRAME_CAN_ID;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[CONFIG_FRAME_TYPE_BYTE] = frame_type;
   message.data[FORWARD_SIGNAL_BASE_FIRST_BYTE] =
-      static_cast<uint8_t>(static_cast<uint>(forward_base) & GET_FIRST_BYTE);
+      static_cast<uint8_t>(forward_base & GET_FIRST_BYTE);
   message.data[FORWARD_SIGNAL_BASE_FIRST_BYTE + 1] =
-      static_cast<uint8_t>((static_cast<uint>(forward_base) & GET_SECOND_BYTE) >> 8);
+      static_cast<uint8_t>((forward_base & GET_SECOND_BYTE) >> 8);
   message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE] =
-      static_cast<uint8_t>(static_cast<uint>(backward_base) & GET_FIRST_BYTE);
+      static_cast<uint8_t>(backward_base & GET_FIRST_BYTE);
   message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 1] =
-      static_cast<uint8_t>((static_cast<uint>(backward_base) & GET_SECOND_BYTE) >> 8);
+      static_cast<uint8_t>((backward_base & GET_SECOND_BYTE) >> 8);
   // dont care bytes
   message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 2] = 0xFF;
   message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 3] = 0xFF;

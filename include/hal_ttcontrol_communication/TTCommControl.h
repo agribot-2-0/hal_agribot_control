@@ -83,8 +83,8 @@ public:
   void vSendVelocities(float fFrontLinear, float fFrontAngular, float fBackLinear, float fBackAngular);
   void vSendSignalsParameters(int ditter_period, int ditter_amplitude, int encoder_period);
   void vSendCartsPIDParameters(double kp, double ki, double kd, double acc, uint8_t frame_type);
-  void vSendCaterpillarPIDParameters(int kp, int ki, int kd, uint8_t frame_type);
-  void vSendCaterpillarBaseSignal(int forward_base, int backward_base, uint8_t frame_type);
+  void vSendCaterpillarPIDParameters(uint kp, uint ki, uint kd, uint8_t frame_type);
+  void vSendCaterpillarBaseSignal(uint forward_base, uint backward_base, uint8_t frame_type);
   CartsStatus GetCartsStatus();
   float fGetFrontCartAngle();
   float fGetBackCartAngle();
