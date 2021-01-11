@@ -205,7 +205,7 @@ void TTCommControl::vSendSignalsParameters(int ditter_period, int ditter_amplitu
   can_frame message;
   message.can_id = CONFIG_FRAME_CAN_ID;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
-  message.data[CONFIG_FRAME_TYPE_BYTE] = static_cast<uint8_t>(eTTControlParamsType::TTCONTROL_SIGNALS_PARAMS_TYPE);
+  message.data[CONFIG_FRAME_TYPE_BYTE] = TTControlParamsFrameType.TTCONTROL_SIGNALS_PARAMS_TYPE;
   message.data[DITTER_PERIOD_BYTE] = static_cast<uint8_t>(ditter_period);
   message.data[DITTER_AMPLITUDE_FIRST_BYTE] = static_cast<uint8_t>(ditter_amplitude & GET_FIRST_BYTE);
   message.data[DITTER_AMPLITUDE_FIRST_BYTE + 1] = static_cast<uint8_t>((ditter_amplitude & GET_SECOND_BYTE) >> 8);
@@ -217,24 +217,61 @@ void TTCommControl::vSendSignalsParameters(int ditter_period, int ditter_amplitu
   _CanHandler.iSendFrame(&message);
 }
 
-void TTCommControl::vSendCartsPIDParameters(double kp, double kd, double acc, eTTControlParamsType frame_type)
+void TTCommControl::vSendCartsPIDParameters(double kp, double ki, double kd, double acc, uint8_t frame_type)
 {
   can_frame message;
   message.can_id = CONFIG_FRAME_CAN_ID;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
-  message.data[CONFIG_FRAME_TYPE_BYTE] = static_cast<uint8_t>(frame_type);
+  message.data[CONFIG_FRAME_TYPE_BYTE] = frame_type;
   message.data[KP_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(kp * K_RESOLUTION_MULTIPLIER) & GET_FIRST_BYTE);
   message.data[KP_FIRST_BYTE + 1] =
       static_cast<uint8_t>((static_cast<uint>(kp * K_RESOLUTION_MULTIPLIER) & GET_SECOND_BYTE) >> 8);
-  message.data[KD_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(kd * K_RESOLUTION_MULTIPLIER) & GET_FIRST_BYTE);
-  message.data[KD_FIRST_BYTE + 1] =
-      static_cast<uint8_t>((static_cast<uint>(kd * K_RESOLUTION_MULTIPLIER) & GET_SECOND_BYTE) >> 8);
+  message.data[KI_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(ki * K_RESOLUTION_MULTIPLIER) & GET_FIRST_BYTE);
+  message.data[KI_FIRST_BYTE + 1] =
+      static_cast<uint8_t>((static_cast<uint>(ki * K_RESOLUTION_MULTIPLIER) & GET_SECOND_BYTE) >> 8);
+  message.data[KD_FIRST_BYTE] = static_cast<uint8_t>(static_cast<uint>(kd * KD_RESOLUTION_MULTIPLIER) & GET_FIRST_BYTE);
   message.data[ACC_FIRST_BYTE] =
       static_cast<uint8_t>(static_cast<uint>(acc * ACC_RESOLUTION_MULTIPLIER) & GET_FIRST_BYTE);
   message.data[ACC_FIRST_BYTE + 1] =
       static_cast<uint8_t>((static_cast<uint>(acc * ACC_RESOLUTION_MULTIPLIER) & GET_SECOND_BYTE) >> 8);
-  // dont-care byte
-  message.data[ACC_FIRST_BYTE + 2] = 0xFF;
+  _CanHandler.iSendFrame(&message);
+}
+
+void TTCommControl::vSendCaterpillarPIDParameters(uint kp, uint ki, uint kd, uint8_t frame_type)
+{
+  can_frame message;
+  message.can_id = CONFIG_FRAME_CAN_ID;
+  message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
+  message.data[CONFIG_FRAME_TYPE_BYTE] = frame_type;
+  message.data[KP_CATERPILLAR_FIRST_BYTE] = static_cast<uint8_t>(kp & GET_FIRST_BYTE);
+  message.data[KP_CATERPILLAR_FIRST_BYTE + 1] = static_cast<uint8_t>((kp & GET_SECOND_BYTE) >> 8);
+  message.data[KI_CATERPILLAR_FIRST_BYTE] = static_cast<uint8_t>(ki & GET_FIRST_BYTE);
+  message.data[KI_CATERPILLAR_FIRST_BYTE + 1] = static_cast<uint8_t>((ki & GET_SECOND_BYTE) >> 8);
+  message.data[KD_CATERPILLAR_FIRST_BYTE] = static_cast<uint8_t>(kd & GET_FIRST_BYTE);
+  message.data[KD_CATERPILLAR_FIRST_BYTE + 1] = static_cast<uint8_t>((kd & GET_SECOND_BYTE) >> 8);
+  // dont care byte
+  message.data[KD_CATERPILLAR_FIRST_BYTE + 2] = 0xFF;
+  _CanHandler.iSendFrame(&message);
+}
+
+void TTCommControl::vSendCaterpillarBaseSignal(uint forward_base, uint backward_base, uint8_t frame_type)
+{
+  can_frame message;
+  message.can_id = CONFIG_FRAME_CAN_ID;
+  message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
+  message.data[CONFIG_FRAME_TYPE_BYTE] = frame_type;
+  message.data[FORWARD_SIGNAL_BASE_FIRST_BYTE] =
+      static_cast<uint8_t>(forward_base & GET_FIRST_BYTE);
+  message.data[FORWARD_SIGNAL_BASE_FIRST_BYTE + 1] =
+      static_cast<uint8_t>((forward_base & GET_SECOND_BYTE) >> 8);
+  message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE] =
+      static_cast<uint8_t>(backward_base & GET_FIRST_BYTE);
+  message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 1] =
+      static_cast<uint8_t>((backward_base & GET_SECOND_BYTE) >> 8);
+  // dont care bytes
+  message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 2] = 0xFF;
+  message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 3] = 0xFF;
+  message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 4] = 0xFF;
   _CanHandler.iSendFrame(&message);
 }
 
