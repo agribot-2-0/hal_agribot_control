@@ -36,7 +36,7 @@ void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersCo
 {
   // maximum number of queed msg to read in TTControl for a given CAN_ID is 10, so we need to send the msgs
   // in turns
-  if (level = 0xFFFFFFFF)
+  if (level == 0xFFFFFFFF)
   {
     CommHandlerControl.vSendSignalsParameters(config.ditter_period_int, config.ditter_amplitude_int,
                                               config.encoder_period_int);
