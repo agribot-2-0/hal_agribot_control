@@ -13,6 +13,7 @@ constexpr uint VELO_FRAME_ID = 0x00FFD064;
 constexpr uint FRONT_ANGLE_ID = 0xAA20;
 constexpr uint BACK_ANGLE_ID = 0xAA21;
 constexpr uint VELOCITY_CONTROL_FRAME_ID = 0x00FFD0C8;
+constexpr uint CONFIG_FRAME_CAN_ID = 0x00FFDBC8;
 constexpr double DEG_TO_RAD = (M_PI / 180);
 
 constexpr uint SIGN_BIT = 0x80;
@@ -28,8 +29,14 @@ constexpr float VELO_FRAME_DECODE_CONST = 0.001;
 constexpr float ANGLE_FRAME_DECODE_CONST_MULTIPLIER = 0.214;
 constexpr float ANGLE_FRAME_DECODE_CONST_OFFSET = -180;
 constexpr uint INVERSE_INT16_CONST = 32768;
-constexpr uint GET_SECOND_BYTE = 0xFF00;
-constexpr uint GET_FIRST_BYTE = 0x00FF;
+constexpr uint GET_THIRD_BYTE = 0xFF0000;
+constexpr uint GET_SECOND_BYTE = 0x00FF00;
+constexpr uint GET_FIRST_BYTE = 0x0000FF;
+constexpr uint CARTS_ANGLE_RESOLUTION = 1000;
+constexpr int CARTS_ANGLES_OFFSET = 180;
+
+constexpr uint DELIMITER_MIDDLE_LENGTH = 1;
+constexpr uint DELIMITER_ENDING_LENGTH = 2;
 
 void TTCommControl::vPrepareVelocitiesFrame(can_frame* Frame, float fVelocity, uint8_t u8StartBit)
 {
@@ -139,12 +146,14 @@ uint8_t TTCommControl::u8ParseCanFrames()
     // if there is front cart angle frame in _FramesQueue
     if ((FRONT_ANGLE_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
+      _bFrontCartAngleFresh = true;
       _fFrontCartAngle = fDecodeAngle(message) * DEG_TO_RAD;
       u8Status |= FRONT_ANGLE_MASK;
     }
     // if there is back cart angle frame in _FramesQueue
     if ((BACK_ANGLE_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
+      _bBackCartAngleFresh = true;
       _fBackCartAngle = fDecodeAngle(message) * DEG_TO_RAD;
       u8Status |= BACK_ANGLE_MASK;
     }
@@ -158,6 +167,11 @@ uint8_t TTCommControl::u8ParseCanFrames()
         if (message.data[1] == TTC_OK)
         {
           u8Status |= AUTOMATIC_STATE_REQUEST_MASK;
+        }
+        // if TTControl confirms angle receiving
+        else if (message.data[1] == TTC_CARTS_ANGLE_INITIALIZATION)
+        {
+          u8Status |= CARTS_ANGLE_INIT_MASK;
         }
         // if TTC send some error while entering automatic mode
         else
@@ -184,6 +198,24 @@ void TTCommControl::vConfirmAdvantechReadiness()
   message.data[4] = 0;
   message.data[5] = 0;
   message.data[6] = 0;
+  message.data[7] = 0;
+  _CanHandler.iSendFrame(&message);
+}
+
+void TTCommControl::vSendCartsAnglesInitialization()
+{
+  uint front_data_to_send = static_cast<int>(_fInitFrontCartAngle + CARTS_ANGLES_OFFSET) * CARTS_ANGLE_RESOLUTION;
+  uint back_data_to_send = static_cast<int>(_fInitBackCartAngle + CARTS_ANGLES_OFFSET) * CARTS_ANGLE_RESOLUTION;
+  can_frame message;
+  message.can_id = PROTOCOL_RESPONSE_FRAME_ID;
+  message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
+  message.data[0] = TTC_CARTS_ANGLE_INITIALIZATION;
+  message.data[1] = static_cast<uint8_t>((front_data_to_send & GET_THIRD_BYTE) >> 16);
+  message.data[2] = static_cast<uint8_t>((front_data_to_send & GET_SECOND_BYTE) >> 8);
+  message.data[3] = static_cast<uint8_t>((front_data_to_send & GET_FIRST_BYTE));
+  message.data[4] = static_cast<uint8_t>((back_data_to_send & GET_THIRD_BYTE) >> 16);
+  message.data[5] = static_cast<uint8_t>((back_data_to_send & GET_SECOND_BYTE) >> 8);
+  message.data[6] = static_cast<uint8_t>((back_data_to_send & GET_FIRST_BYTE));
   message.data[7] = 0;
   _CanHandler.iSendFrame(&message);
 }
@@ -260,14 +292,10 @@ void TTCommControl::vSendCaterpillarBaseSignal(uint forward_base, uint backward_
   message.can_id = CONFIG_FRAME_CAN_ID;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[CONFIG_FRAME_TYPE_BYTE] = frame_type;
-  message.data[FORWARD_SIGNAL_BASE_FIRST_BYTE] =
-      static_cast<uint8_t>(forward_base & GET_FIRST_BYTE);
-  message.data[FORWARD_SIGNAL_BASE_FIRST_BYTE + 1] =
-      static_cast<uint8_t>((forward_base & GET_SECOND_BYTE) >> 8);
-  message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE] =
-      static_cast<uint8_t>(backward_base & GET_FIRST_BYTE);
-  message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 1] =
-      static_cast<uint8_t>((backward_base & GET_SECOND_BYTE) >> 8);
+  message.data[FORWARD_SIGNAL_BASE_FIRST_BYTE] = static_cast<uint8_t>(forward_base & GET_FIRST_BYTE);
+  message.data[FORWARD_SIGNAL_BASE_FIRST_BYTE + 1] = static_cast<uint8_t>((forward_base & GET_SECOND_BYTE) >> 8);
+  message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE] = static_cast<uint8_t>(backward_base & GET_FIRST_BYTE);
+  message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 1] = static_cast<uint8_t>((backward_base & GET_SECOND_BYTE) >> 8);
   // dont care bytes
   message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 2] = 0xFF;
   message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 3] = 0xFF;
@@ -297,66 +325,89 @@ int TTCommControl::iGetErrorCode()
 
 void TTCommControl::vSetPathToAngleDataFile(std::string path_to_file)
 {
-  path_to_angle_file = path_to_file;
+  _path_to_angle_file = path_to_file;
 }
 
-bool TTCommControl::bReadAngleDataFile()
+bool TTCommControl::bReadAngleDataFile(bool regular_file)
 {
   std::string line;
   std::string number;
-  std::string delimiter_middle = ": ";
+  std::string angle_file_name;
+  std::string delimiter_middle = ":";
   std::string delimiter_endline = ";";
-  angle_data_file_input.open(path_to_angle_file + file_name);
-  if (!angle_data_file_input.is_open() || angle_data_file_input.fail())
+  if (regular_file)
   {
-    angle_data_file_input.close();
-    printf("\nError : failed to read angle data file content !");
+    angle_file_name = _file_name;
+  }
+  else
+  {
+    angle_file_name = _file_name_backup;
+  }
+  _angle_data_file_input.open(_path_to_angle_file + angle_file_name);
+  if (!_angle_data_file_input.is_open() || _angle_data_file_input.fail())
+  {
+    _angle_data_file_input.close();
     return false;
   }
 
-  std::getline(angle_data_file_input, line);
+  std::getline(_angle_data_file_input, line);
   number = line.substr(line.find(delimiter_middle));
-  if (number[0] == ':' && number[1] == ' ' && number.back() == ';')
+  if (number[0] == delimiter_middle[0] && number.back() == delimiter_endline[0])
   {
-    number = number.substr(2, number.length()-2);
-    fFrontCartAngle = std::stof(number);
+    number = number.substr(DELIMITER_MIDDLE_LENGTH, number.length() - DELIMITER_ENDING_LENGTH);
+    _fInitFrontCartAngle = std::stof(number);
+  }
+  else
+  {
+    return false;
   }
 
-  std::getline(angle_data_file_input, line);
+  std::getline(_angle_data_file_input, line);
   number = line.substr(line.find(delimiter_middle));
-  if (number[0] == ':' && number[1] == ' ' && number.back() == ';')
+  if (number[0] == delimiter_middle[0] && number.back() == delimiter_endline[0])
   {
-    number = number.substr(2, number.length()-2);
-    fBackCartAngle = std::stof(number);
-    std::cout<<"Back := "<< fBackCartAngle << "\n";
+    number = number.substr(DELIMITER_MIDDLE_LENGTH, number.length() - DELIMITER_ENDING_LENGTH);
+    _fInitBackCartAngle = std::stof(number);
   }
-  angle_data_file_input.close();
+  else
+  {
+    return false;
+  }
+
+  _angle_data_file_input.close();
   return true;
 }
 
 bool TTCommControl::bWriteAngleDataFile()
 {
-  bReadAngleDataFile();
-  // save the backup file 
-  angle_data_file_output.open((path_to_angle_file + file_name_backup), std::ios::trunc);
-  if (!angle_data_file_output.is_open())
+  // check if angle data is complete
+  if (_bFrontCartAngleFresh && _bBackCartAngleFresh)
   {
-    angle_data_file_output.close();
-    printf("\nError : failed to read angle data file content !");
-    return false;
-  }
-  angle_data_file_output << "front: " << fFrontCartAngle<<";";
-  angle_data_file_output << "back: " << fBackCartAngle<<";";
-  // save the proper file
-  angle_data_file_output.close();
+    // save the proper file
+    _angle_data_file_output.open((_path_to_angle_file + _file_name), std::ios::trunc);
+    if (!_angle_data_file_output.is_open())
+    {
+      _angle_data_file_output.close();
+      return false;
+    }
+    _angle_data_file_output << "front:" << _fFrontCartAngle << ";";
+    _angle_data_file_output << "back:" << _fBackCartAngle << ";";
+    _angle_data_file_output.close();
 
-  angle_data_file_output.open((path_to_angle_file + file_name), std::ios::trunc);
-  if (!angle_data_file_output.is_open())
-  {
-    angle_data_file_output.close();
-    printf("\nError : failed to read angle data file content !");
-    return false;
+    // save the backup file
+    _angle_data_file_output.open((_path_to_angle_file + _file_name_backup), std::ios::trunc);
+    if (!_angle_data_file_output.is_open())
+    {
+      _angle_data_file_output.close();
+      return false;
+    }
+    _angle_data_file_output << "front:" << _fFrontCartAngle << ";";
+    _angle_data_file_output << "back:" << _fBackCartAngle << ";";
+    _angle_data_file_output.close();
+    // reset flags
+    _bFrontCartAngleFresh = false;
+    _bBackCartAngleFresh = false;
   }
-  
+
   return true;
 }

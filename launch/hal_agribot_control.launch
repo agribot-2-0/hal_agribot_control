@@ -1,5 +1,5 @@
 <launch>
-    <param name="path_to_angle_file" type="string" value="/home/adamm/catkin_ws/src/agribot_hal/hal_agribot_control/"/>
+    <param name="path_to_angle_file" type="string" value="$(find hal_agribot_control)"/>
     <node name="heartbeat_node" pkg="hal_agribot_control" type="heartbeat_node" />
     <node name="agribot_control_node" pkg="hal_agribot_control" type="agribot_control_node" output="screen"/>
 </launch>

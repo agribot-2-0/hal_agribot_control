@@ -14,12 +14,13 @@
 constexpr uint8_t VELOCITIES_MASK = 0x01;
 constexpr uint8_t FRONT_ANGLE_MASK = 0x02;
 constexpr uint8_t BACK_ANGLE_MASK = 0x04;
+constexpr uint8_t CARTS_ANGLE_INIT_MASK = 0x08;
 constexpr uint8_t AUTOMATIC_STATE_REQUEST_MASK = 0x10;
 constexpr uint8_t AUTOMATIC_STATE_REQUEST_ERROR_MASK = 0x20;
 constexpr uint8_t TTC_OK = 0x01;
 constexpr uint8_t TTC_AUTOMATIC_MODE_REQUEST = 0x20;
+constexpr uint8_t TTC_CARTS_ANGLE_INITIALIZATION = 0x30;
 
-constexpr uint CONFIG_FRAME_CAN_ID = 0x00FFDBC8;
 constexpr uint8_t CONFIG_FRAME_TYPE_BYTE = 0;
 constexpr uint8_t DITTER_PERIOD_BYTE = 1;
 constexpr uint8_t DITTER_AMPLITUDE_FIRST_BYTE = 2;
@@ -51,19 +52,21 @@ class TTCommControl
   std::queue<can_frame> _FramesQueue;
   CartsStatus _Cart;
   float _fFrontCartAngle;
+  bool _bFrontCartAngleFresh;
   float _fBackCartAngle;
-  float fFrontCartAngle;
-  float fBackCartAngle;
+  bool _bBackCartAngleFresh;
+  float _fInitFrontCartAngle;
+  float _fInitBackCartAngle;
   uint8_t _iErrCode = TTC_OK;
-  std::string path_to_angle_file;
-  std::string file_name = "angle_data.txt";
-  std::string file_name_backup = "angle_data_backup.txt";
+  std::string _path_to_angle_file;
+  std::string _file_name = "/angle_files/angle_data.txt";
+  std::string _file_name_backup = "/angle_files/angle_data_backup.txt";
   void vPrepareVelocitiesFrame(can_frame* Frame, float f16Velocity, uint8_t u8StartBit);
   float fDecodeVelocitiy(uint8_t u8StartBit, can_frame Frame);
   float fDecodeAngle(can_frame Frame);
   void vSetVelocitiy(eVelocities velo, can_frame Frame);
-  std::ifstream angle_data_file_input;
-  std::ofstream angle_data_file_output;
+  std::ifstream _angle_data_file_input;
+  std::ofstream _angle_data_file_output;
 
 public:
   const struct eTTControlParamsType
@@ -90,8 +93,9 @@ public:
   void vConfirmAdvantechReadiness();
   bool bWaritForTTControlReadiness();
   void vSetPathToAngleDataFile(std::string path_to_file);
-  bool bReadAngleDataFile();
+  bool bReadAngleDataFile(bool backup_file);
   bool bWriteAngleDataFile();
+  void vSendCartsAnglesInitialization();
   void vSendVelocities(float fFrontLinear, float fFrontAngular, float fBackLinear, float fBackAngular);
   void vSendSignalsParameters(int ditter_period, int ditter_amplitude, int encoder_period);
   void vSendCartsPIDParameters(double kp, double ki, double kd, double acc, uint8_t frame_type);

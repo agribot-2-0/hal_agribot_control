@@ -12,6 +12,8 @@
 
 constexpr char used_can[] = "can0";
 constexpr uint WAIT_FOR_TTCONTROL = 100000;
+constexpr bool READ_BACKUP_FILE = false;
+constexpr bool READ_REGULAR_FILE = true;
 
 const struct TTCONTROL_PARAMETER_FLAGS
 {
@@ -181,9 +183,23 @@ int main(int argc, char** argv)
   dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>::CallbackType callback_function_object;
   std_msgs::Float32 FrontAngleMsg;
   std_msgs::Float32 BackAngleMsg;
+  // angle initialization reading
+  bool ttcontrol_carts_angle_confirmed = true;
   std::string path_to_angle_file;
   n.getParam("path_to_angle_file", path_to_angle_file);
   CommHandlerControl.vSetPathToAngleDataFile(path_to_angle_file);
+  if (!CommHandlerControl.bReadAngleDataFile(READ_REGULAR_FILE))
+  {
+    ROS_ERROR_STREAM("\nFailed to read carts angles data file content ! Trying to read from backup file \n"
+                     << "Attempted path: " << path_to_angle_file);
+    if (!CommHandlerControl.bReadAngleDataFile(READ_BACKUP_FILE))
+    {
+      ROS_ERROR_STREAM("\nFailed to read carts angle data file content ! Robots carts angles are not inited! \n"
+                       << "Attempted path: " << path_to_angle_file);
+      return -1;
+    }
+  }
+  CommHandlerControl.vSendCartsAnglesInitialization();
   callback_function_object = boost::bind(&callbackDynamicReconfigure, _1, _2);
   server.setCallback(callback_function_object);
   uint8_t u8Status = 0x00;
@@ -230,6 +246,20 @@ int main(int argc, char** argv)
     if ((u8Status & AUTOMATIC_STATE_REQUEST_ERROR_MASK) == AUTOMATIC_STATE_REQUEST_ERROR_MASK)
     {
       ROS_ERROR("Automatic state request error: %d", CommHandlerControl.iGetErrorCode());
+    }
+    // check if ttcontrol confirmed angle initialization
+    if ((u8Status & CARTS_ANGLE_INIT_MASK) == CARTS_ANGLE_INIT_MASK)
+    {
+      ttcontrol_carts_angle_confirmed = true;
+    }
+    // check if the carts has been initialized and write the new received values to file
+    if (ttcontrol_carts_angle_confirmed)
+    {
+      // check if both angle data reached us
+      if (!CommHandlerControl.bWriteAngleDataFile())
+      {
+        ROS_ERROR("Failed to write carts angle data to file!");
+      }
     }
     ros::spinOnce();
     loop_rate.sleep();
