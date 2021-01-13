@@ -4,17 +4,17 @@
 
 #pragma once
 
+#include <math.h>
 #include <agribot_common/Can.h>
 #include <hal_ttcontrol_communication/CartsStatus.h>
 #include <iostream>
 #include <fstream>
-#include <math.h>
 #include <queue>
+#include <string>
 
 constexpr uint8_t VELOCITIES_MASK = 0x01;
 constexpr uint8_t FRONT_ANGLE_MASK = 0x02;
 constexpr uint8_t BACK_ANGLE_MASK = 0x04;
-constexpr uint8_t CARTS_ANGLE_INIT_MASK = 0x08;
 constexpr uint8_t AUTOMATIC_STATE_REQUEST_MASK = 0x10;
 constexpr uint8_t AUTOMATIC_STATE_REQUEST_ERROR_MASK = 0x20;
 constexpr uint8_t TTC_OK = 0x01;
@@ -67,6 +67,8 @@ class TTCommControl
   void vSetVelocitiy(eVelocities velo, can_frame Frame);
   std::ifstream _angle_data_file_input;
   std::ofstream _angle_data_file_output;
+  bool _ttcontrol_is_connected;
+  bool _ttcontrol_carts_angle_confirmed;
 
 public:
   const struct eTTControlParamsType
@@ -90,6 +92,9 @@ public:
   void update();
   void vReceiveCanFrames();
   uint8_t u8ParseCanFrames();
+  void vSetTTControlConnectionStatus(bool connected);
+  bool bGetTTControlConnectionStatus();
+  bool bGetAnglesConfirmedStatus();
   void vConfirmAdvantechReadiness();
   bool bWaritForTTControlReadiness();
   void vSetPathToAngleDataFile(std::string path_to_file);

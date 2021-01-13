@@ -105,8 +105,33 @@ void TTCommControl::vSetVelocitiy(eVelocities eVelo, can_frame Frame)
   }
 }
 
+void TTCommControl::vSetTTControlConnectionStatus(bool connected)
+{
+  if (connected)
+  {
+    _ttcontrol_is_connected = true;
+  }
+  else
+  {
+    _ttcontrol_carts_angle_confirmed = false;
+    _ttcontrol_is_connected = false;
+  }
+}
+
+bool TTCommControl::bGetTTControlConnectionStatus()
+{
+  return _ttcontrol_is_connected;
+}
+
+bool TTCommControl::bGetAnglesConfirmedStatus()
+{
+  return _ttcontrol_carts_angle_confirmed;
+}
+
 TTCommControl::TTCommControl(const char* pchCanChannel)
 {
+  _ttcontrol_carts_angle_confirmed = false;
+  _ttcontrol_is_connected = false;
   _CanHandler.iInitialize(pchCanChannel);
 }
 
@@ -171,7 +196,7 @@ uint8_t TTCommControl::u8ParseCanFrames()
         // if TTControl confirms angle receiving
         else if (message.data[1] == TTC_CARTS_ANGLE_INITIALIZATION)
         {
-          u8Status |= CARTS_ANGLE_INIT_MASK;
+          _ttcontrol_carts_angle_confirmed = true;
         }
         // if TTC send some error while entering automatic mode
         else

@@ -1,7 +1,6 @@
 /*
  * Copyright (C) 2020 Agribot. All rights reserved.
  */
-
 #include <agribot_msgs/AgribotCaterpillar.h>
 #include <hal_ttcontrol_communication/TTCommControl.h>
 #include <dynamic_reconfigure/server.h>
@@ -9,11 +8,16 @@
 #include <ros/console.h>
 #include <ros/ros.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/String.h>
+#include <string_view>
 
 constexpr char used_can[] = "can0";
 constexpr uint WAIT_FOR_TTCONTROL = 100000;
 constexpr bool READ_BACKUP_FILE = false;
 constexpr bool READ_REGULAR_FILE = true;
+constexpr std::string_view TTCONTROL_CONNECTION_MSG = "connected";
+constexpr bool TTCONTROL_CONNECTED = true;
+constexpr bool TTCONTROL_DISCONNECTED = false;
 
 const struct TTCONTROL_PARAMETER_FLAGS
 {
@@ -168,12 +172,26 @@ void frontCallback(const agribot_msgs::AgribotCaterpillar& msg)
   CommHandlerControl.vSendVelocities(msg.front_linear, msg.front_angular, msg.back_linear, msg.back_angular);
 }
 
+void ttcontrol_connection_state(const std_msgs::String& msg)
+{
+  if (msg.data == "connected")
+  {
+    CommHandlerControl.vSetTTControlConnectionStatus(TTCONTROL_CONNECTED);
+  }
+  else
+  {
+    CommHandlerControl.vSetTTControlConnectionStatus(TTCONTROL_DISCONNECTED);
+  }
+}
+
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "agribot_control");
   ros::NodeHandle n;
   ros::Rate loop_rate(10);
   ros::Subscriber sub = n.subscribe("/agribot/control/caterpillar", 1000, frontCallback);
+  ros::Subscriber sub_connection_state =
+      n.subscribe("/agribot/ttcontrol/connection_state", 1000, ttcontrol_connection_state);
   ros::Publisher CartsStatusPublisher =
       n.advertise<agribot_msgs::AgribotCaterpillar>("/agribot/encoder/caterpillar", 1);
   ros::Publisher FrontCartAnglePublisher = n.advertise<std_msgs::Float32>("/agribot/encoder/cart/front", 1);
@@ -247,13 +265,13 @@ int main(int argc, char** argv)
     {
       ROS_ERROR("Automatic state request error: %d", CommHandlerControl.iGetErrorCode());
     }
-    // check if ttcontrol confirmed angle initialization
-    if ((u8Status & CARTS_ANGLE_INIT_MASK) == CARTS_ANGLE_INIT_MASK)
+    // when connected, send angle initialization till the confirmation
+    if (!CommHandlerControl.bGetAnglesConfirmedStatus() && CommHandlerControl.bGetTTControlConnectionStatus())
     {
-      ttcontrol_carts_angle_confirmed = true;
+      CommHandlerControl.vSendCartsAnglesInitialization();
     }
     // check if the carts has been initialized and write the new received values to file
-    if (ttcontrol_carts_angle_confirmed)
+    if (CommHandlerControl.bGetAnglesConfirmedStatus())
     {
       // check if both angle data reached us
       if (!CommHandlerControl.bWriteAngleDataFile())
