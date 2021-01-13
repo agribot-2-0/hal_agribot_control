@@ -34,6 +34,11 @@ constexpr uint GET_SECOND_BYTE = 0x00FF00;
 constexpr uint GET_FIRST_BYTE = 0x0000FF;
 constexpr uint CARTS_ANGLE_RESOLUTION = 1000;
 constexpr int CARTS_ANGLES_OFFSET = 180;
+constexpr float RAD_TO_DEG = 57.2957795;
+constexpr uint8_t CARTS_ENCODER_HIGH_BYTE_POSITION = 1;
+constexpr uint8_t CARTS_ENCODER_LOW_BYTE_POSITION = 0;
+constexpr int CARTS_ENCODERS_ZERO_VALUE = 20000;
+constexpr float CARTS_ENCODERS_RESOLUTION = 0.036; //360 deg/10000
 
 constexpr uint DELIMITER_MIDDLE_LENGTH = 1;
 constexpr uint DELIMITER_ENDING_LENGTH = 2;
@@ -63,10 +68,15 @@ float TTCommControl::fDecodeVelocitiy(uint8_t u8StartBit, can_frame Frame)
 
 float TTCommControl::fDecodeAngle(can_frame Frame)
 {
-  return (static_cast<float>(((int32_t)Frame.data[2]) << 16 | ((int32_t)Frame.data[1]) << 8 |
-                             ((int32_t)Frame.data[0]))) *
-             ANGLE_FRAME_DECODE_CONST_MULTIPLIER +
-         ANGLE_FRAME_DECODE_CONST_OFFSET;
+  return (static_cast<float>((((int32_t)Frame.data[CARTS_ENCODER_HIGH_BYTE_POSITION]) << 8 |
+                             ((int32_t)Frame.data[CARTS_ENCODER_LOW_BYTE_POSITION])) - CARTS_ENCODERS_ZERO_VALUE) *
+                              CARTS_ENCODERS_RESOLUTION);
+}
+
+uint TTCommControl::uiDecondeEncoderValue(can_frame Frame)
+{
+   return (((uint)Frame.data[CARTS_ENCODER_HIGH_BYTE_POSITION]) << 8 |
+                             ((uint)Frame.data[CARTS_ENCODER_LOW_BYTE_POSITION]));
 }
 
 void TTCommControl::vSetVelocitiy(eVelocities eVelo, can_frame Frame)
@@ -172,6 +182,7 @@ uint8_t TTCommControl::u8ParseCanFrames()
     if ((FRONT_ANGLE_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
       _bFrontCartAngleFresh = true;
+      _uiFrontCartEncoderValue = uiDecondeEncoderValue(message);
       _fFrontCartAngle = fDecodeAngle(message) * DEG_TO_RAD;
       u8Status |= FRONT_ANGLE_MASK;
     }
@@ -179,12 +190,18 @@ uint8_t TTCommControl::u8ParseCanFrames()
     if ((BACK_ANGLE_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
       _bBackCartAngleFresh = true;
+      _uiBackCartEncoderValue = uiDecondeEncoderValue(message);
       _fBackCartAngle = fDecodeAngle(message) * DEG_TO_RAD;
       u8Status |= BACK_ANGLE_MASK;
     }
     // if there is protocol frame in _FramesQueue
     if ((PROTOCOL_FRAME_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
+      // if TTControl confirms angle receiving
+      if (message.data[0] == TTC_CARTS_ANGLE_INITIALIZATION)
+      {
+        _ttcontrol_carts_angle_confirmed = true;
+      }
       // if there is a request for entering automatic mode
       if (message.data[0] == TTC_AUTOMATIC_MODE_REQUEST)
       {
@@ -192,11 +209,6 @@ uint8_t TTCommControl::u8ParseCanFrames()
         if (message.data[1] == TTC_OK)
         {
           u8Status |= AUTOMATIC_STATE_REQUEST_MASK;
-        }
-        // if TTControl confirms angle receiving
-        else if (message.data[1] == TTC_CARTS_ANGLE_INITIALIZATION)
-        {
-          _ttcontrol_carts_angle_confirmed = true;
         }
         // if TTC send some error while entering automatic mode
         else
@@ -229,18 +241,18 @@ void TTCommControl::vConfirmAdvantechReadiness()
 
 void TTCommControl::vSendCartsAnglesInitialization()
 {
-  uint front_data_to_send = static_cast<int>(_fInitFrontCartAngle + CARTS_ANGLES_OFFSET) * CARTS_ANGLE_RESOLUTION;
-  uint back_data_to_send = static_cast<int>(_fInitBackCartAngle + CARTS_ANGLES_OFFSET) * CARTS_ANGLE_RESOLUTION;
+  //uint front_data_to_send = static_cast<int>(_fInitFrontCartAngle * RAD_TO_DEG + CARTS_ANGLES_OFFSET) * CARTS_ANGLE_RESOLUTION;
+  //uint back_data_to_send = static_cast<int>(_fInitBackCartAngle * RAD_TO_DEG + CARTS_ANGLES_OFFSET) * CARTS_ANGLE_RESOLUTION;
   can_frame message;
   message.can_id = PROTOCOL_RESPONSE_FRAME_ID;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[0] = TTC_CARTS_ANGLE_INITIALIZATION;
-  message.data[1] = static_cast<uint8_t>((front_data_to_send & GET_THIRD_BYTE) >> 16);
-  message.data[2] = static_cast<uint8_t>((front_data_to_send & GET_SECOND_BYTE) >> 8);
-  message.data[3] = static_cast<uint8_t>((front_data_to_send & GET_FIRST_BYTE));
-  message.data[4] = static_cast<uint8_t>((back_data_to_send & GET_THIRD_BYTE) >> 16);
-  message.data[5] = static_cast<uint8_t>((back_data_to_send & GET_SECOND_BYTE) >> 8);
-  message.data[6] = static_cast<uint8_t>((back_data_to_send & GET_FIRST_BYTE));
+  message.data[1] = static_cast<uint8_t>((_uiInitFrontCartAngle & GET_THIRD_BYTE) >> 16);
+  message.data[2] = static_cast<uint8_t>((_uiInitFrontCartAngle & GET_SECOND_BYTE) >> 8);
+  message.data[3] = static_cast<uint8_t>((_uiInitFrontCartAngle & GET_FIRST_BYTE));
+  message.data[4] = static_cast<uint8_t>((_uiInitBackCartAngle & GET_THIRD_BYTE) >> 16);
+  message.data[5] = static_cast<uint8_t>((_uiInitBackCartAngle & GET_SECOND_BYTE) >> 8);
+  message.data[6] = static_cast<uint8_t>((_uiInitBackCartAngle & GET_FIRST_BYTE));
   message.data[7] = 0;
   _CanHandler.iSendFrame(&message);
 }
@@ -380,7 +392,7 @@ bool TTCommControl::bReadAngleDataFile(bool regular_file)
   if (number[0] == delimiter_middle[0] && number.back() == delimiter_endline[0])
   {
     number = number.substr(DELIMITER_MIDDLE_LENGTH, number.length() - DELIMITER_ENDING_LENGTH);
-    _fInitFrontCartAngle = std::stof(number);
+    _uiInitFrontCartAngle = std::stoi(number) ;
   }
   else
   {
@@ -392,7 +404,7 @@ bool TTCommControl::bReadAngleDataFile(bool regular_file)
   if (number[0] == delimiter_middle[0] && number.back() == delimiter_endline[0])
   {
     number = number.substr(DELIMITER_MIDDLE_LENGTH, number.length() - DELIMITER_ENDING_LENGTH);
-    _fInitBackCartAngle = std::stof(number);
+    _uiInitBackCartAngle = std::stoi(number);
   }
   else
   {
@@ -415,8 +427,8 @@ bool TTCommControl::bWriteAngleDataFile()
       _angle_data_file_output.close();
       return false;
     }
-    _angle_data_file_output << "front:" << _fFrontCartAngle << ";";
-    _angle_data_file_output << "back:" << _fBackCartAngle << ";";
+    _angle_data_file_output << "front:" << _uiFrontCartEncoderValue << ";\n";
+    _angle_data_file_output << "back:" << _uiBackCartEncoderValue << ";";
     _angle_data_file_output.close();
 
     // save the backup file
@@ -426,8 +438,8 @@ bool TTCommControl::bWriteAngleDataFile()
       _angle_data_file_output.close();
       return false;
     }
-    _angle_data_file_output << "front:" << _fFrontCartAngle << ";";
-    _angle_data_file_output << "back:" << _fBackCartAngle << ";";
+    _angle_data_file_output << "front:" << _uiFrontCartEncoderValue << ";\n";
+    _angle_data_file_output << "back:" << _uiBackCartEncoderValue << ";";
     _angle_data_file_output.close();
     // reset flags
     _bFrontCartAngleFresh = false;

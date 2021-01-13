@@ -202,7 +202,6 @@ int main(int argc, char** argv)
   std_msgs::Float32 FrontAngleMsg;
   std_msgs::Float32 BackAngleMsg;
   // angle initialization reading
-  bool ttcontrol_carts_angle_confirmed = true;
   std::string path_to_angle_file;
   n.getParam("path_to_angle_file", path_to_angle_file);
   CommHandlerControl.vSetPathToAngleDataFile(path_to_angle_file);

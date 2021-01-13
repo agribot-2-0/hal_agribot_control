@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <math.h>
+#include <cmath>
 #include <agribot_common/Can.h>
 #include <hal_ttcontrol_communication/CartsStatus.h>
 #include <iostream>
@@ -52,11 +52,13 @@ class TTCommControl
   std::queue<can_frame> _FramesQueue;
   CartsStatus _Cart;
   float _fFrontCartAngle;
+  uint _uiFrontCartEncoderValue;
   bool _bFrontCartAngleFresh;
   float _fBackCartAngle;
+  uint _uiBackCartEncoderValue;
   bool _bBackCartAngleFresh;
-  float _fInitFrontCartAngle;
-  float _fInitBackCartAngle;
+  uint _uiInitFrontCartAngle;
+  uint _uiInitBackCartAngle;
   uint8_t _iErrCode = TTC_OK;
   std::string _path_to_angle_file;
   std::string _file_name = "/angle_files/angle_data.txt";
@@ -64,6 +66,7 @@ class TTCommControl
   void vPrepareVelocitiesFrame(can_frame* Frame, float f16Velocity, uint8_t u8StartBit);
   float fDecodeVelocitiy(uint8_t u8StartBit, can_frame Frame);
   float fDecodeAngle(can_frame Frame);
+  uint uiDecondeEncoderValue(can_frame Frame);
   void vSetVelocitiy(eVelocities velo, can_frame Frame);
   std::ifstream _angle_data_file_input;
   std::ofstream _angle_data_file_output;
