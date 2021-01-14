@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include <cmath>
 #include <agribot_common/Can.h>
 #include <hal_ttcontrol_communication/CartsStatus.h>
+#include <cmath>
 #include <iostream>
 #include <fstream>
 #include <queue>
@@ -103,7 +103,7 @@ public:
   void vSetPathToCartsEncodersDataFile(std::string path_to_file);
   bool bReadCartsEncodersDataFile(bool backup_file);
   bool bWriteEncodersDataFile();
-  void vSendCartsEncodersInitialization(); 
+  void vSendCartsEncodersInitialization();
   void vSendVelocities(float fFrontLinear, float fFrontAngular, float fBackLinear, float fBackAngular);
   void vSendSignalsParameters(int ditter_period, int ditter_amplitude, int encoder_period);
   void vSendCartsPIDParameters(double kp, double ki, double kd, double acc, uint8_t frame_type);
