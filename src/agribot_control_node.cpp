@@ -184,6 +184,18 @@ void ttcontrol_connection_state(const std_msgs::String& msg)
   }
 }
 
+bool read_encoders_data_file()
+{
+  if (!CommHandlerControl.bReadCartsEncodersDataFile(READ_REGULAR_FILE))
+  {
+    if (!CommHandlerControl.bReadCartsEncodersDataFile(READ_BACKUP_FILE))
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "agribot_control");
@@ -202,21 +214,16 @@ int main(int argc, char** argv)
   std_msgs::Float32 FrontAngleMsg;
   std_msgs::Float32 BackAngleMsg;
   // angle initialization reading
-  std::string path_to_angle_file;
-  n.getParam("path_to_angle_file", path_to_angle_file);
-  CommHandlerControl.vSetPathToAngleDataFile(path_to_angle_file);
-  if (!CommHandlerControl.bReadAngleDataFile(READ_REGULAR_FILE))
+  std::string path_to_carts_encoders_file;
+  n.getParam("path_to_angle_file", path_to_carts_encoders_file);
+  CommHandlerControl.vSetPathToCartsEncodersDataFile(path_to_carts_encoders_file);
+  if (!read_encoders_data_file())
   {
-    ROS_ERROR_STREAM("\nFailed to read carts angles data file content ! Trying to read from backup file \n"
-                     << "Attempted path: " << path_to_angle_file);
-    if (!CommHandlerControl.bReadAngleDataFile(READ_BACKUP_FILE))
-    {
-      ROS_ERROR_STREAM("\nFailed to read carts angle data file content ! Robots carts angles are not inited! \n"
-                       << "Attempted path: " << path_to_angle_file);
-      return -1;
-    }
+    ROS_ERROR_STREAM("\nFailed to read carts angle data file content ! Robots carts encoders values are not inited! \n"
+                     << "Attempted path: " << path_to_carts_encoders_file);
+    return -1;
   }
-  CommHandlerControl.vSendCartsAnglesInitialization();
+  CommHandlerControl.vSendCartsEncodersInitialization();
   callback_function_object = boost::bind(&callbackDynamicReconfigure, _1, _2);
   server.setCallback(callback_function_object);
   uint8_t u8Status = 0x00;
@@ -264,18 +271,25 @@ int main(int argc, char** argv)
     {
       ROS_ERROR("Automatic state request error: %d", CommHandlerControl.iGetErrorCode());
     }
-    // when connected, send angle initialization till the confirmation
-    if (!CommHandlerControl.bGetAnglesConfirmedStatus() && CommHandlerControl.bGetTTControlConnectionStatus())
+    // when connected, read and send encoders value initialization till the confirmation
+    if (!CommHandlerControl.bGetEncodersConfirmedStatus() && CommHandlerControl.bGetTTControlConnectionStatus())
     {
-      CommHandlerControl.vSendCartsAnglesInitialization();
+      if (!read_encoders_data_file())
+      {
+        ROS_ERROR_STREAM(
+            "\nFailed to read carts angle data file content ! Robots carts encoders values are not inited! \n"
+            << "Attempted path: " << path_to_carts_encoders_file);
+        return -1;
+      }
+      CommHandlerControl.vSendCartsEncodersInitialization();
     }
     // check if the carts has been initialized and write the new received values to file
-    if (CommHandlerControl.bGetAnglesConfirmedStatus())
+    if (CommHandlerControl.bGetEncodersConfirmedStatus())
     {
       // check if both angle data reached us
-      if (!CommHandlerControl.bWriteAngleDataFile())
+      if (!CommHandlerControl.bWriteEncodersDataFile())
       {
-        ROS_ERROR("Failed to write carts angle data to file!");
+        ROS_ERROR("Failed to write carts encoders data to file!");
       }
     }
     ros::spinOnce();

@@ -38,7 +38,7 @@ constexpr float RAD_TO_DEG = 57.2957795;
 constexpr uint8_t CARTS_ENCODER_HIGH_BYTE_POSITION = 1;
 constexpr uint8_t CARTS_ENCODER_LOW_BYTE_POSITION = 0;
 constexpr int CARTS_ENCODERS_ZERO_VALUE = 20000;
-constexpr float CARTS_ENCODERS_RESOLUTION = 0.036; //360 deg/10000
+constexpr float CARTS_ENCODERS_RESOLUTION = 0.036;  // 360 deg/10000
 
 constexpr uint DELIMITER_MIDDLE_LENGTH = 1;
 constexpr uint DELIMITER_ENDING_LENGTH = 2;
@@ -69,14 +69,15 @@ float TTCommControl::fDecodeVelocitiy(uint8_t u8StartBit, can_frame Frame)
 float TTCommControl::fDecodeAngle(can_frame Frame)
 {
   return (static_cast<float>((((int32_t)Frame.data[CARTS_ENCODER_HIGH_BYTE_POSITION]) << 8 |
-                             ((int32_t)Frame.data[CARTS_ENCODER_LOW_BYTE_POSITION])) - CARTS_ENCODERS_ZERO_VALUE) *
-                              CARTS_ENCODERS_RESOLUTION);
+                              ((int32_t)Frame.data[CARTS_ENCODER_LOW_BYTE_POSITION])) -
+                             CARTS_ENCODERS_ZERO_VALUE) *
+          CARTS_ENCODERS_RESOLUTION);
 }
 
 uint TTCommControl::uiDecondeEncoderValue(can_frame Frame)
 {
-   return (((uint)Frame.data[CARTS_ENCODER_HIGH_BYTE_POSITION]) << 8 |
-                             ((uint)Frame.data[CARTS_ENCODER_LOW_BYTE_POSITION]));
+  return (((uint)Frame.data[CARTS_ENCODER_HIGH_BYTE_POSITION]) << 8 |
+          ((uint)Frame.data[CARTS_ENCODER_LOW_BYTE_POSITION]));
 }
 
 void TTCommControl::vSetVelocitiy(eVelocities eVelo, can_frame Frame)
@@ -133,7 +134,7 @@ bool TTCommControl::bGetTTControlConnectionStatus()
   return _ttcontrol_is_connected;
 }
 
-bool TTCommControl::bGetAnglesConfirmedStatus()
+bool TTCommControl::bGetEncodersConfirmedStatus()
 {
   return _ttcontrol_carts_angle_confirmed;
 }
@@ -181,7 +182,7 @@ uint8_t TTCommControl::u8ParseCanFrames()
     // if there is front cart angle frame in _FramesQueue
     if ((FRONT_ANGLE_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
-      _bFrontCartAngleFresh = true;
+      _bFrontCartEncoderFresh = true;
       _uiFrontCartEncoderValue = uiDecondeEncoderValue(message);
       _fFrontCartAngle = fDecodeAngle(message) * DEG_TO_RAD;
       u8Status |= FRONT_ANGLE_MASK;
@@ -189,7 +190,7 @@ uint8_t TTCommControl::u8ParseCanFrames()
     // if there is back cart angle frame in _FramesQueue
     if ((BACK_ANGLE_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
-      _bBackCartAngleFresh = true;
+      _bBackCartEncoderFresh = true;
       _uiBackCartEncoderValue = uiDecondeEncoderValue(message);
       _fBackCartAngle = fDecodeAngle(message) * DEG_TO_RAD;
       u8Status |= BACK_ANGLE_MASK;
@@ -239,20 +240,21 @@ void TTCommControl::vConfirmAdvantechReadiness()
   _CanHandler.iSendFrame(&message);
 }
 
-void TTCommControl::vSendCartsAnglesInitialization()
+void TTCommControl::vSendCartsEncodersInitialization()
 {
-  //uint front_data_to_send = static_cast<int>(_fInitFrontCartAngle * RAD_TO_DEG + CARTS_ANGLES_OFFSET) * CARTS_ANGLE_RESOLUTION;
-  //uint back_data_to_send = static_cast<int>(_fInitBackCartAngle * RAD_TO_DEG + CARTS_ANGLES_OFFSET) * CARTS_ANGLE_RESOLUTION;
+  // uint front_data_to_send = static_cast<int>(_fInitFrontCartAngle * RAD_TO_DEG + CARTS_ANGLES_OFFSET) *
+  // CARTS_ANGLE_RESOLUTION; uint back_data_to_send = static_cast<int>(_fInitBackCartAngle * RAD_TO_DEG +
+  // CARTS_ANGLES_OFFSET) * CARTS_ANGLE_RESOLUTION;
   can_frame message;
   message.can_id = PROTOCOL_RESPONSE_FRAME_ID;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[0] = TTC_CARTS_ANGLE_INITIALIZATION;
-  message.data[1] = static_cast<uint8_t>((_uiInitFrontCartAngle & GET_THIRD_BYTE) >> 16);
-  message.data[2] = static_cast<uint8_t>((_uiInitFrontCartAngle & GET_SECOND_BYTE) >> 8);
-  message.data[3] = static_cast<uint8_t>((_uiInitFrontCartAngle & GET_FIRST_BYTE));
-  message.data[4] = static_cast<uint8_t>((_uiInitBackCartAngle & GET_THIRD_BYTE) >> 16);
-  message.data[5] = static_cast<uint8_t>((_uiInitBackCartAngle & GET_SECOND_BYTE) >> 8);
-  message.data[6] = static_cast<uint8_t>((_uiInitBackCartAngle & GET_FIRST_BYTE));
+  message.data[1] = static_cast<uint8_t>((_uiInitFrontCartEncoderValue & GET_THIRD_BYTE) >> 16);
+  message.data[2] = static_cast<uint8_t>((_uiInitFrontCartEncoderValue & GET_SECOND_BYTE) >> 8);
+  message.data[3] = static_cast<uint8_t>((_uiInitFrontCartEncoderValue & GET_FIRST_BYTE));
+  message.data[4] = static_cast<uint8_t>((_uiInitBackCartEncoderValue & GET_THIRD_BYTE) >> 16);
+  message.data[5] = static_cast<uint8_t>((_uiInitBackCartEncoderValue & GET_SECOND_BYTE) >> 8);
+  message.data[6] = static_cast<uint8_t>((_uiInitBackCartEncoderValue & GET_FIRST_BYTE));
   message.data[7] = 0;
   _CanHandler.iSendFrame(&message);
 }
@@ -360,90 +362,90 @@ int TTCommControl::iGetErrorCode()
   return _iErrCode;
 }
 
-void TTCommControl::vSetPathToAngleDataFile(std::string path_to_file)
+void TTCommControl::vSetPathToCartsEncodersDataFile(std::string path_to_file)
 {
-  _path_to_angle_file = path_to_file;
+  _path_to_encoder_file = path_to_file;
 }
 
-bool TTCommControl::bReadAngleDataFile(bool regular_file)
+bool TTCommControl::bReadCartsEncodersDataFile(bool regular_file)
 {
   std::string line;
   std::string number;
-  std::string angle_file_name;
+  std::string encoder_file_name;
   std::string delimiter_middle = ":";
   std::string delimiter_endline = ";";
   if (regular_file)
   {
-    angle_file_name = _file_name;
+    encoder_file_name = _file_name;
   }
   else
   {
-    angle_file_name = _file_name_backup;
+    encoder_file_name = _file_name_backup;
   }
-  _angle_data_file_input.open(_path_to_angle_file + angle_file_name);
-  if (!_angle_data_file_input.is_open() || _angle_data_file_input.fail())
+  _encoder_data_file_input.open(_path_to_encoder_file + encoder_file_name);
+  if (!_encoder_data_file_input.is_open() || _encoder_data_file_input.fail())
   {
-    _angle_data_file_input.close();
+    _encoder_data_file_input.close();
     return false;
   }
 
-  std::getline(_angle_data_file_input, line);
+  std::getline(_encoder_data_file_input, line);
   number = line.substr(line.find(delimiter_middle));
   if (number[0] == delimiter_middle[0] && number.back() == delimiter_endline[0])
   {
     number = number.substr(DELIMITER_MIDDLE_LENGTH, number.length() - DELIMITER_ENDING_LENGTH);
-    _uiInitFrontCartAngle = std::stoi(number) ;
+    _uiInitFrontCartEncoderValue = std::stoi(number);
   }
   else
   {
     return false;
   }
 
-  std::getline(_angle_data_file_input, line);
+  std::getline(_encoder_data_file_input, line);
   number = line.substr(line.find(delimiter_middle));
   if (number[0] == delimiter_middle[0] && number.back() == delimiter_endline[0])
   {
     number = number.substr(DELIMITER_MIDDLE_LENGTH, number.length() - DELIMITER_ENDING_LENGTH);
-    _uiInitBackCartAngle = std::stoi(number);
+    _uiInitBackCartEncoderValue = std::stoi(number);
   }
   else
   {
     return false;
   }
 
-  _angle_data_file_input.close();
+  _encoder_data_file_input.close();
   return true;
 }
 
-bool TTCommControl::bWriteAngleDataFile()
+bool TTCommControl::bWriteEncodersDataFile()
 {
   // check if angle data is complete
-  if (_bFrontCartAngleFresh && _bBackCartAngleFresh)
+  if (_bFrontCartEncoderFresh && _bBackCartEncoderFresh)
   {
     // save the proper file
-    _angle_data_file_output.open((_path_to_angle_file + _file_name), std::ios::trunc);
-    if (!_angle_data_file_output.is_open())
+    _encoder_data_file_output.open((_path_to_encoder_file + _file_name), std::ios::trunc);
+    if (!_encoder_data_file_output.is_open())
     {
-      _angle_data_file_output.close();
+      _encoder_data_file_output.close();
       return false;
     }
-    _angle_data_file_output << "front:" << _uiFrontCartEncoderValue << ";\n";
-    _angle_data_file_output << "back:" << _uiBackCartEncoderValue << ";";
-    _angle_data_file_output.close();
+    _encoder_data_file_output << "front:" << _uiFrontCartEncoderValue << ";\n";
+    _encoder_data_file_output << "back:" << _uiBackCartEncoderValue << ";";
+    _encoder_data_file_output.close();
 
     // save the backup file
-    _angle_data_file_output.open((_path_to_angle_file + _file_name_backup), std::ios::trunc);
-    if (!_angle_data_file_output.is_open())
+    _encoder_data_file_output.open((_path_to_encoder_file + _file_name_backup), std::ios::trunc);
+    if (!_encoder_data_file_output.is_open())
     {
-      _angle_data_file_output.close();
+      _encoder_data_file_output.close();
       return false;
     }
-    _angle_data_file_output << "front:" << _uiFrontCartEncoderValue << ";\n";
-    _angle_data_file_output << "back:" << _uiBackCartEncoderValue << ";";
-    _angle_data_file_output.close();
+    _encoder_data_file_output << "front:" << _uiFrontCartEncoderValue << ";\n";
+    _encoder_data_file_output << "back:" << _uiBackCartEncoderValue << ";";
+    _encoder_data_file_output.close();
     // reset flags
-    _bFrontCartAngleFresh = false;
-    _bBackCartAngleFresh = false;
+    _bFrontCartEncoderFresh = false;
+    _bBackCartEncoderFresh = false;
   }
 
   return true;
