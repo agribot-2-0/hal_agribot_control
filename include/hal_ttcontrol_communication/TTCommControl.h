@@ -102,6 +102,7 @@ public:
   bool bWaritForTTControlReadiness();
   void vSetPathToCartsEncodersDataFile(const std::string& path_to_file);
   bool bReadCartsEncodersDataFile(const bool& backup_file);
+  uint iExtractEncoderInitValueFromFile(std::ifstream& file_input);
   bool bWriteEncodersDataFile();
   void vSendCartsEncodersInitialization();
   void vSendVelocities(const float& front_linear, const float& front_angular, const float& back_linear,

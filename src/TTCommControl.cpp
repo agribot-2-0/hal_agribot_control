@@ -378,13 +378,28 @@ void TTCommControl::vSetPathToCartsEncodersDataFile(const std::string& path_to_f
   _path_to_encoder_file = path_to_file;
 }
 
-bool TTCommControl::bReadCartsEncodersDataFile(const bool& regular_file)
+uint TTCommControl::iExtractEncoderInitValueFromFile(std::ifstream& file_input)
 {
-  std::string line;
-  std::string number;
-  std::string encoder_file_name;
   const char delimiter_middle = ':';
   const char delimiter_endline = ';';
+  std::string line;
+  std::string number_str;
+  std::getline(file_input, line);
+  number_str = line.substr(line.find(delimiter_middle));
+  if (number_str[0] == delimiter_middle && number_str.back() == delimiter_endline)
+  {
+    number_str = number_str.substr(DELIMITER_MIDDLE_LENGTH, number_str.length() - DELIMITER_ENDING_LENGTH);
+    return std::stoi(number_str);
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+bool TTCommControl::bReadCartsEncodersDataFile(const bool& regular_file)
+{
+  std::string encoder_file_name;
 
   if (regular_file)
   {
@@ -400,27 +415,16 @@ bool TTCommControl::bReadCartsEncodersDataFile(const bool& regular_file)
     _encoder_data_file_input.close();
     return false;
   }
-
-  std::getline(_encoder_data_file_input, line);
-  number = line.substr(line.find(delimiter_middle));
-  if (number[0] == delimiter_middle && number.back() == delimiter_endline)
-  {
-    number = number.substr(DELIMITER_MIDDLE_LENGTH, number.length() - DELIMITER_ENDING_LENGTH);
-    _init_front_cart_encoder_value = std::stoi(number);
-  }
-  else
+  // first line for the front cart encoder value
+  _init_front_cart_encoder_value = iExtractEncoderInitValueFromFile(_encoder_data_file_input);
+  if (_init_front_cart_encoder_value == 0)
   {
     return false;
   }
 
-  std::getline(_encoder_data_file_input, line);
-  number = line.substr(line.find(delimiter_middle));
-  if (number[0] == delimiter_middle && number.back() == delimiter_endline)
-  {
-    number = number.substr(DELIMITER_MIDDLE_LENGTH, number.length() - DELIMITER_ENDING_LENGTH);
-    _init_back_cart_encoder_value = std::stoi(number);
-  }
-  else
+  // second line for the back cart encoder value
+  _init_back_cart_encoder_value = iExtractEncoderInitValueFromFile(_encoder_data_file_input);
+  if (_init_back_cart_encoder_value == 0)
   {
     return false;
   }
