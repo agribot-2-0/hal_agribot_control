@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(hal_agribot_control)
 
-## Compile as C++11, supported in ROS Kinetic and newer
+## Compilation options
 add_compile_options(-std=c++17 -Wall -Wextra -pedantic -Werror)
 
 #############################################################################
