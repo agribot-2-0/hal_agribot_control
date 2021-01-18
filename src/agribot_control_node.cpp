@@ -13,8 +13,9 @@
 
 constexpr char used_can[] = "can0";
 constexpr uint WAIT_FOR_TTCONTROL = 100000;
-constexpr bool READ_BACKUP_FILE = false;
-constexpr bool READ_REGULAR_FILE = true;
+// 
+constexpr bool READ_BACKUP_CARTS_ENCODERS_FILE = false;
+constexpr bool READ_REGULAR_CARTS_ENCODERS_FILE = true;
 constexpr std::string_view TTCONTROL_CONNECTION_MSG = "connected";
 constexpr bool TTCONTROL_CONNECTED = true;
 constexpr bool TTCONTROL_DISCONNECTED = false;
@@ -186,9 +187,9 @@ void ttcontrol_connection_state(const std_msgs::String& msg)
 
 bool read_encoders_data_file()
 {
-  if (!CommHandlerControl.bReadCartsEncodersDataFile(READ_REGULAR_FILE))
+  if (!CommHandlerControl.bReadCartsEncodersDataFile(READ_REGULAR_CARTS_ENCODERS_FILE))
   {
-    return CommHandlerControl.bReadCartsEncodersDataFile(READ_BACKUP_FILE);
+    return CommHandlerControl.bReadCartsEncodersDataFile(READ_BACKUP_CARTS_ENCODERS_FILE);
   }
   return true;
 }

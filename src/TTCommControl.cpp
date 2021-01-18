@@ -36,8 +36,14 @@ constexpr uint CARTS_ANGLE_RESOLUTION = 1000;
 constexpr float RAD_TO_DEG = (180.0 / M_PI);
 constexpr uint8_t CARTS_ENCODER_HIGH_BYTE_POSITION = 1;
 constexpr uint8_t CARTS_ENCODER_LOW_BYTE_POSITION = 0;
+// the arbitrary zero of the encoders counter on the TTControl, used for easy
+// rounding to the beginning of the measures exceeding the 360 degrees
+// the encoders natural limits are from 10000 (-360 deg) to 30000(360 deg)
+// but practically we should never reach them
 constexpr int CARTS_ENCODERS_ZERO_VALUE = 20000;
-constexpr float CARTS_ENCODERS_RESOLUTION = 0.036;  // 360 deg/10000
+// carts encoders have 10000 impulses per one full turn (360 deg)
+// so the resolution is 360 deg/10000
+constexpr float CARTS_ENCODERS_RESOLUTION = 0.036;
 
 constexpr uint DELIMITER_MIDDLE_LENGTH = 1;
 constexpr uint DELIMITER_ENDING_LENGTH = 2;
