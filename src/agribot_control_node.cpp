@@ -1,7 +1,6 @@
 /*
  * Copyright (C) 2020 Agribot. All rights reserved.
  */
-
 #include <agribot_msgs/AgribotCaterpillar.h>
 #include <hal_ttcontrol_communication/TTCommControl.h>
 #include <dynamic_reconfigure/server.h>
@@ -9,9 +8,17 @@
 #include <ros/console.h>
 #include <ros/ros.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/String.h>
+#include <string_view>
 
 constexpr char used_can[] = "can0";
 constexpr uint WAIT_FOR_TTCONTROL = 100000;
+constexpr uint8_t CARTS_ENCODERS_INIT_TIMEOUT_LIMIT = 10;
+constexpr bool READ_BACKUP_CARTS_ENCODERS_FILE = false;
+constexpr bool READ_REGULAR_CARTS_ENCODERS_FILE = true;
+constexpr std::string_view TTCONTROL_CONNECTION_MSG = "connected";
+constexpr bool TTCONTROL_CONNECTED = true;
+constexpr bool TTCONTROL_DISCONNECTED = false;
 
 const struct TTCONTROL_PARAMETER_FLAGS
 {
@@ -166,12 +173,35 @@ void frontCallback(const agribot_msgs::AgribotCaterpillar& msg)
   CommHandlerControl.vSendVelocities(msg.front_linear, msg.front_angular, msg.back_linear, msg.back_angular);
 }
 
+void ttcontrol_connection_state(const std_msgs::String& msg)
+{
+  if (msg.data == TTCONTROL_CONNECTION_MSG)
+  {
+    CommHandlerControl.vSetTTControlConnectionStatus(TTCONTROL_CONNECTED);
+  }
+  else
+  {
+    CommHandlerControl.vSetTTControlConnectionStatus(TTCONTROL_DISCONNECTED);
+  }
+}
+
+bool read_encoders_data_file()
+{
+  if (!CommHandlerControl.bReadCartsEncodersDataFile(READ_REGULAR_CARTS_ENCODERS_FILE))
+  {
+    return CommHandlerControl.bReadCartsEncodersDataFile(READ_BACKUP_CARTS_ENCODERS_FILE);
+  }
+  return true;
+}
+
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "agribot_control");
   ros::NodeHandle n;
   ros::Rate loop_rate(10);
   ros::Subscriber sub = n.subscribe("/agribot/control/caterpillar", 1000, frontCallback);
+  ros::Subscriber sub_connection_state =
+      n.subscribe("/agribot/ttcontrol/connection_state", 1, ttcontrol_connection_state);
   ros::Publisher CartsStatusPublisher =
       n.advertise<agribot_msgs::AgribotCaterpillar>("/agribot/encoder/caterpillar", 1);
   ros::Publisher FrontCartAnglePublisher = n.advertise<std_msgs::Float32>("/agribot/encoder/cart/front", 1);
@@ -181,8 +211,21 @@ int main(int argc, char** argv)
   dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>::CallbackType callback_function_object;
   std_msgs::Float32 FrontAngleMsg;
   std_msgs::Float32 BackAngleMsg;
+  // angle initialization reading
+  std::string path_to_carts_encoders_file;
+  n.getParam("path_to_encoder_file", path_to_carts_encoders_file);
+  CommHandlerControl.vSetPathToCartsEncodersDataFile(path_to_carts_encoders_file);
+  if (!read_encoders_data_file())
+  {
+    ROS_ERROR_STREAM("[AgribotControlNode] Failed to read carts angle data file content ! Robots carts encoders "
+                     "values are not inited! \n"
+                     << "Attempted path: " << path_to_carts_encoders_file);
+    return -1;
+  }
+  CommHandlerControl.vSendCartsEncodersInitialization();
   callback_function_object = boost::bind(&callbackDynamicReconfigure, _1, _2);
   server.setCallback(callback_function_object);
+  uint8_t encoder_init_timeout_counter = 0;
   uint8_t u8Status = 0x00;
   while (ros::ok())
   {
@@ -191,7 +234,7 @@ int main(int argc, char** argv)
     // if velociteis frames received in u8ParseCanFrames() method
     if ((u8Status & VELOCITIES_MASK) == VELOCITIES_MASK)
     {
-      CartsStatus cartStatus = CommHandlerControl.GetCartsStatus();
+      CartsStatus cartStatus = CommHandlerControl.getCartsStatus();
       AgribotCaterpillarMsg.header.stamp = ros::Time::now();
       AgribotCaterpillarMsg.header.frame_id = "hal_caterpillar_feedback";
       AgribotCaterpillarMsg.front_linear = cartStatus.fGetFrontLinear();
@@ -218,7 +261,7 @@ int main(int argc, char** argv)
     if ((u8Status & AUTOMATIC_STATE_REQUEST_MASK) == AUTOMATIC_STATE_REQUEST_MASK)
     {
       // TODO(Michal/Adam): Implement some diagnostics
-      ROS_INFO("Received automatic mode request");
+      ROS_INFO("[AgribotControlNode] Received automatic mode request");
       usleep(WAIT_FOR_TTCONTROL);
       CommHandlerControl.vConfirmAdvantechReadiness();
     }
@@ -226,7 +269,41 @@ int main(int argc, char** argv)
     // method
     if ((u8Status & AUTOMATIC_STATE_REQUEST_ERROR_MASK) == AUTOMATIC_STATE_REQUEST_ERROR_MASK)
     {
-      ROS_ERROR("Automatic state request error: %d", CommHandlerControl.iGetErrorCode());
+      ROS_ERROR("[AgribotControlNode] Automatic state request error: %d", CommHandlerControl.iGetErrorCode());
+    }
+    // when connected, read and send encoders value initialization till the confirmation
+    if (!CommHandlerControl.bGetEncodersConfirmedStatus() && CommHandlerControl.bGetTTControlConnectionStatus())
+    {
+      if (!read_encoders_data_file())
+      {
+        ROS_ERROR_STREAM("[AgribotControlNode] Failed to read carts angle data file content ! Robots carts encoders "
+                         "values are not inited! \n"
+                         << "Attempted path: " << path_to_carts_encoders_file);
+        return -1;
+      }
+      CommHandlerControl.vSendCartsEncodersInitialization();
+    }
+    // check if the carts has been initialized and write the new received values to file
+    if (CommHandlerControl.bGetEncodersConfirmedStatus())
+    {
+      // check if both angle data reached us
+      encoder_init_timeout_counter = 0;
+      if (!CommHandlerControl.bWriteEncodersDataFile())
+      {
+        ROS_ERROR("[AgribotControlNode] Failed to write carts encoders data to file!");
+      }
+    }
+    else
+    {
+      if (encoder_init_timeout_counter >= CARTS_ENCODERS_INIT_TIMEOUT_LIMIT)
+      {
+        ROS_ERROR("[AgribotControlNode] Carts encoders not inited!");
+        encoder_init_timeout_counter = 0;
+      }
+      else
+      {
+        encoder_init_timeout_counter++;
+      }
     }
     ros::spinOnce();
     loop_rate.sleep();

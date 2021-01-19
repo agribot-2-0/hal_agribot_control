@@ -6,8 +6,11 @@
 
 #include <agribot_common/Can.h>
 #include <hal_ttcontrol_communication/CartsStatus.h>
-#include <math.h>
+#include <cmath>
+#include <iostream>
+#include <fstream>
 #include <queue>
+#include <string>
 
 constexpr uint8_t VELOCITIES_MASK = 0x01;
 constexpr uint8_t FRONT_ANGLE_MASK = 0x02;
@@ -16,8 +19,8 @@ constexpr uint8_t AUTOMATIC_STATE_REQUEST_MASK = 0x10;
 constexpr uint8_t AUTOMATIC_STATE_REQUEST_ERROR_MASK = 0x20;
 constexpr uint8_t TTC_OK = 0x01;
 constexpr uint8_t TTC_AUTOMATIC_MODE_REQUEST = 0x20;
+constexpr uint8_t TTC_CARTS_ANGLE_INITIALIZATION = 0x30;
 
-constexpr uint CONFIG_FRAME_CAN_ID = 0x00FFDBC8;
 constexpr uint8_t CONFIG_FRAME_TYPE_BYTE = 0;
 constexpr uint8_t DITTER_PERIOD_BYTE = 1;
 constexpr uint8_t DITTER_AMPLITUDE_FIRST_BYTE = 2;
@@ -45,16 +48,30 @@ enum eVelocities
 
 class TTCommControl
 {
-  Can _CanHandler;
-  std::queue<can_frame> _FramesQueue;
-  CartsStatus _Cart;
-  float _fFrontCartAngle;
-  float _fBackCartAngle;
-  uint8_t _iErrCode = TTC_OK;
-  void vPrepareVelocitiesFrame(can_frame* Frame, float f16Velocity, uint8_t u8StartBit);
-  float fDecodeVelocitiy(uint8_t u8StartBit, can_frame Frame);
-  float fDecodeAngle(can_frame Frame);
-  void vSetVelocitiy(eVelocities velo, can_frame Frame);
+  Can _can_handler;
+  std::queue<can_frame> _frames_queue;
+  CartsStatus _cart;
+  float _front_cart_angle;
+  uint _init_front_cart_encoder_value;
+  uint _front_cart_encoder_value;
+  bool _front_cart_encoder_unread;
+  float _back_cart_angle;
+  uint _init_back_cart_encoder_value;
+  uint _back_cart_encoder_value;
+  bool _back_cart_encoder_unread;
+  uint8_t _err_code = TTC_OK;
+  std::string _path_to_encoder_file;
+  std::string _file_name = "/carts_encoder_state_files/carts_encoder_state_data.txt";
+  std::string _file_name_backup = "/carts_encoder_state_files/carts_encoder_state_data_backup.txt";
+  void vPrepareVelocitiesFrame(can_frame* frame, float velocity, uint8_t start_byte);
+  float fDecodeVelocitiy(uint8_t start_byte, can_frame frame);
+  float fDecodeAngle(can_frame frame);
+  uint uiDecodeEncoderValue(can_frame frame);
+  void vSetVelocitiy(eVelocities enum_velo, can_frame frame);
+  std::ifstream _encoder_data_file_input;
+  std::ofstream _encoder_data_file_output;
+  bool _ttcontrol_is_connected;
+  bool _ttcontrol_carts_angle_confirmed;
 
 public:
   const struct eTTControlParamsType
@@ -78,14 +95,24 @@ public:
   void update();
   void vReceiveCanFrames();
   uint8_t u8ParseCanFrames();
+  void vSetTTControlConnectionStatus(const bool& connected);
+  bool bGetTTControlConnectionStatus();
+  bool bGetEncodersConfirmedStatus();
   void vConfirmAdvantechReadiness();
   bool bWaritForTTControlReadiness();
-  void vSendVelocities(float fFrontLinear, float fFrontAngular, float fBackLinear, float fBackAngular);
-  void vSendSignalsParameters(int ditter_period, int ditter_amplitude, int encoder_period);
-  void vSendCartsPIDParameters(double kp, double ki, double kd, double acc, uint8_t frame_type);
-  void vSendCaterpillarPIDParameters(uint kp, uint ki, uint kd, uint8_t frame_type);
-  void vSendCaterpillarBaseSignal(uint forward_base, uint backward_base, uint8_t frame_type);
-  CartsStatus GetCartsStatus();
+  void vSetPathToCartsEncodersDataFile(const std::string& path_to_file);
+  bool bReadCartsEncodersDataFile(const bool& backup_file);
+  uint iExtractEncoderInitValueFromFile(std::ifstream& file_input);
+  bool bWriteEncodersDataFile();
+  void vSendCartsEncodersInitialization();
+  void vSendVelocities(const float& front_linear, const float& front_angular, const float& back_linear,
+                       const float& back_angular);
+  void vSendSignalsParameters(const int& ditter_period, const int& ditter_amplitude, const int& encoder_period);
+  void vSendCartsPIDParameters(const double& kp, const double& ki, const double& kd, const double& acc,
+                               const uint8_t& frame_type);
+  void vSendCaterpillarPIDParameters(const uint& kp, const uint& ki, const uint& kd, const uint8_t& frame_type);
+  void vSendCaterpillarBaseSignal(const uint& forward_base, const uint& backward_base, const uint8_t& frame_type);
+  CartsStatus getCartsStatus();
   float fGetFrontCartAngle();
   float fGetBackCartAngle();
   int iGetErrorCode();
