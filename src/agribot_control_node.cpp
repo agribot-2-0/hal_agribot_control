@@ -13,7 +13,6 @@
 
 constexpr char used_can[] = "can0";
 constexpr uint WAIT_FOR_TTCONTROL = 100000;
-// 
 constexpr bool READ_BACKUP_CARTS_ENCODERS_FILE = false;
 constexpr bool READ_REGULAR_CARTS_ENCODERS_FILE = true;
 constexpr std::string_view TTCONTROL_CONNECTION_MSG = "connected";
