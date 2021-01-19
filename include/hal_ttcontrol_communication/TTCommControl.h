@@ -61,8 +61,8 @@ class TTCommControl
   bool _back_cart_encoder_unread;
   uint8_t _err_code = TTC_OK;
   std::string _path_to_encoder_file;
-  std::string _file_name = "/angle_files/angle_data.txt";
-  std::string _file_name_backup = "/angle_files/angle_data_backup.txt";
+  std::string _file_name = "/carts_encoder_state_files/carts_encoder_state_data.txt";
+  std::string _file_name_backup = "/carts_encoder_state_files/carts_encoder_state_data_backup.txt";
   void vPrepareVelocitiesFrame(can_frame* frame, float velocity, uint8_t start_byte);
   float fDecodeVelocitiy(uint8_t start_byte, can_frame frame);
   float fDecodeAngle(can_frame frame);

@@ -13,6 +13,7 @@
 
 constexpr char used_can[] = "can0";
 constexpr uint WAIT_FOR_TTCONTROL = 100000;
+constexpr uint8_t CARTS_ENCODERS_INIT_TIMEOUT_LIMIT = 10;
 constexpr bool READ_BACKUP_CARTS_ENCODERS_FILE = false;
 constexpr bool READ_REGULAR_CARTS_ENCODERS_FILE = true;
 constexpr std::string_view TTCONTROL_CONNECTION_MSG = "connected";
@@ -216,7 +217,7 @@ int main(int argc, char** argv)
   CommHandlerControl.vSetPathToCartsEncodersDataFile(path_to_carts_encoders_file);
   if (!read_encoders_data_file())
   {
-    ROS_ERROR_STREAM("[agribot_control_node] Failed to read carts angle data file content ! Robots carts encoders "
+    ROS_ERROR_STREAM("[AgribotControlNode] Failed to read carts angle data file content ! Robots carts encoders "
                      "values are not inited! \n"
                      << "Attempted path: " << path_to_carts_encoders_file);
     return -1;
@@ -224,6 +225,7 @@ int main(int argc, char** argv)
   CommHandlerControl.vSendCartsEncodersInitialization();
   callback_function_object = boost::bind(&callbackDynamicReconfigure, _1, _2);
   server.setCallback(callback_function_object);
+  uint8_t encoder_init_timeout_counter = 0;
   uint8_t u8Status = 0x00;
   while (ros::ok())
   {
@@ -259,7 +261,7 @@ int main(int argc, char** argv)
     if ((u8Status & AUTOMATIC_STATE_REQUEST_MASK) == AUTOMATIC_STATE_REQUEST_MASK)
     {
       // TODO(Michal/Adam): Implement some diagnostics
-      ROS_INFO("[agribot_control_node] Received automatic mode request");
+      ROS_INFO("[AgribotControlNode] Received automatic mode request");
       usleep(WAIT_FOR_TTCONTROL);
       CommHandlerControl.vConfirmAdvantechReadiness();
     }
@@ -267,14 +269,14 @@ int main(int argc, char** argv)
     // method
     if ((u8Status & AUTOMATIC_STATE_REQUEST_ERROR_MASK) == AUTOMATIC_STATE_REQUEST_ERROR_MASK)
     {
-      ROS_ERROR("[agribot_control_node] Automatic state request error: %d", CommHandlerControl.iGetErrorCode());
+      ROS_ERROR("[AgribotControlNode] Automatic state request error: %d", CommHandlerControl.iGetErrorCode());
     }
     // when connected, read and send encoders value initialization till the confirmation
     if (!CommHandlerControl.bGetEncodersConfirmedStatus() && CommHandlerControl.bGetTTControlConnectionStatus())
     {
       if (!read_encoders_data_file())
       {
-        ROS_ERROR_STREAM("[agribot_control_node] Failed to read carts angle data file content ! Robots carts encoders "
+        ROS_ERROR_STREAM("[AgribotControlNode] Failed to read carts angle data file content ! Robots carts encoders "
                          "values are not inited! \n"
                          << "Attempted path: " << path_to_carts_encoders_file);
         return -1;
@@ -285,9 +287,22 @@ int main(int argc, char** argv)
     if (CommHandlerControl.bGetEncodersConfirmedStatus())
     {
       // check if both angle data reached us
+      encoder_init_timeout_counter = 0;
       if (!CommHandlerControl.bWriteEncodersDataFile())
       {
-        ROS_ERROR("[agribot_control_node] Failed to write carts encoders data to file!");
+        ROS_ERROR("[AgribotControlNode] Failed to write carts encoders data to file!");
+      }
+    }
+    else
+    {
+      if (encoder_init_timeout_counter >= CARTS_ENCODERS_INIT_TIMEOUT_LIMIT)
+      {
+        ROS_ERROR("[AgribotControlNode] Carts encoders not inited!");
+        encoder_init_timeout_counter = 0;
+      }
+      else
+      {
+        encoder_init_timeout_counter++;
       }
     }
     ros::spinOnce();
