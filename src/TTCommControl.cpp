@@ -52,17 +52,17 @@ void TTCommControl::vPrepareVelocitiesFrame(can_frame* frame, float velocity, ui
 {
   int16_t i16_velocity = (VELO_FRAME_ENCODE_CONST * velocity);
 
-  (*frame).data[start_byte] = (uint8_t)((i16_velocity & GET_SECOND_BYTE) >> 8);
+  frame->data[start_byte] = (uint8_t)((i16_velocity & GET_SECOND_BYTE) >> 8);
   // if sending velo is below zero
   if (i16_velocity < 0)
   {
     // perform below substraction to achive inversed number
     i16_velocity = INVERSE_INT16_CONST - i16_velocity;
-    (*frame).data[start_byte] = (uint8_t)((i16_velocity & GET_SECOND_BYTE) >> 8);
+    frame->data[start_byte] = (uint8_t)((i16_velocity & GET_SECOND_BYTE) >> 8);
     // toggle sign bit
-    (*frame).data[start_byte] |= SIGN_BIT;
+    frame->data[start_byte] |= SIGN_BIT;
   }
-  (*frame).data[start_byte + 1] = (uint8_t)i16_velocity;
+  frame->data[start_byte + 1] = (uint8_t)i16_velocity;
 }
 
 float TTCommControl::fDecodeVelocitiy(uint8_t start_byte, can_frame frame)
@@ -124,14 +124,13 @@ void TTCommControl::vSetVelocitiy(eVelocities enum_velo, can_frame frame)
 
 void TTCommControl::vSetTTControlConnectionStatus(const bool& connected)
 {
-  if (connected)
+  if (!connected)
   {
-    _ttcontrol_is_connected = true;
+    _ttcontrol_carts_angle_confirmed = false;
   }
   else
   {
-    _ttcontrol_carts_angle_confirmed = false;
-    _ttcontrol_is_connected = false;
+    _ttcontrol_is_connected = connected;
   }
 }
 
