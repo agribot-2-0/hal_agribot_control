@@ -384,8 +384,15 @@ uint TTCommControl::iExtractEncoderInitValueFromFile(std::ifstream& file_input)
   std::string line;
   std::string number_str;
   std::getline(file_input, line);
-  if (line.size() > 2)
+  if (line.size() > 0)
   {
+    // check if middle delimiter is in the string, without it, the substr function
+    // can return exception because find function return position greater than the str length when
+    // the char is not found
+    if (line.find(delimiter_middle) > line.length())
+    {
+      return 0;
+    }
     number_str = line.substr(line.find(delimiter_middle));
     if (number_str[0] == delimiter_middle && number_str.back() == delimiter_endline)
     {
