@@ -394,7 +394,7 @@ uint TTCommControl::iExtractEncoderInitValueFromFile(std::ifstream& file_input)
       return 0;
     }
     number_str = line.substr(line.find(delimiter_middle));
-    if (number_str[0] == delimiter_middle && number_str.back() == delimiter_endline)
+    if (number_str.front() == delimiter_middle && number_str.back() == delimiter_endline)
     {
       number_str = number_str.substr(DELIMITER_MIDDLE_LENGTH, number_str.length() - DELIMITER_ENDING_LENGTH);
       return std::stoi(number_str);
