@@ -10,6 +10,7 @@ constexpr uint8_t FULL_CAN_FRAME_BYTE_NUMBER = 8;
 constexpr uint PROTOCOL_FRAME_ID = 0x00EFC864;
 constexpr uint PROTOCOL_RESPONSE_FRAME_ID = 0x00EF64C8;
 constexpr uint VELO_FRAME_ID = 0x00FFD064;
+constexpr uint TRACK_ENCODER_SUM_ID = 0x00FFD364;
 constexpr uint FRONT_ANGLE_ID = 0xAA20;
 constexpr uint BACK_ANGLE_ID = 0xAA21;
 constexpr uint VELOCITY_CONTROL_FRAME_ID = 0x00FFD0C8;
@@ -32,6 +33,8 @@ constexpr uint INVERSE_INT16_CONST = 32768;
 constexpr uint32_t GET_THIRD_BYTE = 0xFF0000;
 constexpr uint32_t GET_SECOND_BYTE = 0x00FF00;
 constexpr uint32_t GET_FIRST_BYTE = 0x0000FF;
+constexpr uint8_t GET_UPPER_HALF_OF_THE_BYTE = 0xF0;
+constexpr uint8_t GET_LOWER_HALF_OF_THE_BYTE = 0x0F;
 constexpr uint CARTS_ANGLE_RESOLUTION = 1000;
 constexpr float RAD_TO_DEG = (180.0 / M_PI);
 constexpr uint8_t CARTS_ENCODER_HIGH_BYTE_POSITION = 1;
@@ -47,6 +50,11 @@ constexpr float CARTS_ENCODERS_RESOLUTION = 0.036;
 
 constexpr uint DELIMITER_MIDDLE_LENGTH = 1;
 constexpr uint DELIMITER_ENDING_LENGTH = 2;
+// byte position of the encoder sum value
+constexpr uint8_t SIGN_BYTE_FRAME_POSITION = 0x10;
+constexpr uint8_t TRACK_ENCODER_ID_BYTE_POSITION = 0;
+constexpr uint8_t TRACK_ENCODER_SIGN_BIT_MASK = 0x10;
+constexpr uint8_t TRACK_ENCODER_SUM_LOW_BYTE_POSITION = 1;
 
 void TTCommControl::vPrepareVelocitiesFrame(can_frame* frame, float velocity, uint8_t start_byte)
 {
@@ -84,6 +92,28 @@ uint TTCommControl::uiDecodeEncoderValue(can_frame frame)
 {
   return ((static_cast<uint32_t>(frame.data[CARTS_ENCODER_HIGH_BYTE_POSITION]) << 8) |
           (static_cast<uint32_t>(frame.data[CARTS_ENCODER_LOW_BYTE_POSITION])));
+}
+
+void TTCommControl::vDecodeTrackEncoderSumValue(can_frame frame)
+{
+  // get the encoder sum
+  uint32_t encoder_sum_without_sign =
+      ((static_cast<uint32_t>(frame.data[TRACK_ENCODER_SUM_LOW_BYTE_POSITION + 3]) << 24) |
+       (static_cast<uint32_t>(frame.data[TRACK_ENCODER_SUM_LOW_BYTE_POSITION + 2]) << 16) |
+       (static_cast<uint32_t>(frame.data[TRACK_ENCODER_SUM_LOW_BYTE_POSITION + 1]) << 8) |
+       (static_cast<uint32_t>(frame.data[TRACK_ENCODER_SUM_LOW_BYTE_POSITION])));
+  // get the track ID
+  uint8_t track_id = frame.data[TRACK_ENCODER_ID_BYTE_POSITION] & GET_LOWER_HALF_OF_THE_BYTE;
+  // get the sign of the sum, if its on, then the sum is negative
+  if ((frame.data[TRACK_ENCODER_ID_BYTE_POSITION] & TRACK_ENCODER_SIGN_BIT_MASK) == TRACK_ENCODER_SIGN_BIT_MASK)
+  {
+    _cart.vSetTrackEncoderSum(track_id, -static_cast<int32_t>(encoder_sum_without_sign));
+  }
+  // if its off then the sum is positive
+  else
+  {
+    _cart.vSetTrackEncoderSum(track_id, static_cast<int32_t>(encoder_sum_without_sign));
+  }
 }
 
 void TTCommControl::vSetVelocitiy(eVelocities enum_velo, can_frame frame)
@@ -199,6 +229,11 @@ uint8_t TTCommControl::u8ParseCanFrames()
       _back_cart_encoder_value = uiDecodeEncoderValue(message);
       _back_cart_angle = fDecodeAngle(message) * DEG_TO_RAD;
       status |= BACK_ANGLE_MASK;
+    }
+    if ((TRACK_ENCODER_SUM_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
+    {
+      vDecodeTrackEncoderSumValue(message);
+      status |= TRACK_ENCODER_SUM_MASK;
     }
     // if there is protocol frame in _frames_queue
     if ((PROTOCOL_FRAME_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))

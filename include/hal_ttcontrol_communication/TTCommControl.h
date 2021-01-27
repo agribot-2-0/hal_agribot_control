@@ -15,6 +15,7 @@
 constexpr uint8_t VELOCITIES_MASK = 0x01;
 constexpr uint8_t FRONT_ANGLE_MASK = 0x02;
 constexpr uint8_t BACK_ANGLE_MASK = 0x04;
+constexpr uint8_t TRACK_ENCODER_SUM_MASK = 0x08;
 constexpr uint8_t AUTOMATIC_STATE_REQUEST_MASK = 0x10;
 constexpr uint8_t AUTOMATIC_STATE_REQUEST_ERROR_MASK = 0x20;
 constexpr uint8_t TTC_OK = 0x01;
@@ -67,6 +68,7 @@ class TTCommControl
   float fDecodeVelocitiy(uint8_t start_byte, can_frame frame);
   float fDecodeAngle(can_frame frame);
   uint uiDecodeEncoderValue(can_frame frame);
+  void vDecodeTrackEncoderSumValue(can_frame frame);
   void vSetVelocitiy(eVelocities enum_velo, can_frame frame);
   std::ifstream _encoder_data_file_input;
   std::ofstream _encoder_data_file_output;

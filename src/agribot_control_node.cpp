@@ -2,12 +2,14 @@
  * Copyright (C) 2020 Agribot. All rights reserved.
  */
 #include <agribot_msgs/AgribotCaterpillar.h>
+#include <agribot_msgs/AgribotTracksEncoderSum.h>
 #include <hal_ttcontrol_communication/TTCommControl.h>
 #include <dynamic_reconfigure/server.h>
 #include <hal_agribot_control/TTControlParametersConfig.h>
 #include <ros/console.h>
 #include <ros/ros.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Int32.h>
 #include <std_msgs/String.h>
 #include <string_view>
 
@@ -204,6 +206,8 @@ int main(int argc, char** argv)
       n.subscribe("/agribot/ttcontrol/connection_state", 1, ttcontrol_connection_state);
   ros::Publisher CartsStatusPublisher =
       n.advertise<agribot_msgs::AgribotCaterpillar>("/agribot/encoder/caterpillar", 1);
+  ros::Publisher TrackEncoderSumPublisher =
+      n.advertise<agribot_msgs::AgribotTracksEncoderSum>("/agribot/tracks_encoders_sums", 1);
   ros::Publisher FrontCartAnglePublisher = n.advertise<std_msgs::Float32>("/agribot/encoder/cart/front", 1);
   ros::Publisher BackCartAnglePublisher = n.advertise<std_msgs::Float32>("/agribot/encoder/cart/back", 1);
   agribot_msgs::AgribotCaterpillar AgribotCaterpillarMsg;
@@ -211,6 +215,7 @@ int main(int argc, char** argv)
   dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>::CallbackType callback_function_object;
   std_msgs::Float32 FrontAngleMsg;
   std_msgs::Float32 BackAngleMsg;
+  agribot_msgs::AgribotTracksEncoderSum EncoderSumMsg;
   // angle initialization reading
   std::string path_to_carts_encoders_file;
   n.getParam("path_to_encoder_file", path_to_carts_encoders_file);
@@ -264,6 +269,19 @@ int main(int argc, char** argv)
       ROS_INFO("[AgribotControlNode] Received automatic mode request");
       usleep(WAIT_FOR_TTCONTROL);
       CommHandlerControl.vConfirmAdvantechReadiness();
+    }
+    // if we received the tracks encoder sum
+    // send them on the apriopriate topic
+    if ((u8Status & TRACK_ENCODER_SUM_MASK) == TRACK_ENCODER_SUM_MASK)
+    {
+      CartsStatus cartStatus = CommHandlerControl.getCartsStatus();
+      EncoderSumMsg.header.stamp = ros::Time::now();
+      EncoderSumMsg.header.frame_id = "hal_tracks_encoders_sum_feedback";
+      EncoderSumMsg.front_left_encoder_sum = cartStatus.iGetTrackEncoderSum(FRONT_LEFT_TRACK_ENCODER);
+      EncoderSumMsg.front_right_encoder_sum = cartStatus.iGetTrackEncoderSum(FRONT_RIGHT_TRACK_ENCODER);
+      EncoderSumMsg.back_left_encoder_sum = cartStatus.iGetTrackEncoderSum(BACK_LEFT_TRACK_ENCODER);
+      EncoderSumMsg.back_right_encoder_sum = cartStatus.iGetTrackEncoderSum(BACK_RIGHT_TRACK_ENCODER);
+      TrackEncoderSumPublisher.publish(EncoderSumMsg);
     }
     // if automatic state request error frame received in u8ParseCanFrames()
     // method
