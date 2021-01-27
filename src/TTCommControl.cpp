@@ -384,11 +384,25 @@ uint TTCommControl::iExtractEncoderInitValueFromFile(std::ifstream& file_input)
   std::string line;
   std::string number_str;
   std::getline(file_input, line);
-  number_str = line.substr(line.find(delimiter_middle));
-  if (number_str[0] == delimiter_middle && number_str.back() == delimiter_endline)
+  if (line.size() > 0)
   {
-    number_str = number_str.substr(DELIMITER_MIDDLE_LENGTH, number_str.length() - DELIMITER_ENDING_LENGTH);
-    return std::stoi(number_str);
+    // check if middle delimiter is in the string, without it, the substr function
+    // can return exception because find function return position greater than the str length when
+    // the char is not found
+    if (line.find(delimiter_middle) > line.length())
+    {
+      return 0;
+    }
+    number_str = line.substr(line.find(delimiter_middle));
+    if (number_str.front() == delimiter_middle && number_str.back() == delimiter_endline)
+    {
+      number_str = number_str.substr(DELIMITER_MIDDLE_LENGTH, number_str.length() - DELIMITER_ENDING_LENGTH);
+      return std::stoi(number_str);
+    }
+    else
+    {
+      return 0;
+    }
   }
   else
   {
@@ -418,6 +432,7 @@ bool TTCommControl::bReadCartsEncodersDataFile(const bool& regular_file)
   _init_front_cart_encoder_value = iExtractEncoderInitValueFromFile(_encoder_data_file_input);
   if (_init_front_cart_encoder_value == 0)
   {
+    _encoder_data_file_input.close();
     return false;
   }
 
@@ -425,6 +440,7 @@ bool TTCommControl::bReadCartsEncodersDataFile(const bool& regular_file)
   _init_back_cart_encoder_value = iExtractEncoderInitValueFromFile(_encoder_data_file_input);
   if (_init_back_cart_encoder_value == 0)
   {
+    _encoder_data_file_input.close();
     return false;
   }
 
