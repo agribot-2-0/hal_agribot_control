@@ -17,6 +17,7 @@ constexpr uint8_t FRONT_ANGLE_MASK = 0x02;
 constexpr uint8_t BACK_ANGLE_MASK = 0x04;
 constexpr uint8_t AUTOMATIC_STATE_REQUEST_MASK = 0x10;
 constexpr uint8_t AUTOMATIC_STATE_REQUEST_ERROR_MASK = 0x20;
+constexpr uint8_t GEOMETRY_FEEDBACK_MASK = 0x40;
 constexpr uint8_t TTC_OK = 0x01;
 constexpr uint8_t TTC_AUTOMATIC_MODE_REQUEST = 0x20;
 constexpr uint8_t TTC_CARTS_ANGLE_INITIALIZATION = 0x30;
@@ -67,6 +68,7 @@ class TTCommControl
   float fDecodeVelocitiy(uint8_t start_byte, can_frame frame);
   float fDecodeAngle(can_frame frame);
   uint uiDecodeEncoderValue(can_frame frame);
+  void fDecodeCartsGeometryState(can_frame frame);
   void vSetVelocitiy(eVelocities enum_velo, can_frame frame);
   std::ifstream _encoder_data_file_input;
   std::ofstream _encoder_data_file_output;
@@ -104,6 +106,7 @@ public:
   bool bReadCartsEncodersDataFile(const bool& backup_file);
   uint iExtractEncoderInitValueFromFile(std::ifstream& file_input);
   bool bWriteEncodersDataFile();
+  void vSendDeltasGeometryCommand(bool front_cart_command, bool back_cart_command);
   void vSendCartsEncodersInitialization();
   void vSendVelocities(const float& front_linear, const float& front_angular, const float& back_linear,
                        const float& back_angular);

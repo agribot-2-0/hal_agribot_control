@@ -7,11 +7,14 @@
 // mask used for extracting address and source, without PG
 constexpr uint ADDR_MASK = 0xFFFF;
 constexpr uint8_t FULL_CAN_FRAME_BYTE_NUMBER = 8;
+constexpr uint8_t TWO_BYTE_CAN_FRAME = 2;
 constexpr uint PROTOCOL_FRAME_ID = 0x00EFC864;
 constexpr uint PROTOCOL_RESPONSE_FRAME_ID = 0x00EF64C8;
 constexpr uint VELO_FRAME_ID = 0x00FFD064;
 constexpr uint FRONT_ANGLE_ID = 0xAA20;
 constexpr uint BACK_ANGLE_ID = 0xAA21;
+constexpr uint DELTAS_GEOMETRY_FEEDBACK_ID = 0x00FFDC64;
+constexpr uint DELTAS_GEOMETRY_COMMAND_ID = 0x00FFDCC8;
 constexpr uint VELOCITY_CONTROL_FRAME_ID = 0x00FFD0C8;
 constexpr uint CONFIG_FRAME_CAN_ID = 0x00FFDBC8;
 constexpr double DEG_TO_RAD = (M_PI / 180.0);
@@ -19,6 +22,13 @@ constexpr double DEG_TO_RAD = (M_PI / 180.0);
 constexpr uint SIGN_BIT = 0x80;
 constexpr uint DATA_BITS = 0x7F;
 
+// deltas geometry steering and feedback
+constexpr uint8_t DELTAS_GEOMETRY_STATE_UP = 0x01;
+constexpr uint8_t DELTAS_GEOMETRY_STATE_DOWN = 0x00;
+constexpr uint8_t FRONT_DELTA_GEOMETRY_BYTE = 0;
+constexpr uint8_t BACK_DELTA_GEOMETRY_BYTE = 1;
+constexpr bool DELTAS_GEOMETRY_UP = true;
+constexpr bool DELTAS_GEOMETRY_DOWN = false;
 // Encode velocity frame coming from TTC - check TTC-Advantech
 // protocol DS for more info
 constexpr uint VELO_FRAME_ENCODE_CONST = 1000;
@@ -70,6 +80,27 @@ float TTCommControl::fDecodeVelocitiy(uint8_t start_byte, can_frame frame)
   return (static_cast<float>((static_cast<int16_t>(frame.data[start_byte] & DATA_BITS)) << 8 |
                              frame.data[start_byte + 1])) *
          VELO_FRAME_DECODE_CONST;
+}
+
+void TTCommControl::fDecodeCartsGeometryState(can_frame frame)
+{
+  if (frame.data[FRONT_DELTA_GEOMETRY_BYTE] == DELTAS_GEOMETRY_STATE_UP)
+  {
+    _cart.vSetFrontCartGeometryState(DELTAS_GEOMETRY_UP);
+  }
+  else
+  {
+    _cart.vSetFrontCartGeometryState(DELTAS_GEOMETRY_DOWN);
+  }
+
+  if (frame.data[BACK_DELTA_GEOMETRY_BYTE] == DELTAS_GEOMETRY_STATE_UP)
+  {
+    _cart.vSetBackCartGeometryState(DELTAS_GEOMETRY_UP);
+  }
+  else
+  {
+    _cart.vSetBackCartGeometryState(DELTAS_GEOMETRY_DOWN);
+  }
 }
 
 float TTCommControl::fDecodeAngle(can_frame frame)
@@ -200,6 +231,20 @@ uint8_t TTCommControl::u8ParseCanFrames()
       _back_cart_angle = fDecodeAngle(message) * DEG_TO_RAD;
       status |= BACK_ANGLE_MASK;
     }
+    // if there is back cart angle frame in _frames_queue
+    if ((BACK_ANGLE_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
+    {
+      _back_cart_encoder_unread = true;
+      _back_cart_encoder_value = uiDecodeEncoderValue(message);
+      _back_cart_angle = fDecodeAngle(message) * DEG_TO_RAD;
+      status |= BACK_ANGLE_MASK;
+    }
+    // if there is a cart geometry feedback
+    if ((DELTAS_GEOMETRY_FEEDBACK_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
+    {
+      fDecodeCartsGeometryState(message);
+      status |= GEOMETRY_FEEDBACK_MASK;
+    }
     // if there is protocol frame in _frames_queue
     if ((PROTOCOL_FRAME_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
@@ -242,6 +287,30 @@ void TTCommControl::vConfirmAdvantechReadiness()
   message.data[5] = 0;
   message.data[6] = 0;
   message.data[7] = 0;
+  _can_handler.iSendFrame(&message);
+}
+
+void TTCommControl::vSendDeltasGeometryCommand(bool front_cart_command, bool back_cart_command)
+{
+  can_frame message;
+  message.can_id = DELTAS_GEOMETRY_COMMAND_ID;
+  message.can_dlc = TWO_BYTE_CAN_FRAME;
+  if (front_cart_command)
+  {
+    message.data[FRONT_DELTA_GEOMETRY_BYTE] = DELTAS_GEOMETRY_STATE_UP;
+  }
+  else
+  {
+    message.data[FRONT_DELTA_GEOMETRY_BYTE] = DELTAS_GEOMETRY_STATE_DOWN;
+  }
+  if (back_cart_command)
+  {
+    message.data[BACK_DELTA_GEOMETRY_BYTE] = DELTAS_GEOMETRY_STATE_UP;
+  }
+  else
+  {
+    message.data[BACK_DELTA_GEOMETRY_BYTE] = DELTAS_GEOMETRY_STATE_DOWN;
+  }
   _can_handler.iSendFrame(&message);
 }
 
