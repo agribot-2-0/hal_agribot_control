@@ -1,0 +1,49 @@
+@startuml
+title hal_agribot_control - Encoder initialization procedure
+
+participant Advantech
+database Encoder_File
+database Encoder_File_Backup
+participant TTControl
+
+activate Advantech
+activate TTControl
+
+Advantech->Encoder_File:Check if encoder file exists and read it
+alt Read succesful
+Advantech<--Encoder_File: Prepare the encoders initialization values
+else Read unsuccessful
+Advantech->Encoder_File_Backup:Check if backup encoder file exists and read it
+alt Backup read succesful
+Advantech<--Encoder_File_Backup: Prepare the encoders initialization values
+else Backup read unsuccessful
+Advantech ->x Advantech: Close the node, something went wrong\nand both encoder initialization files \nare absent or corrupted
+activate Advantech
+|||
+deactivate Advantech
+end
+end
+loop  TTControl communication loop 
+note over Advantech:Heartbeat node will try to connect with TTControl\noutside of this node, the msg is received on the rostopic
+Advantech->Advantech: Check the connection state
+alt  Heartbeat is present 
+alt  Encoders are not inited 
+Advantech->TTControl: [CAN frame] encoder initialization values
+TTControl-->Advantech: [CAN frame] encoders inited confirmation frame to Advantech
+Advantech->Advantech: Set encoders are inited 
+else  Encoders are inited 
+TTControl-->Advantech: [CAN frame] current carts encoders value
+alt  Encoder_File and Backup_Encoder_File open properly 
+Advantech->Encoder_File: write current encoder values Encoder_File
+Advantech->Encoder_File_Backup: write current encoder values to Encoder_File_Backup
+else  Could not write to Encoder_File 
+Advantech->Advantech: Inform about the problem.\nEncoder values needs to be saved differently to avoid\nredoing of the calibration procedure, currently not implented
+end
+end
+else    Heartbeat is not present
+Advantech ->x Advantech: Set encoders are not inited 
+|||
+deactivate Advantech
+end
+end
+@enduml
