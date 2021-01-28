@@ -41,9 +41,7 @@ Advantech->Advantech: Inform about the problem.\nEncoder values needs to be save
 end
 end
 else    Heartbeat is not present
-Advantech ->x Advantech: Set encoders are not inited 
-|||
-deactivate Advantech
+Advantech -> Advantech: Set encoders are not inited 
 end
 end
 @enduml
