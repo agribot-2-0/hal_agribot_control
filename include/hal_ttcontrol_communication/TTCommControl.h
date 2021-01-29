@@ -49,31 +49,32 @@ enum eVelocities
 
 class TTCommControl
 {
-  Can _can_handler;
-  std::queue<can_frame> _frames_queue;
-  CartsStatus _cart;
-  float _front_cart_angle;
-  uint _init_front_cart_encoder_value;
-  uint _front_cart_encoder_value;
-  bool _front_cart_encoder_unread;
-  float _back_cart_angle;
-  uint _init_back_cart_encoder_value;
-  uint _back_cart_encoder_value;
-  bool _back_cart_encoder_unread;
-  uint8_t _err_code = TTC_OK;
-  std::string _path_to_encoder_file;
-  std::string _file_name = "/carts_encoder_state_files/carts_encoder_state_data.txt";
-  std::string _file_name_backup = "/carts_encoder_state_files/carts_encoder_state_data_backup.txt";
+  Can can_handler_;
+  std::queue<can_frame> frames_queue_;
+  CartsStatus cart_;
+  float front_cart_angle_;
+  uint init_front_cart_encoder_value_;
+  uint front_cart_encoder_value_;
+  bool front_cart_encoder_unread_;
+  float back_cart_angle_;
+  uint init_back_cart_encoder_value_;
+  uint back_cart_encoder_value_;
+  bool back_cart_encoder_unread_;
+  uint8_t err_code_ = TTC_OK;
+  std::string path_to_encoder_file_;
+  std::string file_name_ = "/carts_encoder_state_files/carts_encoder_state_data.txt";
+  std::string file_name_backup_ = "/carts_encoder_state_files/carts_encoder_state_data_backup.txt";
+  std::ifstream encoder_data_file_input_;
+  std::ofstream encoder_data_file_output_;
+  bool ttcontrol_is_connected_;
+  bool ttcontrol_carts_angle_confirmed_;
   void vPrepareVelocitiesFrame(can_frame* frame, float velocity, uint8_t start_byte);
   float fDecodeVelocitiy(uint8_t start_byte, can_frame frame);
   float fDecodeAngle(can_frame frame);
   uint uiDecodeEncoderValue(can_frame frame);
-  void fDecodeCartsGeometryState(can_frame frame);
+  void vDecodeCartsGeometryState(const can_frame& frame);
   void vSetVelocitiy(eVelocities enum_velo, can_frame frame);
-  std::ifstream _encoder_data_file_input;
-  std::ofstream _encoder_data_file_output;
-  bool _ttcontrol_is_connected;
-  bool _ttcontrol_carts_angle_confirmed;
+
 
 public:
   const struct eTTControlParamsType
@@ -106,7 +107,7 @@ public:
   bool bReadCartsEncodersDataFile(const bool& backup_file);
   uint iExtractEncoderInitValueFromFile(std::ifstream& file_input);
   bool bWriteEncodersDataFile();
-  void vSendDeltasGeometryCommand(bool front_cart_command, bool back_cart_command);
+  void vSendDeltasGeometryCommand(const uint8_t& front_cart_command, const uint8_t& back_cart_command);
   void vSendCartsEncodersInitialization();
   void vSendVelocities(const float& front_linear, const float& front_angular, const float& back_linear,
                        const float& back_angular);

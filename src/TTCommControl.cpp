@@ -23,8 +23,6 @@ constexpr uint SIGN_BIT = 0x80;
 constexpr uint DATA_BITS = 0x7F;
 
 // deltas geometry steering and feedback
-constexpr uint8_t DELTAS_GEOMETRY_STATE_UP = 0x01;
-constexpr uint8_t DELTAS_GEOMETRY_STATE_DOWN = 0x00;
 constexpr uint8_t FRONT_DELTA_GEOMETRY_BYTE = 0;
 constexpr uint8_t BACK_DELTA_GEOMETRY_BYTE = 1;
 constexpr bool DELTAS_GEOMETRY_UP = true;
@@ -82,24 +80,32 @@ float TTCommControl::fDecodeVelocitiy(uint8_t start_byte, can_frame frame)
          VELO_FRAME_DECODE_CONST;
 }
 
-void TTCommControl::fDecodeCartsGeometryState(can_frame frame)
+void TTCommControl::vDecodeCartsGeometryState(const can_frame& frame)
 {
-  if (frame.data[FRONT_DELTA_GEOMETRY_BYTE] == DELTAS_GEOMETRY_STATE_UP)
+  if (frame.data[FRONT_DELTA_GEOMETRY_BYTE] == DELTAS_GEOMETRY_STATE_CHANGED)
   {
-    _cart.vSetFrontCartGeometryState(DELTAS_GEOMETRY_UP);
+    cart_.vSetFrontCartGeometryState(DELTAS_GEOMETRY_STATE_CHANGED);
+  }
+  else if (frame.data[FRONT_DELTA_GEOMETRY_BYTE] == DELTAS_GEOMETRY_STATE_NORMAL)
+  {
+    cart_.vSetFrontCartGeometryState(DELTAS_GEOMETRY_STATE_NORMAL);
   }
   else
   {
-    _cart.vSetFrontCartGeometryState(DELTAS_GEOMETRY_DOWN);
+    cart_.vSetFrontCartGeometryState(DELTAS_GEOMETRY_STATE_UNKNOWN);
   }
 
-  if (frame.data[BACK_DELTA_GEOMETRY_BYTE] == DELTAS_GEOMETRY_STATE_UP)
+  if (frame.data[BACK_DELTA_GEOMETRY_BYTE] == DELTAS_GEOMETRY_STATE_CHANGED)
   {
-    _cart.vSetBackCartGeometryState(DELTAS_GEOMETRY_UP);
+    cart_.vSetBackCartGeometryState(DELTAS_GEOMETRY_STATE_CHANGED);
+  }
+  else if (frame.data[BACK_DELTA_GEOMETRY_BYTE] == DELTAS_GEOMETRY_STATE_NORMAL)
+  {
+    cart_.vSetBackCartGeometryState(DELTAS_GEOMETRY_STATE_NORMAL);
   }
   else
   {
-    _cart.vSetBackCartGeometryState(DELTAS_GEOMETRY_DOWN);
+    cart_.vSetBackCartGeometryState(DELTAS_GEOMETRY_STATE_UNKNOWN);
   }
 }
 
@@ -122,32 +128,32 @@ void TTCommControl::vSetVelocitiy(eVelocities enum_velo, can_frame frame)
   switch (enum_velo)
   {
     case FRONT_LINEAR:
-      _cart.vSetFrontLinear(fDecodeVelocitiy(FRONT_LINEAR, frame));
+      cart_.vSetFrontLinear(fDecodeVelocitiy(FRONT_LINEAR, frame));
       // if there is sign bit present, change sign of velocity
       if (frame.data[FRONT_LINEAR] & SIGN_BIT)
       {
-        _cart.vSetFrontLinear(-_cart.fGetFrontLinear());
+        cart_.vSetFrontLinear(-cart_.fGetFrontLinear());
       }
       break;
     case FRONT_ANGULAR:
-      _cart.vSetFrontAngular(fDecodeVelocitiy(FRONT_ANGULAR, frame) * DEG_TO_RAD);
+      cart_.vSetFrontAngular(fDecodeVelocitiy(FRONT_ANGULAR, frame) * DEG_TO_RAD);
       if (frame.data[FRONT_ANGULAR] & SIGN_BIT)
       {
-        _cart.vSetFrontAngular(-_cart.fGetFrontAngular());
+        cart_.vSetFrontAngular(-cart_.fGetFrontAngular());
       }
       break;
     case BACK_LINEAR:
-      _cart.vSetBackLinear(fDecodeVelocitiy(BACK_LINEAR, frame));
+      cart_.vSetBackLinear(fDecodeVelocitiy(BACK_LINEAR, frame));
       if (frame.data[BACK_LINEAR] & SIGN_BIT)
       {
-        _cart.vSetBackLinear(-_cart.fGetBackLinear());
+        cart_.vSetBackLinear(-cart_.fGetBackLinear());
       }
       break;
     case BACK_ANGULAR:
-      _cart.vSetBackAngular(fDecodeVelocitiy(BACK_ANGULAR, frame) * DEG_TO_RAD);
+      cart_.vSetBackAngular(fDecodeVelocitiy(BACK_ANGULAR, frame) * DEG_TO_RAD);
       if (frame.data[BACK_ANGULAR] & SIGN_BIT)
       {
-        _cart.vSetBackAngular(-_cart.fGetBackAngular());
+        cart_.vSetBackAngular(-cart_.fGetBackAngular());
       }
       break;
   }
@@ -157,45 +163,45 @@ void TTCommControl::vSetTTControlConnectionStatus(const bool& connected)
 {
   if (!connected)
   {
-    _ttcontrol_carts_angle_confirmed = false;
+    ttcontrol_carts_angle_confirmed_ = false;
   }
   else
   {
-    _ttcontrol_is_connected = connected;
+    ttcontrol_is_connected_ = connected;
   }
 }
 
 bool TTCommControl::bGetTTControlConnectionStatus()
 {
-  return _ttcontrol_is_connected;
+  return ttcontrol_is_connected_;
 }
 
 bool TTCommControl::bGetEncodersConfirmedStatus()
 {
-  return _ttcontrol_carts_angle_confirmed;
+  return ttcontrol_carts_angle_confirmed_;
 }
 
 TTCommControl::TTCommControl(const char* can_channel)
 {
-  _ttcontrol_carts_angle_confirmed = false;
-  _ttcontrol_is_connected = false;
-  _can_handler.iInitialize(can_channel);
+  ttcontrol_carts_angle_confirmed_ = false;
+  ttcontrol_is_connected_ = false;
+  can_handler_.iInitialize(can_channel);
 }
 
 void TTCommControl::vReceiveCanFrames()
 {
   can_frame message;
-  while (_can_handler.bReceiveFrame(&message))
+  while (can_handler_.bReceiveFrame(&message))
   {
-    _frames_queue.push(message);
+    frames_queue_.push(message);
   }
 }
 
 TTCommControl::~TTCommControl()
 {
-  while (!_frames_queue.empty())
+  while (!frames_queue_.empty())
   {
-    _frames_queue.pop();
+    frames_queue_.pop();
   }
 }
 
@@ -203,10 +209,10 @@ uint8_t TTCommControl::u8ParseCanFrames()
 {
   uint8_t status = 0;
   can_frame message;
-  while (!_frames_queue.empty())
+  while (!frames_queue_.empty())
   {
-    message = _frames_queue.front();
-    // if there is velocities frame in _frames_queue
+    message = frames_queue_.front();
+    // if there is velocities frame in frames_queue_
     if ((VELO_FRAME_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
       vSetVelocitiy(FRONT_LINEAR, message);
@@ -215,43 +221,43 @@ uint8_t TTCommControl::u8ParseCanFrames()
       vSetVelocitiy(BACK_ANGULAR, message);
       status |= VELOCITIES_MASK;
     }
-    // if there is front cart angle frame in _frames_queue
+    // if there is front cart angle frame in frames_queue_
     if ((FRONT_ANGLE_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
-      _front_cart_encoder_unread = true;
-      _front_cart_encoder_value = uiDecodeEncoderValue(message);
-      _front_cart_angle = fDecodeAngle(message) * DEG_TO_RAD;
+      front_cart_encoder_unread_ = true;
+      front_cart_encoder_value_ = uiDecodeEncoderValue(message);
+      front_cart_angle_ = fDecodeAngle(message) * DEG_TO_RAD;
       status |= FRONT_ANGLE_MASK;
     }
-    // if there is back cart angle frame in _frames_queue
+    // if there is back cart angle frame in frames_queue_
     if ((BACK_ANGLE_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
-      _back_cart_encoder_unread = true;
-      _back_cart_encoder_value = uiDecodeEncoderValue(message);
-      _back_cart_angle = fDecodeAngle(message) * DEG_TO_RAD;
+      back_cart_encoder_unread_ = true;
+      back_cart_encoder_value_ = uiDecodeEncoderValue(message);
+      back_cart_angle_ = fDecodeAngle(message) * DEG_TO_RAD;
       status |= BACK_ANGLE_MASK;
     }
-    // if there is back cart angle frame in _frames_queue
+    // if there is back cart angle frame in frames_queue_
     if ((BACK_ANGLE_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
-      _back_cart_encoder_unread = true;
-      _back_cart_encoder_value = uiDecodeEncoderValue(message);
-      _back_cart_angle = fDecodeAngle(message) * DEG_TO_RAD;
+      back_cart_encoder_unread_ = true;
+      back_cart_encoder_value_ = uiDecodeEncoderValue(message);
+      back_cart_angle_ = fDecodeAngle(message) * DEG_TO_RAD;
       status |= BACK_ANGLE_MASK;
     }
     // if there is a cart geometry feedback
     if ((DELTAS_GEOMETRY_FEEDBACK_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
-      fDecodeCartsGeometryState(message);
+      vDecodeCartsGeometryState(message);
       status |= GEOMETRY_FEEDBACK_MASK;
     }
-    // if there is protocol frame in _frames_queue
+    // if there is protocol frame in frames_queue_
     if ((PROTOCOL_FRAME_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
       // if TTControl confirms angle receiving
       if (message.data[0] == TTC_CARTS_ANGLE_INITIALIZATION)
       {
-        _ttcontrol_carts_angle_confirmed = true;
+        ttcontrol_carts_angle_confirmed_ = true;
       }
       // if there is a request for entering automatic mode
       if (message.data[0] == TTC_AUTOMATIC_MODE_REQUEST)
@@ -264,12 +270,12 @@ uint8_t TTCommControl::u8ParseCanFrames()
         // if TTC send some error while entering automatic mode
         else
         {
-          _err_code = message.data[1];
+          err_code_ = message.data[1];
           status |= AUTOMATIC_STATE_REQUEST_ERROR_MASK;
         }
       }
     }
-    _frames_queue.pop();
+    frames_queue_.pop();
   }
   return status;
 }
@@ -287,31 +293,39 @@ void TTCommControl::vConfirmAdvantechReadiness()
   message.data[5] = 0;
   message.data[6] = 0;
   message.data[7] = 0;
-  _can_handler.iSendFrame(&message);
+  can_handler_.iSendFrame(&message);
 }
 
-void TTCommControl::vSendDeltasGeometryCommand(bool front_cart_command, bool back_cart_command)
+void TTCommControl::vSendDeltasGeometryCommand(const uint8_t& front_cart_command, const uint8_t& back_cart_command)
 {
   can_frame message;
   message.can_id = DELTAS_GEOMETRY_COMMAND_ID;
   message.can_dlc = TWO_BYTE_CAN_FRAME;
-  if (front_cart_command)
+  switch (front_cart_command)
   {
-    message.data[FRONT_DELTA_GEOMETRY_BYTE] = DELTAS_GEOMETRY_STATE_UP;
+    case DELTAS_GEOMETRY_STATE_CHANGED:
+      message.data[FRONT_DELTA_GEOMETRY_BYTE] = DELTAS_GEOMETRY_STATE_CHANGED;
+      break;
+    case DELTAS_GEOMETRY_STATE_NORMAL:
+      message.data[FRONT_DELTA_GEOMETRY_BYTE] = DELTAS_GEOMETRY_STATE_NORMAL;
+      break;
+    default:
+      message.data[FRONT_DELTA_GEOMETRY_BYTE] = DELTAS_GEOMETRY_STATE_UNKNOWN;
+      break;
   }
-  else
+  switch (back_cart_command)
   {
-    message.data[FRONT_DELTA_GEOMETRY_BYTE] = DELTAS_GEOMETRY_STATE_DOWN;
+    case DELTAS_GEOMETRY_STATE_CHANGED:
+      message.data[BACK_DELTA_GEOMETRY_BYTE] = DELTAS_GEOMETRY_STATE_CHANGED;
+      break;
+    case DELTAS_GEOMETRY_STATE_NORMAL:
+      message.data[BACK_DELTA_GEOMETRY_BYTE] = DELTAS_GEOMETRY_STATE_NORMAL;
+      break;
+    default:
+      message.data[BACK_DELTA_GEOMETRY_BYTE] = DELTAS_GEOMETRY_STATE_UNKNOWN;
+      break;
   }
-  if (back_cart_command)
-  {
-    message.data[BACK_DELTA_GEOMETRY_BYTE] = DELTAS_GEOMETRY_STATE_UP;
-  }
-  else
-  {
-    message.data[BACK_DELTA_GEOMETRY_BYTE] = DELTAS_GEOMETRY_STATE_DOWN;
-  }
-  _can_handler.iSendFrame(&message);
+  can_handler_.iSendFrame(&message);
 }
 
 void TTCommControl::vSendCartsEncodersInitialization()
@@ -323,14 +337,14 @@ void TTCommControl::vSendCartsEncodersInitialization()
   message.can_id = PROTOCOL_RESPONSE_FRAME_ID;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[0] = TTC_CARTS_ANGLE_INITIALIZATION;
-  message.data[1] = static_cast<uint8_t>((_init_front_cart_encoder_value & GET_THIRD_BYTE) >> 16);
-  message.data[2] = static_cast<uint8_t>((_init_front_cart_encoder_value & GET_SECOND_BYTE) >> 8);
-  message.data[3] = static_cast<uint8_t>((_init_front_cart_encoder_value & GET_FIRST_BYTE));
-  message.data[4] = static_cast<uint8_t>((_init_back_cart_encoder_value & GET_THIRD_BYTE) >> 16);
-  message.data[5] = static_cast<uint8_t>((_init_back_cart_encoder_value & GET_SECOND_BYTE) >> 8);
-  message.data[6] = static_cast<uint8_t>((_init_back_cart_encoder_value & GET_FIRST_BYTE));
+  message.data[1] = static_cast<uint8_t>((init_front_cart_encoder_value_ & GET_THIRD_BYTE) >> 16);
+  message.data[2] = static_cast<uint8_t>((init_front_cart_encoder_value_ & GET_SECOND_BYTE) >> 8);
+  message.data[3] = static_cast<uint8_t>((init_front_cart_encoder_value_ & GET_FIRST_BYTE));
+  message.data[4] = static_cast<uint8_t>((init_back_cart_encoder_value_ & GET_THIRD_BYTE) >> 16);
+  message.data[5] = static_cast<uint8_t>((init_back_cart_encoder_value_ & GET_SECOND_BYTE) >> 8);
+  message.data[6] = static_cast<uint8_t>((init_back_cart_encoder_value_ & GET_FIRST_BYTE));
   message.data[7] = 0;
-  _can_handler.iSendFrame(&message);
+  can_handler_.iSendFrame(&message);
 }
 
 void TTCommControl::vSendVelocities(const float& front_linear, const float& front_angular, const float& back_linear,
@@ -343,7 +357,7 @@ void TTCommControl::vSendVelocities(const float& front_linear, const float& fron
   vPrepareVelocitiesFrame(&message, front_angular, 2);
   vPrepareVelocitiesFrame(&message, back_linear, 4);
   vPrepareVelocitiesFrame(&message, back_angular, 6);
-  _can_handler.iSendFrame(&message);
+  can_handler_.iSendFrame(&message);
 }
 
 void TTCommControl::vSendSignalsParameters(const int& ditter_period, const int& ditter_amplitude,
@@ -361,7 +375,7 @@ void TTCommControl::vSendSignalsParameters(const int& ditter_period, const int& 
   message.data[ENCODER_PERIOD_BYTE + 1] = 0xFF;
   message.data[ENCODER_PERIOD_BYTE + 2] = 0xFF;
   message.data[ENCODER_PERIOD_BYTE + 3] = 0xFF;
-  _can_handler.iSendFrame(&message);
+  can_handler_.iSendFrame(&message);
 }
 
 void TTCommControl::vSendCartsPIDParameters(const double& kp, const double& ki, const double& kd, const double& acc,
@@ -382,7 +396,7 @@ void TTCommControl::vSendCartsPIDParameters(const double& kp, const double& ki, 
       static_cast<uint8_t>(static_cast<uint>(acc * ACC_RESOLUTION_MULTIPLIER) & GET_FIRST_BYTE);
   message.data[ACC_FIRST_BYTE + 1] =
       static_cast<uint8_t>((static_cast<uint>(acc * ACC_RESOLUTION_MULTIPLIER) & GET_SECOND_BYTE) >> 8);
-  _can_handler.iSendFrame(&message);
+  can_handler_.iSendFrame(&message);
 }
 
 void TTCommControl::vSendCaterpillarPIDParameters(const uint& kp, const uint& ki, const uint& kd,
@@ -400,7 +414,7 @@ void TTCommControl::vSendCaterpillarPIDParameters(const uint& kp, const uint& ki
   message.data[KD_CATERPILLAR_FIRST_BYTE + 1] = static_cast<uint8_t>((kd & GET_SECOND_BYTE) >> 8);
   // dont care byte
   message.data[KD_CATERPILLAR_FIRST_BYTE + 2] = 0xFF;
-  _can_handler.iSendFrame(&message);
+  can_handler_.iSendFrame(&message);
 }
 
 void TTCommControl::vSendCaterpillarBaseSignal(const uint& forward_base, const uint& backward_base,
@@ -418,32 +432,32 @@ void TTCommControl::vSendCaterpillarBaseSignal(const uint& forward_base, const u
   message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 2] = 0xFF;
   message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 3] = 0xFF;
   message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 4] = 0xFF;
-  _can_handler.iSendFrame(&message);
+  can_handler_.iSendFrame(&message);
 }
 
 CartsStatus TTCommControl::getCartsStatus()
 {
-  return _cart;
+  return cart_;
 }
 
 float TTCommControl::fGetFrontCartAngle()
 {
-  return _front_cart_angle;
+  return front_cart_angle_;
 }
 
 float TTCommControl::fGetBackCartAngle()
 {
-  return _back_cart_angle;
+  return back_cart_angle_;
 }
 
 int TTCommControl::iGetErrorCode()
 {
-  return _err_code;
+  return err_code_;
 }
 
 void TTCommControl::vSetPathToCartsEncodersDataFile(const std::string& path_to_file)
 {
-  _path_to_encoder_file = path_to_file;
+  path_to_encoder_file_ = path_to_file;
 }
 
 uint TTCommControl::iExtractEncoderInitValueFromFile(std::ifstream& file_input)
@@ -485,67 +499,67 @@ bool TTCommControl::bReadCartsEncodersDataFile(const bool& regular_file)
 
   if (regular_file)
   {
-    encoder_file_name = _file_name;
+    encoder_file_name = file_name_;
   }
   else
   {
-    encoder_file_name = _file_name_backup;
+    encoder_file_name = file_name_backup_;
   }
-  _encoder_data_file_input.open(_path_to_encoder_file + encoder_file_name);
-  if (!_encoder_data_file_input.is_open() || _encoder_data_file_input.fail())
+  encoder_data_file_input_.open(path_to_encoder_file_ + encoder_file_name);
+  if (!encoder_data_file_input_.is_open() || encoder_data_file_input_.fail())
   {
-    _encoder_data_file_input.close();
+    encoder_data_file_input_.close();
     return false;
   }
   // first line for the front cart encoder value
-  _init_front_cart_encoder_value = iExtractEncoderInitValueFromFile(_encoder_data_file_input);
-  if (_init_front_cart_encoder_value == 0)
+  init_front_cart_encoder_value_ = iExtractEncoderInitValueFromFile(encoder_data_file_input_);
+  if (init_front_cart_encoder_value_ == 0)
   {
-    _encoder_data_file_input.close();
+    encoder_data_file_input_.close();
     return false;
   }
 
   // second line for the back cart encoder value
-  _init_back_cart_encoder_value = iExtractEncoderInitValueFromFile(_encoder_data_file_input);
-  if (_init_back_cart_encoder_value == 0)
+  init_back_cart_encoder_value_ = iExtractEncoderInitValueFromFile(encoder_data_file_input_);
+  if (init_back_cart_encoder_value_ == 0)
   {
-    _encoder_data_file_input.close();
+    encoder_data_file_input_.close();
     return false;
   }
 
-  _encoder_data_file_input.close();
+  encoder_data_file_input_.close();
   return true;
 }
 
 bool TTCommControl::bWriteEncodersDataFile()
 {
   // check if angle data is complete
-  if (_front_cart_encoder_unread && _back_cart_encoder_unread)
+  if (front_cart_encoder_unread_ && back_cart_encoder_unread_)
   {
     // save the proper file
-    _encoder_data_file_output.open((_path_to_encoder_file + _file_name), std::ios::trunc);
-    if (!_encoder_data_file_output.is_open())
+    encoder_data_file_output_.open((path_to_encoder_file_ + file_name_), std::ios::trunc);
+    if (!encoder_data_file_output_.is_open())
     {
-      _encoder_data_file_output.close();
+      encoder_data_file_output_.close();
       return false;
     }
-    _encoder_data_file_output << "front:" << _front_cart_encoder_value << ";\n";
-    _encoder_data_file_output << "back:" << _back_cart_encoder_value << ";";
-    _encoder_data_file_output.close();
+    encoder_data_file_output_ << "front:" << front_cart_encoder_value_ << ";\n";
+    encoder_data_file_output_ << "back:" << back_cart_encoder_value_ << ";";
+    encoder_data_file_output_.close();
 
     // save the backup file
-    _encoder_data_file_output.open((_path_to_encoder_file + _file_name_backup), std::ios::trunc);
-    if (!_encoder_data_file_output.is_open())
+    encoder_data_file_output_.open((path_to_encoder_file_ + file_name_backup_), std::ios::trunc);
+    if (!encoder_data_file_output_.is_open())
     {
-      _encoder_data_file_output.close();
+      encoder_data_file_output_.close();
       return false;
     }
-    _encoder_data_file_output << "front:" << _front_cart_encoder_value << ";\n";
-    _encoder_data_file_output << "back:" << _back_cart_encoder_value << ";";
-    _encoder_data_file_output.close();
+    encoder_data_file_output_ << "front:" << front_cart_encoder_value_ << ";\n";
+    encoder_data_file_output_ << "back:" << back_cart_encoder_value_ << ";";
+    encoder_data_file_output_.close();
     // reset flags
-    _front_cart_encoder_unread = false;
-    _back_cart_encoder_unread = false;
+    front_cart_encoder_unread_ = false;
+    back_cart_encoder_unread_ = false;
   }
 
   return true;

@@ -24,14 +24,14 @@ void CartsStatus::vSetBackAngular(float fVelo)
     _fBackAngular = fVelo;
 }
 
-void CartsStatus::vSetFrontCartGeometryState(bool geometry_state)
+void CartsStatus::vSetFrontCartGeometryState(uint8_t geometry_state)
 {
-    front_cart_geometry_state = geometry_state;
+    front_cart_geometry_state_ = geometry_state;
 }
 
-void CartsStatus::vSetBackCartGeometryState(bool geometry_state)
+void CartsStatus::vSetBackCartGeometryState(uint8_t geometry_state)
 {
-    back_cart_geometry_state = geometry_state;
+    back_cart_geometry_state_ = geometry_state;
 }
 
 float CartsStatus::fGetFrontLinear()
@@ -54,12 +54,12 @@ float CartsStatus::fGetBackAngular()
     return _fBackAngular;
 }
 
-bool CartsStatus::bGetFrontCartGeometryState()
+uint8_t CartsStatus::bGetFrontCartGeometryState() const
 {
-    return front_cart_geometry_state;
+    return front_cart_geometry_state_;
 }
 
-bool CartsStatus::bGetBackCartGeometryState()
+uint8_t CartsStatus::bGetBackCartGeometryState() const
 {
-    return back_cart_geometry_state;
+    return back_cart_geometry_state_;
 }
