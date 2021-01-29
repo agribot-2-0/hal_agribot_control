@@ -128,10 +128,7 @@ void TTCommControl::vSetTTControlConnectionStatus(const bool& connected)
   {
     _ttcontrol_carts_angle_confirmed = false;
   }
-  else
-  {
-    _ttcontrol_is_connected = connected;
-  }
+  _ttcontrol_is_connected = connected;
 }
 
 bool TTCommControl::bGetTTControlConnectionStatus()
@@ -387,9 +384,8 @@ uint TTCommControl::iExtractEncoderInitValueFromFile(std::ifstream& file_input)
   if (line.size() > 0)
   {
     // check if middle delimiter is in the string, without it, the substr function
-    // can return exception because find function return position greater than the str length when
-    // the char is not found
-    if (line.find(delimiter_middle) > line.length())
+    // can return exception because find function return npos
+    if (line.find(delimiter_middle) == std::string::npos)
     {
       return 0;
     }
