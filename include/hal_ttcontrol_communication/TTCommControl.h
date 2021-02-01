@@ -116,7 +116,7 @@ public:
                                const uint8_t& frame_type);
   void vSendCaterpillarPIDParameters(const uint& kp, const uint& ki, const uint& kd, const uint8_t& frame_type);
   void vSendCaterpillarBaseSignal(const uint& forward_base, const uint& backward_base, const uint8_t& frame_type);
-  CartsStatus getCartsStatus();
+  const CartsStatus& getCartsStatus() const;
   float fGetFrontCartAngle();
   float fGetBackCartAngle();
   int iGetErrorCode();

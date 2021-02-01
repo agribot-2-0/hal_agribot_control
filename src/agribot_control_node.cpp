@@ -178,14 +178,13 @@ bool front_deltas_geometry_service_callback(
     agribot_msgs::ChangeDeltasGeometry::Request& req,   // NOLINT(runtime/references)
     agribot_msgs::ChangeDeltasGeometry::Response& res)  // NOLINT(runtime/references)
 {
-  CartsStatus cartStatus = CommHandlerControl.getCartsStatus();
+  const CartsStatus& cartStatus = CommHandlerControl.getCartsStatus();
   uint8_t cart_state = DELTAS_GEOMETRY_STATE_UNKNOWN;
   if (req.cart_delta_command == req.CHANGE_CATERPILLAR_GEOMETRY)
   {
     CommHandlerControl.vSendDeltasGeometryCommand(DELTAS_GEOMETRY_STATE_CHANGED, DELTAS_GEOMETRY_STATE_UNKNOWN);
     while (cart_state != DELTAS_GEOMETRY_STATE_CHANGED)
     {
-      cartStatus = CommHandlerControl.getCartsStatus();
       cart_state = cartStatus.bGetFrontCartGeometryState();
       ros::Duration(0.1).sleep();
     }
@@ -197,7 +196,6 @@ bool front_deltas_geometry_service_callback(
     CommHandlerControl.vSendDeltasGeometryCommand(DELTAS_GEOMETRY_STATE_NORMAL, DELTAS_GEOMETRY_STATE_UNKNOWN);
     while (cart_state != DELTAS_GEOMETRY_STATE_NORMAL)
     {
-      cartStatus = CommHandlerControl.getCartsStatus();
       cart_state = cartStatus.bGetFrontCartGeometryState();
       ros::Duration(0.1).sleep();
     }
@@ -215,14 +213,13 @@ bool back_deltas_geometry_service_callback(
     agribot_msgs::ChangeDeltasGeometry::Request& req,   // NOLINT(runtime/references)
     agribot_msgs::ChangeDeltasGeometry::Response& res)  // NOLINT(runtime/references)
 {
-  CartsStatus cartStatus;
+  const CartsStatus& cartStatus = CommHandlerControl.getCartsStatus();
   uint8_t cart_state = DELTAS_GEOMETRY_STATE_UNKNOWN;
   if (req.cart_delta_command == req.CHANGE_CATERPILLAR_GEOMETRY)
   {
     CommHandlerControl.vSendDeltasGeometryCommand(DELTAS_GEOMETRY_STATE_UNKNOWN, DELTAS_GEOMETRY_STATE_CHANGED);
     while (cart_state != DELTAS_GEOMETRY_STATE_CHANGED)
     {
-      cartStatus = CommHandlerControl.getCartsStatus();
       cart_state = cartStatus.bGetBackCartGeometryState();
       ros::Duration(0.1).sleep();
     }
@@ -234,7 +231,6 @@ bool back_deltas_geometry_service_callback(
     CommHandlerControl.vSendDeltasGeometryCommand(DELTAS_GEOMETRY_STATE_UNKNOWN, DELTAS_GEOMETRY_STATE_NORMAL);
     while (cart_state != DELTAS_GEOMETRY_STATE_NORMAL)
     {
-      cartStatus = CommHandlerControl.getCartsStatus();
       cart_state = cartStatus.bGetBackCartGeometryState();
       ros::Duration(0.1).sleep();
     }
@@ -287,10 +283,10 @@ int main(int argc, char** argv)
   agribot_msgs::AgribotCaterpillar AgribotCaterpillarMsg;
   dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig> server;
   dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>::CallbackType callback_function_object;
-  ros::ServiceServer service_front =
-      n.advertiseService("change_deltas_geometry_front", front_deltas_geometry_service_callback);
+  ros::ServiceServer service_front = n.advertiseService("agribot/cart/caterpillar/change_deltas_geometry_front",
+                                                        front_deltas_geometry_service_callback);
   ros::ServiceServer service_back =
-      n.advertiseService("change_deltas_geometry_back", back_deltas_geometry_service_callback);
+      n.advertiseService("agribot/cart/caterpillar/change_deltas_geometry_back", back_deltas_geometry_service_callback);
   std_msgs::Float32 FrontAngleMsg;
   std_msgs::Float32 BackAngleMsg;
   // angle initialization reading
@@ -316,7 +312,7 @@ int main(int argc, char** argv)
     // if velociteis frames received in u8ParseCanFrames() method
     if ((u8Status & VELOCITIES_MASK) == VELOCITIES_MASK)
     {
-      CartsStatus cartStatus = CommHandlerControl.getCartsStatus();
+      const CartsStatus& cartStatus = CommHandlerControl.getCartsStatus();
       AgribotCaterpillarMsg.header.stamp = ros::Time::now();
       AgribotCaterpillarMsg.header.frame_id = "hal_caterpillar_feedback";
       AgribotCaterpillarMsg.front_linear = cartStatus.fGetFrontLinear();

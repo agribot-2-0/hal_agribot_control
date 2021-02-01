@@ -26,10 +26,10 @@ class CartsStatus
     void vSetFrontCartGeometryState(uint8_t geometry_state);
     void vSetBackCartGeometryState(uint8_t geometry_state);
 
-    float fGetFrontLinear();
-    float fGetFrontAngular();
-    float fGetBackLinear();
-    float fGetBackAngular();
+    float fGetFrontLinear()const;
+    float fGetFrontAngular() const;
+    float fGetBackLinear() const;
+    float fGetBackAngular() const;
     uint8_t bGetFrontCartGeometryState() const;
     uint8_t bGetBackCartGeometryState() const;
 };

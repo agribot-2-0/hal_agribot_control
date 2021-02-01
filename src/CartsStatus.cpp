@@ -34,22 +34,22 @@ void CartsStatus::vSetBackCartGeometryState(uint8_t geometry_state)
     back_cart_geometry_state_ = geometry_state;
 }
 
-float CartsStatus::fGetFrontLinear()
+float CartsStatus::fGetFrontLinear() const
 {
     return _fFrontLinear;
 }
 
-float CartsStatus::fGetFrontAngular()
+float CartsStatus::fGetFrontAngular() const
 {
     return _fFrontAngular;
 }
 
-float CartsStatus::fGetBackLinear()
+float CartsStatus::fGetBackLinear() const
 {
     return _fBackLinear;
 }
 
-float CartsStatus::fGetBackAngular()
+float CartsStatus::fGetBackAngular() const
 {
     return _fBackAngular;
 }

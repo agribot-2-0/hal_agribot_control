@@ -435,7 +435,7 @@ void TTCommControl::vSendCaterpillarBaseSignal(const uint& forward_base, const u
   can_handler_.iSendFrame(&message);
 }
 
-CartsStatus TTCommControl::getCartsStatus()
+const CartsStatus& TTCommControl::getCartsStatus() const
 {
   return cart_;
 }
