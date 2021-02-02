@@ -170,7 +170,7 @@ void TTCommControl::vSetTTControlConnectionStatus(const bool& connected)
   {
     ttcontrol_carts_angle_confirmed_ = false;
   }
-  _ttcontrol_is_connected = connected;
+  ttcontrol_is_connected_ = connected;
 }
 
 bool TTCommControl::bGetTTControlConnectionStatus()
