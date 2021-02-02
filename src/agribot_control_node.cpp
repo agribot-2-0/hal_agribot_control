@@ -283,10 +283,10 @@ int main(int argc, char** argv)
   agribot_msgs::AgribotCaterpillar AgribotCaterpillarMsg;
   dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig> server;
   dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>::CallbackType callback_function_object;
-  ros::ServiceServer service_front = n.advertiseService("agribot/cart/caterpillar/change_deltas_geometry_front",
+  ros::ServiceServer service_front = n.advertiseService("agribot/cart/caterpillar/change_deltas_geometry/front",
                                                         front_deltas_geometry_service_callback);
   ros::ServiceServer service_back =
-      n.advertiseService("agribot/cart/caterpillar/change_deltas_geometry_back", back_deltas_geometry_service_callback);
+      n.advertiseService("agribot/cart/caterpillar/change_deltas_geometry/back", back_deltas_geometry_service_callback);
   std_msgs::Float32 FrontAngleMsg;
   std_msgs::Float32 BackAngleMsg;
   // angle initialization reading
