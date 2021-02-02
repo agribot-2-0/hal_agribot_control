@@ -5,9 +5,12 @@
 #pragma once
 #include <stdint.h>
 
-constexpr uint8_t DELTAS_GEOMETRY_STATE_UNKNOWN = 0x02;
-constexpr uint8_t DELTAS_GEOMETRY_STATE_CHANGED = 0x01;
-constexpr uint8_t DELTAS_GEOMETRY_STATE_NORMAL = 0x00;
+enum eDeltasGeometryState : uint8_t
+{
+   DELTAS_GEOMETRY_STATE_UNKNOWN = 0x02,
+   DELTAS_GEOMETRY_STATE_CHANGED = 0x01,
+   DELTAS_GEOMETRY_STATE_NORMAL = 0x00
+};
 
 class CartsStatus
 {
@@ -19,12 +22,12 @@ class CartsStatus
     uint8_t front_cart_geometry_state_;
     uint8_t back_cart_geometry_state_;
  public:
-    void vSetFrontLinear(float fVelo);
-    void vSetFrontAngular(float fVelo);
-    void vSetBackLinear(float fVelo);
-    void vSetBackAngular(float fVelo);
-    void vSetFrontCartGeometryState(uint8_t geometry_state);
-    void vSetBackCartGeometryState(uint8_t geometry_state);
+    void vSetFrontLinear(const float fVelo);
+    void vSetFrontAngular(const float fVelo);
+    void vSetBackLinear(const float fVelo);
+    void vSetBackAngular(const float fVelo);
+    void vSetFrontCartGeometryState(const uint8_t geometry_state);
+    void vSetBackCartGeometryState(const uint8_t geometry_state);
 
     float fGetFrontLinear()const;
     float fGetFrontAngular() const;

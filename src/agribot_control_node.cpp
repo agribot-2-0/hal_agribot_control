@@ -179,11 +179,11 @@ bool front_deltas_geometry_service_callback(
     agribot_msgs::ChangeDeltasGeometry::Response& res)  // NOLINT(runtime/references)
 {
   const CartsStatus& cartStatus = CommHandlerControl.getCartsStatus();
-  uint8_t cart_state = DELTAS_GEOMETRY_STATE_UNKNOWN;
+  uint8_t cart_state = eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN;
   if (req.cart_delta_command == req.CHANGE_CATERPILLAR_GEOMETRY)
   {
-    CommHandlerControl.vSendDeltasGeometryCommand(DELTAS_GEOMETRY_STATE_CHANGED, DELTAS_GEOMETRY_STATE_UNKNOWN);
-    while (cart_state != DELTAS_GEOMETRY_STATE_CHANGED)
+    CommHandlerControl.vSendDeltasGeometryCommand(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_CHANGED, eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN);
+    while (cart_state != eDeltasGeometryState::DELTAS_GEOMETRY_STATE_CHANGED)
     {
       cart_state = cartStatus.bGetFrontCartGeometryState();
       ros::Duration(0.1).sleep();
@@ -193,8 +193,8 @@ bool front_deltas_geometry_service_callback(
   }
   else if (req.cart_delta_command == req.NORMAL_CATERPILLAR_GEOMETRY)
   {
-    CommHandlerControl.vSendDeltasGeometryCommand(DELTAS_GEOMETRY_STATE_NORMAL, DELTAS_GEOMETRY_STATE_UNKNOWN);
-    while (cart_state != DELTAS_GEOMETRY_STATE_NORMAL)
+    CommHandlerControl.vSendDeltasGeometryCommand(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL, eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN);
+    while (cart_state != eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL)
     {
       cart_state = cartStatus.bGetFrontCartGeometryState();
       ros::Duration(0.1).sleep();
@@ -214,11 +214,11 @@ bool back_deltas_geometry_service_callback(
     agribot_msgs::ChangeDeltasGeometry::Response& res)  // NOLINT(runtime/references)
 {
   const CartsStatus& cartStatus = CommHandlerControl.getCartsStatus();
-  uint8_t cart_state = DELTAS_GEOMETRY_STATE_UNKNOWN;
+  uint8_t cart_state = eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN;
   if (req.cart_delta_command == req.CHANGE_CATERPILLAR_GEOMETRY)
   {
-    CommHandlerControl.vSendDeltasGeometryCommand(DELTAS_GEOMETRY_STATE_UNKNOWN, DELTAS_GEOMETRY_STATE_CHANGED);
-    while (cart_state != DELTAS_GEOMETRY_STATE_CHANGED)
+    CommHandlerControl.vSendDeltasGeometryCommand(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN, eDeltasGeometryState::DELTAS_GEOMETRY_STATE_CHANGED);
+    while (cart_state != eDeltasGeometryState::DELTAS_GEOMETRY_STATE_CHANGED)
     {
       cart_state = cartStatus.bGetBackCartGeometryState();
       ros::Duration(0.1).sleep();
@@ -228,8 +228,8 @@ bool back_deltas_geometry_service_callback(
   }
   else if (req.cart_delta_command == req.NORMAL_CATERPILLAR_GEOMETRY)
   {
-    CommHandlerControl.vSendDeltasGeometryCommand(DELTAS_GEOMETRY_STATE_UNKNOWN, DELTAS_GEOMETRY_STATE_NORMAL);
-    while (cart_state != DELTAS_GEOMETRY_STATE_NORMAL)
+    CommHandlerControl.vSendDeltasGeometryCommand(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN, eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL);
+    while (cart_state != eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL)
     {
       cart_state = cartStatus.bGetBackCartGeometryState();
       ros::Duration(0.1).sleep();

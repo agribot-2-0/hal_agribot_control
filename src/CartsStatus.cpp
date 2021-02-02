@@ -24,12 +24,12 @@ void CartsStatus::vSetBackAngular(float fVelo)
     _fBackAngular = fVelo;
 }
 
-void CartsStatus::vSetFrontCartGeometryState(uint8_t geometry_state)
+void CartsStatus::vSetFrontCartGeometryState(const uint8_t geometry_state)
 {
     front_cart_geometry_state_ = geometry_state;
 }
 
-void CartsStatus::vSetBackCartGeometryState(uint8_t geometry_state)
+void CartsStatus::vSetBackCartGeometryState(const uint8_t geometry_state)
 {
     back_cart_geometry_state_ = geometry_state;
 }
