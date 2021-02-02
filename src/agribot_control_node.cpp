@@ -20,6 +20,8 @@ constexpr bool READ_REGULAR_CARTS_ENCODERS_FILE = true;
 constexpr std::string_view TTCONTROL_CONNECTION_MSG = "connected";
 constexpr bool TTCONTROL_CONNECTED = true;
 constexpr bool TTCONTROL_DISCONNECTED = false;
+constexpr uint8_t FRONT_CART = 1;
+constexpr uint8_t BACK_CART = 0;
 
 const struct TTCONTROL_PARAMETER_FLAGS
 {
@@ -174,32 +176,93 @@ void frontCallback(const agribot_msgs::AgribotCaterpillar& msg)
   CommHandlerControl.vSendVelocities(msg.front_linear, msg.front_angular, msg.back_linear, msg.back_angular);
 }
 
-bool front_deltas_geometry_service_callback(
-    agribot_msgs::ChangeDeltasGeometry::Request& req,   // NOLINT(runtime/references)
-    agribot_msgs::ChangeDeltasGeometry::Response& res)  // NOLINT(runtime/references)
+bool send_deltas_geometry_command(const bool cart_pick, const uint8_t command)
+{
+  if (command == eDeltasGeometryState::DELTAS_GEOMETRY_STATE_ELEVATED ||
+      command == eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL)
+  {
+    if (cart_pick)
+    {
+      CommHandlerControl.vSendDeltasGeometryCommand(command, eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN);
+      return true;
+    }
+    else
+    {
+      CommHandlerControl.vSendDeltasGeometryCommand(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN, command);
+      return true;
+    }
+  }
+  else
+  {
+    return false;
+  }
+}
+
+void wait_till_deltas_geometry_is_set(const uint8_t cart_pick, const uint8_t desired_geometry)
 {
   const CartsStatus& cartStatus = CommHandlerControl.getCartsStatus();
   uint8_t cart_state = eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN;
-  if (req.cart_delta_command == req.CHANGE_CATERPILLAR_GEOMETRY)
+  if (cart_pick)
   {
-    CommHandlerControl.vSendDeltasGeometryCommand(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_CHANGED, eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN);
-    while (cart_state != eDeltasGeometryState::DELTAS_GEOMETRY_STATE_CHANGED)
+    while (cart_state != desired_geometry)
     {
       cart_state = cartStatus.bGetFrontCartGeometryState();
       ros::Duration(0.1).sleep();
     }
-    res.result = res.CHANGED_CATERPILLAR_GEOMETRY;
-    return true;
+  }
+  else
+  {
+    while (cart_state != desired_geometry)
+    {
+      cart_state = cartStatus.bGetBackCartGeometryState();
+      ros::Duration(0.1).sleep();
+    }
+  }
+}
+
+uint8_t deltas_geometry_request_to_enum(const agribot_msgs::ChangeDeltasGeometry::Request& req)
+{
+  if (req.cart_delta_command == req.CHANGE_CATERPILLAR_GEOMETRY)
+  {
+    return eDeltasGeometryState::DELTAS_GEOMETRY_STATE_ELEVATED;
   }
   else if (req.cart_delta_command == req.NORMAL_CATERPILLAR_GEOMETRY)
   {
-    CommHandlerControl.vSendDeltasGeometryCommand(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL, eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN);
-    while (cart_state != eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL)
-    {
-      cart_state = cartStatus.bGetFrontCartGeometryState();
-      ros::Duration(0.1).sleep();
-    }
-    res.result = res.NORMAL_CATERPILLAR_GEOMETRY;
+    return eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL;
+  }
+  else
+  {
+    return eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN;
+  }
+}
+
+void set_deltas_geometry_result(agribot_msgs::ChangeDeltasGeometry::Response& res,  // NOLINT(runtime/references)
+                                const uint8_t desired_geometry)
+{
+  switch (desired_geometry)
+  {
+    case eDeltasGeometryState::DELTAS_GEOMETRY_STATE_ELEVATED:
+      res.result = res.CHANGED_CATERPILLAR_GEOMETRY;
+      break;
+    case eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL:
+      res.result = res.NORMAL_CATERPILLAR_GEOMETRY;
+      break;
+    default:
+      res.result = res.UNKNOWN_CATERPILLAR_GEOMETRY;
+      break;
+  }
+}
+
+bool deltas_change_geometry_service_execution(
+    const agribot_msgs::ChangeDeltasGeometry::Request& req,
+    agribot_msgs::ChangeDeltasGeometry::Response& res,  // NOLINT(runtime/references)
+    const uint8_t cart_pick)
+{
+  uint8_t desired_geometry = deltas_geometry_request_to_enum(req);
+  if (send_deltas_geometry_command(cart_pick, desired_geometry))
+  {
+    wait_till_deltas_geometry_is_set(cart_pick, desired_geometry);
+    set_deltas_geometry_result(res, desired_geometry);
     return true;
   }
   else
@@ -209,39 +272,18 @@ bool front_deltas_geometry_service_callback(
   }
 }
 
+bool front_deltas_geometry_service_callback(
+    agribot_msgs::ChangeDeltasGeometry::Request& req,   // NOLINT(runtime/references)
+    agribot_msgs::ChangeDeltasGeometry::Response& res)  // NOLINT(runtime/references)
+{
+  return deltas_change_geometry_service_execution(req, res, FRONT_CART);
+}
+
 bool back_deltas_geometry_service_callback(
     agribot_msgs::ChangeDeltasGeometry::Request& req,   // NOLINT(runtime/references)
     agribot_msgs::ChangeDeltasGeometry::Response& res)  // NOLINT(runtime/references)
 {
-  const CartsStatus& cartStatus = CommHandlerControl.getCartsStatus();
-  uint8_t cart_state = eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN;
-  if (req.cart_delta_command == req.CHANGE_CATERPILLAR_GEOMETRY)
-  {
-    CommHandlerControl.vSendDeltasGeometryCommand(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN, eDeltasGeometryState::DELTAS_GEOMETRY_STATE_CHANGED);
-    while (cart_state != eDeltasGeometryState::DELTAS_GEOMETRY_STATE_CHANGED)
-    {
-      cart_state = cartStatus.bGetBackCartGeometryState();
-      ros::Duration(0.1).sleep();
-    }
-    res.result = res.CHANGED_CATERPILLAR_GEOMETRY;
-    return true;
-  }
-  else if (req.cart_delta_command == req.NORMAL_CATERPILLAR_GEOMETRY)
-  {
-    CommHandlerControl.vSendDeltasGeometryCommand(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN, eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL);
-    while (cart_state != eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL)
-    {
-      cart_state = cartStatus.bGetBackCartGeometryState();
-      ros::Duration(0.1).sleep();
-    }
-    res.result = res.NORMAL_CATERPILLAR_GEOMETRY;
-    return true;
-  }
-  else
-  {
-    res.result = res.UNKNOWN_CATERPILLAR_GEOMETRY;
-    return false;
-  }
+  return deltas_change_geometry_service_execution(req, res, BACK_CART);
 }
 
 void ttcontrol_connection_state(const std_msgs::String& msg)
@@ -283,10 +325,10 @@ int main(int argc, char** argv)
   agribot_msgs::AgribotCaterpillar AgribotCaterpillarMsg;
   dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig> server;
   dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>::CallbackType callback_function_object;
-  ros::ServiceServer service_front = n.advertiseService("agribot/cart/caterpillar/change_deltas_geometry/front",
+  ros::ServiceServer service_front = n.advertiseService("agribot/cart/caterpillar/front/change_deltas_geometry",
                                                         front_deltas_geometry_service_callback);
   ros::ServiceServer service_back =
-      n.advertiseService("agribot/cart/caterpillar/change_deltas_geometry/back", back_deltas_geometry_service_callback);
+      n.advertiseService("agribot/cart/caterpillar/back/change_deltas_geometry", back_deltas_geometry_service_callback);
   std_msgs::Float32 FrontAngleMsg;
   std_msgs::Float32 BackAngleMsg;
   // angle initialization reading
@@ -308,7 +350,7 @@ int main(int argc, char** argv)
   {
     CommHandlerControl.vReceiveCanFrames();
     CommHandlerControl.vParseCanFrames();
-    if (CommHandlerControl.bCheckReceivedCAN_ID_Bit(VELOCITIES_MASK))
+    if (CommHandlerControl.bCheckReceivedCanBusIdBit(VELOCITIES_MASK))
     {
       const CartsStatus& cartStatus = CommHandlerControl.getCartsStatus();
       AgribotCaterpillarMsg.header.stamp = ros::Time::now();
@@ -318,32 +360,32 @@ int main(int argc, char** argv)
       AgribotCaterpillarMsg.back_linear = cartStatus.fGetBackLinear();
       AgribotCaterpillarMsg.back_angular = cartStatus.fGetBackAngular();
       CartsStatusPublisher.publish(AgribotCaterpillarMsg);
-      CommHandlerControl.vClearReceivedCAN_ID_Bit(VELOCITIES_MASK);
+      CommHandlerControl.vClearReceivedCanBusIdBit(VELOCITIES_MASK);
     }
-    if (CommHandlerControl.bCheckReceivedCAN_ID_Bit(FRONT_ANGLE_MASK))
+    if (CommHandlerControl.bCheckReceivedCanBusIdBit(FRONT_ANGLE_MASK))
     {
       FrontAngleMsg.data = CommHandlerControl.fGetFrontCartAngle();
       FrontCartAnglePublisher.publish(FrontAngleMsg);
-      CommHandlerControl.vClearReceivedCAN_ID_Bit(FRONT_ANGLE_MASK);
+      CommHandlerControl.vClearReceivedCanBusIdBit(FRONT_ANGLE_MASK);
     }
-    if (CommHandlerControl.bCheckReceivedCAN_ID_Bit(BACK_ANGLE_MASK))
+    if (CommHandlerControl.bCheckReceivedCanBusIdBit(BACK_ANGLE_MASK))
     {
       BackAngleMsg.data = CommHandlerControl.fGetBackCartAngle();
       BackCartAnglePublisher.publish(BackAngleMsg);
-      CommHandlerControl.vClearReceivedCAN_ID_Bit(BACK_ANGLE_MASK);
+      CommHandlerControl.vClearReceivedCanBusIdBit(BACK_ANGLE_MASK);
     }
-    if (CommHandlerControl.bCheckReceivedCAN_ID_Bit(AUTOMATIC_STATE_REQUEST_MASK))
+    if (CommHandlerControl.bCheckReceivedCanBusIdBit(AUTOMATIC_STATE_REQUEST_MASK))
     {
       // TODO(Michal/Adam): Implement some diagnostics
       ROS_INFO("[AgribotControlNode] Received automatic mode request");
       usleep(WAIT_FOR_TTCONTROL);
       CommHandlerControl.vConfirmAdvantechReadiness();
-      CommHandlerControl.vClearReceivedCAN_ID_Bit(AUTOMATIC_STATE_REQUEST_MASK);
+      CommHandlerControl.vClearReceivedCanBusIdBit(AUTOMATIC_STATE_REQUEST_MASK);
     }
-    if (CommHandlerControl.bCheckReceivedCAN_ID_Bit(AUTOMATIC_STATE_REQUEST_ERROR_MASK))
+    if (CommHandlerControl.bCheckReceivedCanBusIdBit(AUTOMATIC_STATE_REQUEST_ERROR_MASK))
     {
       ROS_ERROR("[AgribotControlNode] Automatic state request error: %d", CommHandlerControl.iGetErrorCode());
-      CommHandlerControl.vClearReceivedCAN_ID_Bit(AUTOMATIC_STATE_REQUEST_ERROR_MASK);
+      CommHandlerControl.vClearReceivedCanBusIdBit(AUTOMATIC_STATE_REQUEST_ERROR_MASK);
     }
     // when connected, read and send encoders value initialization till the confirmation
     if (!CommHandlerControl.bGetEncodersConfirmedStatus() && CommHandlerControl.bGetTTControlConnectionStatus())

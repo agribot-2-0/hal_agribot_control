@@ -87,30 +87,29 @@ float TTCommControl::fDecodeVelocitiy(const uint8_t start_byte, const can_frame&
 
 void TTCommControl::vDecodeCartsGeometryState(const can_frame& frame)
 {
-  if (frame.data[FRONT_DELTA_GEOMETRY_BYTE] == eDeltasGeometryState::DELTAS_GEOMETRY_STATE_CHANGED)
+  switch (frame.data[FRONT_DELTA_GEOMETRY_BYTE])
   {
-    cart_.vSetFrontCartGeometryState(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_CHANGED);
+    case eDeltasGeometryState::DELTAS_GEOMETRY_STATE_ELEVATED:
+      cart_.vSetFrontCartGeometryState(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_ELEVATED);
+      break;
+    case eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL:
+      cart_.vSetFrontCartGeometryState(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL);
+      break;
+    default:
+      cart_.vSetFrontCartGeometryState(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN);
+      break;
   }
-  else if (frame.data[FRONT_DELTA_GEOMETRY_BYTE] == eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL)
+  switch (frame.data[BACK_DELTA_GEOMETRY_BYTE])
   {
-    cart_.vSetFrontCartGeometryState(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL);
-  }
-  else
-  {
-    cart_.vSetFrontCartGeometryState(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN);
-  }
-
-  if (frame.data[BACK_DELTA_GEOMETRY_BYTE] == eDeltasGeometryState::DELTAS_GEOMETRY_STATE_CHANGED)
-  {
-    cart_.vSetBackCartGeometryState(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_CHANGED);
-  }
-  else if (frame.data[BACK_DELTA_GEOMETRY_BYTE] == eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL)
-  {
-    cart_.vSetBackCartGeometryState(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL);
-  }
-  else
-  {
-    cart_.vSetBackCartGeometryState(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN);
+    case eDeltasGeometryState::DELTAS_GEOMETRY_STATE_ELEVATED:
+      cart_.vSetBackCartGeometryState(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_ELEVATED);
+      break;
+    case eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL:
+      cart_.vSetBackCartGeometryState(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL);
+      break;
+    default:
+      cart_.vSetBackCartGeometryState(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN);
+      break;
   }
 }
 
@@ -207,12 +206,12 @@ TTCommControl::~TTCommControl()
   }
 }
 
-inline bool TTCommControl::bCheckIfCAN_IDsMatch(const uint ID_to_check, const uint msg_id)
+inline bool TTCommControl::bCheckIfCanBusIdsMatch(const uint32_t id_to_check, const uint msg_id)
 {
-  return ((ID_to_check & ADDR_MASK) == (msg_id & ADDR_MASK));
+  return ((id_to_check & ADDR_MASK) == (msg_id & ADDR_MASK));
 }
 
-inline void TTCommControl::vSetReceivedCAN_IDsBitMask(const uint32_t mask_to_set)
+inline void TTCommControl::vSetReceivedCanBusIdsBitMask(const uint32_t mask_to_set)
 {
   received_msgs_register_ |= mask_to_set;
 }
@@ -227,12 +226,12 @@ inline void TTCommControl::vClearBitInReceivedMsgsRegister(const uint32_t mask_t
   received_msgs_register_ = (received_msgs_register_ & ~mask_to_check);
 }
 
-void TTCommControl::vClearReceivedCAN_ID_Bit(const uint32_t mask_to_check)
+void TTCommControl::vClearReceivedCanBusIdBit(const uint32_t mask_to_check)
 {
   vClearBitInReceivedMsgsRegister(mask_to_check);
 }
 
-bool TTCommControl::bCheckReceivedCAN_ID_Bit(const uint32_t mask_to_check)
+bool TTCommControl::bCheckReceivedCanBusIdBit(const uint32_t mask_to_check)
 {
   return (bCheckIfBitIsSet(received_msgs_register_, mask_to_check));
 }
@@ -243,34 +242,34 @@ void TTCommControl::vParseCanFrames()
   while (!frames_queue_.empty())
   {
     message = frames_queue_.front();
-    if (bCheckIfCAN_IDsMatch(VELO_FRAME_ID, message.can_id))
+    if (bCheckIfCanBusIdsMatch(VELO_FRAME_ID, message.can_id))
     {
       vSetVelocitiy(FRONT_LINEAR, message);
       vSetVelocitiy(FRONT_ANGULAR, message);
       vSetVelocitiy(BACK_LINEAR, message);
       vSetVelocitiy(BACK_ANGULAR, message);
-      vSetReceivedCAN_IDsBitMask(VELOCITIES_MASK);
+      vSetReceivedCanBusIdsBitMask(VELOCITIES_MASK);
     }
-    if (bCheckIfCAN_IDsMatch(FRONT_ANGLE_ID, message.can_id))
+    if (bCheckIfCanBusIdsMatch(FRONT_ANGLE_ID, message.can_id))
     {
       front_cart_encoder_unread_ = true;
       front_cart_encoder_value_ = uiDecodeEncoderValue(message);
       front_cart_angle_ = fDecodeAngle(message) * DEG_TO_RAD;
-      vSetReceivedCAN_IDsBitMask(FRONT_ANGLE_MASK);
+      vSetReceivedCanBusIdsBitMask(FRONT_ANGLE_MASK);
     }
-    if (bCheckIfCAN_IDsMatch(BACK_ANGLE_ID, message.can_id))
+    if (bCheckIfCanBusIdsMatch(BACK_ANGLE_ID, message.can_id))
     {
       back_cart_encoder_unread_ = true;
       back_cart_encoder_value_ = uiDecodeEncoderValue(message);
       back_cart_angle_ = fDecodeAngle(message) * DEG_TO_RAD;
-      vSetReceivedCAN_IDsBitMask(BACK_ANGLE_MASK);
+      vSetReceivedCanBusIdsBitMask(BACK_ANGLE_MASK);
     }
-    if (bCheckIfCAN_IDsMatch(DELTAS_GEOMETRY_FEEDBACK_ID, message.can_id))
+    if (bCheckIfCanBusIdsMatch(DELTAS_GEOMETRY_FEEDBACK_ID, message.can_id))
     {
       vDecodeCartsGeometryState(message);
-      vSetReceivedCAN_IDsBitMask(GEOMETRY_FEEDBACK_MASK);
+      vSetReceivedCanBusIdsBitMask(GEOMETRY_FEEDBACK_MASK);
     }
-    if (bCheckIfCAN_IDsMatch(PROTOCOL_FRAME_ID, message.can_id))
+    if (bCheckIfCanBusIdsMatch(PROTOCOL_FRAME_ID, message.can_id))
     {
       // if TTControl confirms angle receiving
       if (message.data[PROTOCOL_PURPOSE_BYTE] == TTC_CARTS_ANGLE_INITIALIZATION)
@@ -283,13 +282,13 @@ void TTCommControl::vParseCanFrames()
         // if TTC said that it is ready for entering automatic mode
         if (message.data[PROTOCOL_DETAIL_BYTE] == TTC_OK)
         {
-          vSetReceivedCAN_IDsBitMask(AUTOMATIC_STATE_REQUEST_MASK);
+          vSetReceivedCanBusIdsBitMask(AUTOMATIC_STATE_REQUEST_MASK);
         }
         // if TTC send some error while entering automatic mode
         else
         {
           err_code_ = message.data[PROTOCOL_DETAIL_BYTE];
-          vSetReceivedCAN_IDsBitMask(AUTOMATIC_STATE_REQUEST_ERROR_MASK);
+          vSetReceivedCanBusIdsBitMask(AUTOMATIC_STATE_REQUEST_ERROR_MASK);
         }
       }
     }
@@ -313,35 +312,29 @@ void TTCommControl::vConfirmAdvantechReadiness()
   can_handler_.iSendFrame(&message);
 }
 
+inline uint8_t TTCommControl::u8SetDeltasGeometryCommandByte(const uint8_t command)
+{
+  switch (command)
+  {
+    case eDeltasGeometryState::DELTAS_GEOMETRY_STATE_ELEVATED:
+      return eDeltasGeometryState::DELTAS_GEOMETRY_STATE_ELEVATED;
+      break;
+    case eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL:
+      return eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL;
+      break;
+    default:
+      return eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN;
+      break;
+  }
+}
+
 void TTCommControl::vSendDeltasGeometryCommand(const uint8_t front_cart_command, const uint8_t back_cart_command)
 {
   can_frame message;
   message.can_id = DELTAS_GEOMETRY_COMMAND_ID;
   message.can_dlc = TWO_BYTE_CAN_FRAME;
-  switch (front_cart_command)
-  {
-    case eDeltasGeometryState::DELTAS_GEOMETRY_STATE_CHANGED:
-      message.data[FRONT_DELTA_GEOMETRY_BYTE] = eDeltasGeometryState::DELTAS_GEOMETRY_STATE_CHANGED;
-      break;
-    case eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL:
-      message.data[FRONT_DELTA_GEOMETRY_BYTE] = eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL;
-      break;
-    default:
-      message.data[FRONT_DELTA_GEOMETRY_BYTE] = eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN;
-      break;
-  }
-  switch (back_cart_command)
-  {
-    case eDeltasGeometryState::DELTAS_GEOMETRY_STATE_CHANGED:
-      message.data[BACK_DELTA_GEOMETRY_BYTE] = eDeltasGeometryState::DELTAS_GEOMETRY_STATE_CHANGED;
-      break;
-    case eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL:
-      message.data[BACK_DELTA_GEOMETRY_BYTE] = eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL;
-      break;
-    default:
-      message.data[BACK_DELTA_GEOMETRY_BYTE] = eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN;
-      break;
-  }
+  message.data[FRONT_DELTA_GEOMETRY_BYTE] = u8SetDeltasGeometryCommandByte(front_cart_command);
+  message.data[BACK_DELTA_GEOMETRY_BYTE] = u8SetDeltasGeometryCommandByte(back_cart_command);
   can_handler_.iSendFrame(&message);
 }
 
@@ -413,8 +406,7 @@ void TTCommControl::vSendCartsPIDParameters(const double kp, const double ki, co
   can_handler_.iSendFrame(&message);
 }
 
-void TTCommControl::vSendCaterpillarPIDParameters(const uint kp, const uint ki, const uint kd,
-                                                  const uint8_t frame_type)
+void TTCommControl::vSendCaterpillarPIDParameters(const uint kp, const uint ki, const uint kd, const uint8_t frame_type)
 {
   can_frame message;
   message.can_id = CONFIG_FRAME_CAN_ID;

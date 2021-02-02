@@ -75,10 +75,11 @@ class TTCommControl
   uint32_t uiDecodeEncoderValue(const can_frame& frame);
   void vDecodeCartsGeometryState(const can_frame& frame);
   void vSetVelocitiy(const eVelocities enum_velo, const can_frame& frame);
-  inline bool bCheckIfCAN_IDsMatch(const uint ID_to_check, const uint msg_id);
-  inline void vSetReceivedCAN_IDsBitMask(const uint32_t mask_to_set);
+  inline bool bCheckIfCanBusIdsMatch(const uint32_t id_to_check, const uint msg_id);
+  inline void vSetReceivedCanBusIdsBitMask(const uint32_t mask_to_set);
   inline bool bCheckIfBitIsSet(const uint32_t number_to_check, const uint32_t mask_to_check);
   inline void vClearBitInReceivedMsgsRegister(const uint32_t mask_to_check);
+  inline uint8_t u8SetDeltasGeometryCommandByte(const uint8_t command);
 
 public:
   const struct eTTControlParamsType
@@ -124,6 +125,6 @@ public:
   float fGetFrontCartAngle() const;
   float fGetBackCartAngle() const;
   int iGetErrorCode() const;
-  void vClearReceivedCAN_ID_Bit(const uint32_t mask_to_check);
-  bool bCheckReceivedCAN_ID_Bit(const uint32_t mask_to_check);
+  void vClearReceivedCanBusIdBit(const uint32_t mask_to_check);
+  bool bCheckReceivedCanBusIdBit(const uint32_t mask_to_check);
 };
