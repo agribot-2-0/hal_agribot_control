@@ -124,5 +124,6 @@ public:
   float fGetFrontCartAngle();
   float fGetBackCartAngle();
   int iGetErrorCode();
-  bool bCheckAndClearReceivedCAN_ID_Bit(const uint32_t mask_to_check);
+  void vClearReceivedCAN_ID_Bit(const uint32_t mask_to_check);
+  bool bCheckReceivedCAN_ID_Bit(const uint32_t mask_to_check);
 };

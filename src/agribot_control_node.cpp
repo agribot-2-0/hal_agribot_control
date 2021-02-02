@@ -308,7 +308,7 @@ int main(int argc, char** argv)
   {
     CommHandlerControl.vReceiveCanFrames();
     CommHandlerControl.vParseCanFrames();
-    if (CommHandlerControl.bCheckAndClearReceivedCAN_ID_Bit(VELOCITIES_MASK))
+    if (CommHandlerControl.bCheckReceivedCAN_ID_Bit(VELOCITIES_MASK))
     {
       const CartsStatus& cartStatus = CommHandlerControl.getCartsStatus();
       AgribotCaterpillarMsg.header.stamp = ros::Time::now();
@@ -318,27 +318,32 @@ int main(int argc, char** argv)
       AgribotCaterpillarMsg.back_linear = cartStatus.fGetBackLinear();
       AgribotCaterpillarMsg.back_angular = cartStatus.fGetBackAngular();
       CartsStatusPublisher.publish(AgribotCaterpillarMsg);
+      CommHandlerControl.vClearReceivedCAN_ID_Bit(VELOCITIES_MASK);
     }
-    if (CommHandlerControl.bCheckAndClearReceivedCAN_ID_Bit(FRONT_ANGLE_MASK))
+    if (CommHandlerControl.bCheckReceivedCAN_ID_Bit(FRONT_ANGLE_MASK))
     {
       FrontAngleMsg.data = CommHandlerControl.fGetFrontCartAngle();
       FrontCartAnglePublisher.publish(FrontAngleMsg);
+      CommHandlerControl.vClearReceivedCAN_ID_Bit(FRONT_ANGLE_MASK);
     }
-    if (CommHandlerControl.bCheckAndClearReceivedCAN_ID_Bit(BACK_ANGLE_MASK))
+    if (CommHandlerControl.bCheckReceivedCAN_ID_Bit(BACK_ANGLE_MASK))
     {
       BackAngleMsg.data = CommHandlerControl.fGetBackCartAngle();
       BackCartAnglePublisher.publish(BackAngleMsg);
+      CommHandlerControl.vClearReceivedCAN_ID_Bit(BACK_ANGLE_MASK);
     }
-    if (CommHandlerControl.bCheckAndClearReceivedCAN_ID_Bit(AUTOMATIC_STATE_REQUEST_MASK))
+    if (CommHandlerControl.bCheckReceivedCAN_ID_Bit(AUTOMATIC_STATE_REQUEST_MASK))
     {
       // TODO(Michal/Adam): Implement some diagnostics
       ROS_INFO("[AgribotControlNode] Received automatic mode request");
       usleep(WAIT_FOR_TTCONTROL);
       CommHandlerControl.vConfirmAdvantechReadiness();
+      CommHandlerControl.vClearReceivedCAN_ID_Bit(AUTOMATIC_STATE_REQUEST_MASK);
     }
-    if (CommHandlerControl.bCheckAndClearReceivedCAN_ID_Bit(AUTOMATIC_STATE_REQUEST_ERROR_MASK))
+    if (CommHandlerControl.bCheckReceivedCAN_ID_Bit(AUTOMATIC_STATE_REQUEST_ERROR_MASK))
     {
       ROS_ERROR("[AgribotControlNode] Automatic state request error: %d", CommHandlerControl.iGetErrorCode());
+      CommHandlerControl.vClearReceivedCAN_ID_Bit(AUTOMATIC_STATE_REQUEST_ERROR_MASK);
     }
     // when connected, read and send encoders value initialization till the confirmation
     if (!CommHandlerControl.bGetEncodersConfirmedStatus() && CommHandlerControl.bGetTTControlConnectionStatus())

@@ -230,17 +230,14 @@ inline void TTCommControl::vClearBitInReceivedMsgsRegister(const uint32_t mask_t
   received_msgs_register_ = (received_msgs_register_ & ~mask_to_check);
 }
 
-bool TTCommControl::bCheckAndClearReceivedCAN_ID_Bit(const uint32_t mask_to_check)
+void TTCommControl::vClearReceivedCAN_ID_Bit(const uint32_t mask_to_check)
 {
-  if (bCheckIfBitIsSet(received_msgs_register_, mask_to_check))
-  {
-    vClearBitInReceivedMsgsRegister(mask_to_check);
-    return true;
-  }
-  else
-  {
-    return false;
-  }
+  vClearBitInReceivedMsgsRegister(mask_to_check);
+}
+
+bool TTCommControl::bCheckReceivedCAN_ID_Bit(const uint32_t mask_to_check)
+{
+  return (bCheckIfBitIsSet(received_msgs_register_, mask_to_check));
 }
 
 void TTCommControl::vParseCanFrames()
