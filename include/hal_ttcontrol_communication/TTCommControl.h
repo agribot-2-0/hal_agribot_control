@@ -74,6 +74,8 @@ class TTCommControl
   std::ofstream _encoder_data_file_output;
   bool _ttcontrol_is_connected;
   bool _ttcontrol_carts_angle_confirmed;
+  inline uint8_t u8GetLowerHalfOfByte(const uint8_t byte);
+  inline uint8_t u8GetUpperHalfOfByte(const uint8_t byte);
 
 public:
   const struct eTTControlParamsType
