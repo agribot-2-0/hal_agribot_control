@@ -304,13 +304,11 @@ int main(int argc, char** argv)
   callback_function_object = boost::bind(&callbackDynamicReconfigure, _1, _2);
   server.setCallback(callback_function_object);
   uint8_t encoder_init_timeout_counter = 0;
-  uint8_t u8Status = 0x00;
   while (ros::ok())
   {
     CommHandlerControl.vReceiveCanFrames();
-    u8Status = CommHandlerControl.u8ParseCanFrames();
-    // if velociteis frames received in u8ParseCanFrames() method
-    if ((u8Status & VELOCITIES_MASK) == VELOCITIES_MASK)
+    CommHandlerControl.vParseCanFrames();
+    if (CommHandlerControl.bCheckAndClearReceivedCAN_ID_Bit(VELOCITIES_MASK))
     {
       const CartsStatus& cartStatus = CommHandlerControl.getCartsStatus();
       AgribotCaterpillarMsg.header.stamp = ros::Time::now();
@@ -321,30 +319,24 @@ int main(int argc, char** argv)
       AgribotCaterpillarMsg.back_angular = cartStatus.fGetBackAngular();
       CartsStatusPublisher.publish(AgribotCaterpillarMsg);
     }
-    // if front cart angle frames received in u8ParseCanFrames() method
-    if ((u8Status & FRONT_ANGLE_MASK) == FRONT_ANGLE_MASK)
+    if (CommHandlerControl.bCheckAndClearReceivedCAN_ID_Bit(FRONT_ANGLE_MASK))
     {
       FrontAngleMsg.data = CommHandlerControl.fGetFrontCartAngle();
       FrontCartAnglePublisher.publish(FrontAngleMsg);
     }
-    // if back cart angle frames received in u8ParseCanFrames() method
-    if ((u8Status & BACK_ANGLE_MASK) == BACK_ANGLE_MASK)
+    if (CommHandlerControl.bCheckAndClearReceivedCAN_ID_Bit(BACK_ANGLE_MASK))
     {
       BackAngleMsg.data = CommHandlerControl.fGetBackCartAngle();
       BackCartAnglePublisher.publish(BackAngleMsg);
     }
-    // if automatic state request frame received in u8ParseCanFrames()
-    // method
-    if ((u8Status & AUTOMATIC_STATE_REQUEST_MASK) == AUTOMATIC_STATE_REQUEST_MASK)
+    if (CommHandlerControl.bCheckAndClearReceivedCAN_ID_Bit(AUTOMATIC_STATE_REQUEST_MASK))
     {
       // TODO(Michal/Adam): Implement some diagnostics
       ROS_INFO("[AgribotControlNode] Received automatic mode request");
       usleep(WAIT_FOR_TTCONTROL);
       CommHandlerControl.vConfirmAdvantechReadiness();
     }
-    // if automatic state request error frame received in u8ParseCanFrames()
-    // method
-    if ((u8Status & AUTOMATIC_STATE_REQUEST_ERROR_MASK) == AUTOMATIC_STATE_REQUEST_ERROR_MASK)
+    if (CommHandlerControl.bCheckAndClearReceivedCAN_ID_Bit(AUTOMATIC_STATE_REQUEST_ERROR_MASK))
     {
       ROS_ERROR("[AgribotControlNode] Automatic state request error: %d", CommHandlerControl.iGetErrorCode());
     }
@@ -382,7 +374,6 @@ int main(int argc, char** argv)
         encoder_init_timeout_counter++;
       }
     }
-    // ros::spinOnce();
     loop_rate.sleep();
   }
 }

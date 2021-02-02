@@ -5,6 +5,7 @@
 #include <hal_ttcontrol_communication/TTCommControl.h>
 
 // mask used for extracting address and source, without PG
+constexpr uint8_t TTCONTROL_J1939_NODE_ID = 0x64;
 constexpr uint ADDR_MASK = 0xFFFF;
 constexpr uint8_t FULL_CAN_FRAME_BYTE_NUMBER = 8;
 constexpr uint8_t TWO_BYTE_CAN_FRAME = 2;
@@ -21,6 +22,10 @@ constexpr double DEG_TO_RAD = (M_PI / 180.0);
 
 constexpr uint SIGN_BIT = 0x80;
 constexpr uint DATA_BITS = 0x7F;
+
+// protocol data bytes
+constexpr uint8_t PROTOCOL_PURPOSE_BYTE = 0;
+constexpr uint8_t PROTOCOL_DETAIL_BYTE = 1;
 
 // deltas geometry steering and feedback
 constexpr uint8_t FRONT_DELTA_GEOMETRY_BYTE = 0;
@@ -56,7 +61,7 @@ constexpr float CARTS_ENCODERS_RESOLUTION = 0.036;
 constexpr uint DELIMITER_MIDDLE_LENGTH = 1;
 constexpr uint DELIMITER_ENDING_LENGTH = 2;
 
-void TTCommControl::vPrepareVelocitiesFrame(can_frame* frame, float velocity, uint8_t start_byte)
+void TTCommControl::vPrepareVelocitiesFrame(can_frame* frame, const float velocity, const uint8_t start_byte)
 {
   int16_t i16_velocity = (VELO_FRAME_ENCODE_CONST * velocity);
 
@@ -73,7 +78,7 @@ void TTCommControl::vPrepareVelocitiesFrame(can_frame* frame, float velocity, ui
   frame->data[start_byte + 1] = (uint8_t)i16_velocity;
 }
 
-float TTCommControl::fDecodeVelocitiy(uint8_t start_byte, can_frame frame)
+float TTCommControl::fDecodeVelocitiy(const uint8_t start_byte, const can_frame& frame)
 {
   return (static_cast<float>((static_cast<int16_t>(frame.data[start_byte] & DATA_BITS)) << 8 |
                              frame.data[start_byte + 1])) *
@@ -109,7 +114,7 @@ void TTCommControl::vDecodeCartsGeometryState(const can_frame& frame)
   }
 }
 
-float TTCommControl::fDecodeAngle(can_frame frame)
+float TTCommControl::fDecodeAngle(const can_frame& frame)
 {
   return (static_cast<float>(((static_cast<int32_t>(frame.data[CARTS_ENCODER_HIGH_BYTE_POSITION])) << 8 |
                               (static_cast<int32_t>(frame.data[CARTS_ENCODER_LOW_BYTE_POSITION]))) -
@@ -117,13 +122,13 @@ float TTCommControl::fDecodeAngle(can_frame frame)
           CARTS_ENCODERS_RESOLUTION);
 }
 
-uint TTCommControl::uiDecodeEncoderValue(can_frame frame)
+uint TTCommControl::uiDecodeEncoderValue(const can_frame& frame)
 {
   return ((static_cast<uint32_t>(frame.data[CARTS_ENCODER_HIGH_BYTE_POSITION]) << 8) |
           (static_cast<uint32_t>(frame.data[CARTS_ENCODER_LOW_BYTE_POSITION])));
 }
 
-void TTCommControl::vSetVelocitiy(eVelocities enum_velo, can_frame frame)
+void TTCommControl::vSetVelocitiy(const eVelocities enum_velo, const can_frame& frame)
 {
   switch (enum_velo)
   {
@@ -205,79 +210,97 @@ TTCommControl::~TTCommControl()
   }
 }
 
-uint8_t TTCommControl::u8ParseCanFrames()
+inline bool TTCommControl::bCheckIfCAN_IDsMatch(const uint ID_to_check, const uint msg_id)
 {
-  uint8_t status = 0;
+  return ((ID_to_check & ADDR_MASK) == (msg_id & ADDR_MASK));
+}
+
+inline void TTCommControl::vSetReceivedCAN_IDsBitMask(const uint32_t mask_to_set)
+{
+  received_msgs_register_ |= mask_to_set;
+}
+
+inline bool TTCommControl::bCheckIfBitIsSet(const uint32_t number_to_check, const uint32_t mask_to_check)
+{
+  return ((number_to_check & mask_to_check) == mask_to_check);
+}
+
+inline void TTCommControl::vClearBitInReceivedMsgsRegister(const uint32_t mask_to_check)
+{
+  received_msgs_register_ = (received_msgs_register_ & ~mask_to_check);
+}
+
+bool TTCommControl::bCheckAndClearReceivedCAN_ID_Bit(const uint32_t mask_to_check)
+{
+  if (bCheckIfBitIsSet(received_msgs_register_, mask_to_check))
+  {
+    vClearBitInReceivedMsgsRegister(mask_to_check);
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+void TTCommControl::vParseCanFrames()
+{
   can_frame message;
   while (!frames_queue_.empty())
   {
     message = frames_queue_.front();
-    // if there is velocities frame in frames_queue_
-    if ((VELO_FRAME_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
+    if (bCheckIfCAN_IDsMatch(VELO_FRAME_ID, message.can_id))
     {
       vSetVelocitiy(FRONT_LINEAR, message);
       vSetVelocitiy(FRONT_ANGULAR, message);
       vSetVelocitiy(BACK_LINEAR, message);
       vSetVelocitiy(BACK_ANGULAR, message);
-      status |= VELOCITIES_MASK;
+      vSetReceivedCAN_IDsBitMask(VELOCITIES_MASK);
     }
-    // if there is front cart angle frame in frames_queue_
-    if ((FRONT_ANGLE_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
+    if (bCheckIfCAN_IDsMatch(FRONT_ANGLE_ID, message.can_id))
     {
       front_cart_encoder_unread_ = true;
       front_cart_encoder_value_ = uiDecodeEncoderValue(message);
       front_cart_angle_ = fDecodeAngle(message) * DEG_TO_RAD;
-      status |= FRONT_ANGLE_MASK;
+      vSetReceivedCAN_IDsBitMask(FRONT_ANGLE_MASK);
     }
-    // if there is back cart angle frame in frames_queue_
-    if ((BACK_ANGLE_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
+    if (bCheckIfCAN_IDsMatch(BACK_ANGLE_ID, message.can_id))
     {
       back_cart_encoder_unread_ = true;
       back_cart_encoder_value_ = uiDecodeEncoderValue(message);
       back_cart_angle_ = fDecodeAngle(message) * DEG_TO_RAD;
-      status |= BACK_ANGLE_MASK;
+      vSetReceivedCAN_IDsBitMask(BACK_ANGLE_MASK);
     }
-    // if there is back cart angle frame in frames_queue_
-    if ((BACK_ANGLE_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
-    {
-      back_cart_encoder_unread_ = true;
-      back_cart_encoder_value_ = uiDecodeEncoderValue(message);
-      back_cart_angle_ = fDecodeAngle(message) * DEG_TO_RAD;
-      status |= BACK_ANGLE_MASK;
-    }
-    // if there is a cart geometry feedback
-    if ((DELTAS_GEOMETRY_FEEDBACK_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
+    if (bCheckIfCAN_IDsMatch(DELTAS_GEOMETRY_FEEDBACK_ID, message.can_id))
     {
       vDecodeCartsGeometryState(message);
-      status |= GEOMETRY_FEEDBACK_MASK;
+      vSetReceivedCAN_IDsBitMask(GEOMETRY_FEEDBACK_MASK);
     }
-    // if there is protocol frame in frames_queue_
-    if ((PROTOCOL_FRAME_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
+    if (bCheckIfCAN_IDsMatch(PROTOCOL_FRAME_ID, message.can_id))
     {
       // if TTControl confirms angle receiving
-      if (message.data[0] == TTC_CARTS_ANGLE_INITIALIZATION)
+      if (message.data[PROTOCOL_PURPOSE_BYTE] == TTC_CARTS_ANGLE_INITIALIZATION)
       {
         ttcontrol_carts_angle_confirmed_ = true;
       }
       // if there is a request for entering automatic mode
-      if (message.data[0] == TTC_AUTOMATIC_MODE_REQUEST)
+      if (message.data[PROTOCOL_PURPOSE_BYTE] == TTC_AUTOMATIC_MODE_REQUEST)
       {
         // if TTC said that it is ready for entering automatic mode
-        if (message.data[1] == TTC_OK)
+        if (message.data[PROTOCOL_DETAIL_BYTE] == TTC_OK)
         {
-          status |= AUTOMATIC_STATE_REQUEST_MASK;
+          vSetReceivedCAN_IDsBitMask(AUTOMATIC_STATE_REQUEST_MASK);
         }
         // if TTC send some error while entering automatic mode
         else
         {
-          err_code_ = message.data[1];
-          status |= AUTOMATIC_STATE_REQUEST_ERROR_MASK;
+          err_code_ = message.data[PROTOCOL_DETAIL_BYTE];
+          vSetReceivedCAN_IDsBitMask(AUTOMATIC_STATE_REQUEST_ERROR_MASK);
         }
       }
     }
     frames_queue_.pop();
   }
-  return status;
 }
 
 void TTCommControl::vConfirmAdvantechReadiness()
@@ -286,7 +309,7 @@ void TTCommControl::vConfirmAdvantechReadiness()
   message.can_id = PROTOCOL_RESPONSE_FRAME_ID;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[0] = TTC_AUTOMATIC_MODE_REQUEST;
-  message.data[1] = 0x64;  // INFO byte (0x64 - ok)
+  message.data[1] = TTCONTROL_J1939_NODE_ID;  // INFO byte, send the TTControl node ID to confirm readiness
   message.data[2] = 0;
   message.data[3] = 0;
   message.data[4] = 0;
@@ -330,9 +353,6 @@ void TTCommControl::vSendDeltasGeometryCommand(const uint8_t& front_cart_command
 
 void TTCommControl::vSendCartsEncodersInitialization()
 {
-  // uint front_data_to_send = static_cast<int>(_fInitFrontCartAngle * RAD_TO_DEG + CARTS_ANGLES_OFFSET) *
-  // CARTS_ANGLE_RESOLUTION; uint back_data_to_send = static_cast<int>(_fInitBackCartAngle * RAD_TO_DEG +
-  // CARTS_ANGLES_OFFSET) * CARTS_ANGLE_RESOLUTION;
   can_frame message;
   message.can_id = PROTOCOL_RESPONSE_FRAME_ID;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;

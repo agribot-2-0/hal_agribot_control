@@ -52,6 +52,7 @@ class TTCommControl
   Can can_handler_;
   std::queue<can_frame> frames_queue_;
   CartsStatus cart_;
+  uint32_t received_msgs_register_;
   float front_cart_angle_;
   uint init_front_cart_encoder_value_;
   uint front_cart_encoder_value_;
@@ -68,13 +69,16 @@ class TTCommControl
   std::ofstream encoder_data_file_output_;
   bool ttcontrol_is_connected_;
   bool ttcontrol_carts_angle_confirmed_;
-  void vPrepareVelocitiesFrame(can_frame* frame, float velocity, uint8_t start_byte);
-  float fDecodeVelocitiy(uint8_t start_byte, can_frame frame);
-  float fDecodeAngle(can_frame frame);
-  uint uiDecodeEncoderValue(can_frame frame);
+  void vPrepareVelocitiesFrame(can_frame* frame, const float velocity, const uint8_t start_byte);
+  float fDecodeVelocitiy(const uint8_t start_byte, const can_frame& frame);
+  float fDecodeAngle(const can_frame& frame);
+  uint uiDecodeEncoderValue(const can_frame& frame);
   void vDecodeCartsGeometryState(const can_frame& frame);
-  void vSetVelocitiy(eVelocities enum_velo, can_frame frame);
-
+  void vSetVelocitiy(const eVelocities enum_velo, const can_frame& frame);
+  inline bool bCheckIfCAN_IDsMatch(const uint ID_to_check, const uint msg_id);
+  inline void vSetReceivedCAN_IDsBitMask(const uint32_t mask_to_set);
+  inline bool bCheckIfBitIsSet(const uint32_t number_to_check, const uint32_t mask_to_check);
+  inline void vClearBitInReceivedMsgsRegister(const uint32_t mask_to_check);
 
 public:
   const struct eTTControlParamsType
@@ -97,7 +101,7 @@ public:
   ~TTCommControl();
   void update();
   void vReceiveCanFrames();
-  uint8_t u8ParseCanFrames();
+  void vParseCanFrames();
   void vSetTTControlConnectionStatus(const bool& connected);
   bool bGetTTControlConnectionStatus();
   bool bGetEncodersConfirmedStatus();
@@ -120,4 +124,5 @@ public:
   float fGetFrontCartAngle();
   float fGetBackCartAngle();
   int iGetErrorCode();
+  bool bCheckAndClearReceivedCAN_ID_Bit(const uint32_t mask_to_check);
 };
