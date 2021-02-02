@@ -68,7 +68,7 @@ class TTCommControl
   float fDecodeVelocitiy(uint8_t start_byte, can_frame frame);
   float fDecodeAngle(can_frame frame);
   uint uiDecodeEncoderValue(can_frame frame);
-  void vDecodeTrackEncoderSumValue(can_frame frame);
+  void vDecodeTrackEncoderSumValue(const can_frame frame);
   void vSetVelocitiy(eVelocities enum_velo, can_frame frame);
   std::ifstream _encoder_data_file_input;
   std::ofstream _encoder_data_file_output;

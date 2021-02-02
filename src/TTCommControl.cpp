@@ -104,7 +104,7 @@ inline uint8_t TTCommControl::u8GetUpperHalfOfByte(const uint8_t byte)
   return (byte & GET_UPPER_HALF_OF_THE_BYTE);
 }
 
-void TTCommControl::vDecodeTrackEncoderSumValue(can_frame frame)
+void TTCommControl::vDecodeTrackEncoderSumValue(const can_frame frame)
 {
   // get the encoder sum
   uint32_t encoder_sum_without_sign =

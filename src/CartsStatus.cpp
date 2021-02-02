@@ -24,20 +24,20 @@ void CartsStatus::vSetBackAngular(float fVelo)
   _fBackAngular = fVelo;
 }
 
-void CartsStatus::vSetTrackEncoderSum(uint8_t track_ID, int32_t encoder_sum)
+void CartsStatus::vSetTrackEncoderSum(const uint8_t track_ID, const int32_t encoder_sum)
 {
   switch (track_ID)
   {
-    case FRONT_LEFT_TRACK_ENCODER:
+    case eEncoderCaterpillarID::FRONT_LEFT_TRACK_ENCODER:
       _front_left_track_encoder_sum = encoder_sum;
       break;
-    case FRONT_RIGHT_TRACK_ENCODER:
+    case eEncoderCaterpillarID::FRONT_RIGHT_TRACK_ENCODER:
       _front_right_track_encoder_sum = encoder_sum;
       break;
-    case BACK_LEFT_TRACK_ENCODER:
+    case eEncoderCaterpillarID::BACK_LEFT_TRACK_ENCODER:
       _back_left_track_encoder_sum = encoder_sum;
       break;
-    case BACK_RIGHT_TRACK_ENCODER:
+    case eEncoderCaterpillarID::BACK_RIGHT_TRACK_ENCODER:
       _back_right_track_encoder_sum = encoder_sum;
       break;
     default:
@@ -45,17 +45,17 @@ void CartsStatus::vSetTrackEncoderSum(uint8_t track_ID, int32_t encoder_sum)
   }
 }
 
-int32_t CartsStatus::iGetTrackEncoderSum(uint8_t track_ID)
+int32_t CartsStatus::iGetTrackEncoderSum(const uint8_t track_ID) const
 {
   switch (track_ID)
   {
-    case FRONT_LEFT_TRACK_ENCODER:
+    case eEncoderCaterpillarID::FRONT_LEFT_TRACK_ENCODER:
       return _front_left_track_encoder_sum;
-    case FRONT_RIGHT_TRACK_ENCODER:
+    case eEncoderCaterpillarID::FRONT_RIGHT_TRACK_ENCODER:
       return _front_right_track_encoder_sum;
-    case BACK_LEFT_TRACK_ENCODER:
+    case eEncoderCaterpillarID::BACK_LEFT_TRACK_ENCODER:
       return _back_left_track_encoder_sum;
-    case BACK_RIGHT_TRACK_ENCODER:
+    case eEncoderCaterpillarID::BACK_RIGHT_TRACK_ENCODER:
       return _back_right_track_encoder_sum;
     default:
       break;
@@ -63,22 +63,22 @@ int32_t CartsStatus::iGetTrackEncoderSum(uint8_t track_ID)
   return 0;
 }
 
-float CartsStatus::fGetFrontLinear()
+float CartsStatus::fGetFrontLinear() const
 {
   return _fFrontLinear;
 }
 
-float CartsStatus::fGetFrontAngular()
+float CartsStatus::fGetFrontAngular() const
 {
   return _fFrontAngular;
 }
 
-float CartsStatus::fGetBackLinear()
+float CartsStatus::fGetBackLinear() const
 {
   return _fBackLinear;
 }
 
-float CartsStatus::fGetBackAngular()
+float CartsStatus::fGetBackAngular() const
 {
   return _fBackAngular;
 }

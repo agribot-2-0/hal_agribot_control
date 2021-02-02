@@ -5,10 +5,13 @@
 #pragma once
 #include <cstdint>
 
-constexpr uint8_t FRONT_LEFT_TRACK_ENCODER = 0x01;
-constexpr uint8_t FRONT_RIGHT_TRACK_ENCODER = 0x02;
-constexpr uint8_t BACK_LEFT_TRACK_ENCODER = 0x04;
-constexpr uint8_t BACK_RIGHT_TRACK_ENCODER = 0x08;
+enum eEncoderCaterpillarID : uint8_t
+{
+   FRONT_LEFT_TRACK_ENCODER = 0x01,
+   FRONT_RIGHT_TRACK_ENCODER = 0x02,
+   BACK_LEFT_TRACK_ENCODER = 0x04,
+   BACK_RIGHT_TRACK_ENCODER = 0x08
+};
 
 class CartsStatus
 {
@@ -26,11 +29,11 @@ class CartsStatus
     void vSetFrontAngular(float fVelo);
     void vSetBackLinear(float fVelo);
     void vSetBackAngular(float fVelo);
-    void vSetTrackEncoderSum(uint8_t track_ID, int32_t encoder_sum);
+    void vSetTrackEncoderSum(const uint8_t track_ID, const int32_t encoder_sum);
 
-    float fGetFrontLinear();
-    float fGetFrontAngular();
-    float fGetBackLinear();
-    float fGetBackAngular();
-    int32_t iGetTrackEncoderSum(uint8_t track_ID);
+    float fGetFrontLinear() const;
+    float fGetFrontAngular() const;
+    float fGetBackLinear() const;
+    float fGetBackAngular() const;
+    int32_t iGetTrackEncoderSum(const uint8_t track_ID) const;
 };
