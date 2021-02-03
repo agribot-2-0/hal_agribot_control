@@ -86,7 +86,7 @@ void TTCommControl::prepareVelocitiesFrame(can_frame& frame, const float velocit
 {
   int16_t i16_velocity = (velocity * VELO_FRAME_ENCODE_CONST);
 
-  frame.data[start_byte] = extract_second_byte(static_cast<uint32_t> (i16_velocity));
+  frame.data[start_byte] = extract_second_byte(static_cast<uint32_t>(i16_velocity));
   // if sending velo is below zero
   if (i16_velocity < 0)
   {
@@ -377,7 +377,7 @@ void TTCommControl::sendCartsEncodersInitialization()
 }
 
 void TTCommControl::sendVelocities(const float front_linear, const float front_angular, const float back_linear,
-                                    const float back_angular)
+                                   const float back_angular)
 {
   can_frame message;
   message.can_id = VELOCITY_CONTROL_FRAME_ID;
@@ -389,8 +389,7 @@ void TTCommControl::sendVelocities(const float front_linear, const float front_a
   can_handler_.iSendFrame(&message);
 }
 
-void TTCommControl::sendSignalsParameters(const int ditter_period, const int ditter_amplitude,
-                                           const int encoder_period)
+void TTCommControl::sendSignalsParameters(const int ditter_period, const int ditter_amplitude, const int encoder_period)
 {
   can_frame message;
   message.can_id = CONFIG_FRAME_CAN_ID;
@@ -408,7 +407,7 @@ void TTCommControl::sendSignalsParameters(const int ditter_period, const int dit
 }
 
 void TTCommControl::sendCartsPIDParameters(const double kp, const double ki, const double kd, const double acc,
-                                            const uint8_t frame_type)
+                                           const uint8_t frame_type)
 {
   can_frame message;
   message.can_id = CONFIG_FRAME_CAN_ID;
@@ -442,7 +441,7 @@ void TTCommControl::sendCaterpillarPIDParameters(const uint kp, const uint ki, c
 }
 
 void TTCommControl::sendCaterpillarBaseSignal(const uint forward_base, const uint backward_base,
-                                               const uint8_t frame_type)
+                                              const uint8_t frame_type)
 {
   can_frame message;
   message.can_id = CONFIG_FRAME_CAN_ID;

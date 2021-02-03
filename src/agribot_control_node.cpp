@@ -21,7 +21,7 @@ constexpr std::string_view TTCONTROL_CONNECTION_MSG = "connected";
 constexpr bool TTCONTROL_CONNECTED = true;
 constexpr bool TTCONTROL_DISCONNECTED = false;
 
-enum eRobotsCarts : uint8_t 
+enum eRobotsCarts : uint8_t
 {
   FRONT_CART = 1,
   BACK_CART = 0
@@ -53,7 +53,7 @@ void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersCo
   if (level == 0xFFFFFFFF)
   {
     CommHandlerControl.sendSignalsParameters(config.ditter_period_int, config.ditter_amplitude_int,
-                                              config.encoder_period_int);
+                                             config.encoder_period_int);
     CommHandlerControl.sendCartsPIDParameters(
         config.front_kp_t_double, config.front_ki_t_double, config.front_kd_t_double, config.front_acc_t_double,
         CommHandlerControl.TTControlParamsFrameType.TTCONTROL_FRONT_PID_T_PARAMS_TYPE);
@@ -98,7 +98,7 @@ void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersCo
     if (level & TTControl_param_flags.TTCONTROL_SIGNAL_PARAMS_FLAG)
     {
       CommHandlerControl.sendSignalsParameters(config.ditter_period_int, config.ditter_amplitude_int,
-                                                config.encoder_period_int);
+                                               config.encoder_period_int);
     }
     if (level & TTControl_param_flags.TTCONTROL_FRONT_PID_T_PARAMS_FLAG)
     {
@@ -180,7 +180,7 @@ void frontCallback(const agribot_msgs::AgribotCaterpillar& msg)
   CommHandlerControl.sendVelocities(msg.front_linear, msg.front_angular, msg.back_linear, msg.back_angular);
 }
 
-bool send_deltas_geometry_command(const eRobotsCarts selected_cart, const agribot_msgs::ChangeDeltasGeometry::Request& req)
+bool sendDeltasGeometryCommand(const eRobotsCarts selected_cart, const agribot_msgs::ChangeDeltasGeometry::Request& req)
 {
   if (req.cart_delta_command == agribot_msgs::ChangeDeltasGeometry::Request::ELEVATED_CATERPILLAR_GEOMETRY ||
       req.cart_delta_command == agribot_msgs::ChangeDeltasGeometry::Request::NORMAL_CATERPILLAR_GEOMETRY)
@@ -204,7 +204,8 @@ bool send_deltas_geometry_command(const eRobotsCarts selected_cart, const agribo
   }
 }
 
-void wait_till_deltas_geometry_is_set(const eRobotsCarts selected_cart, const agribot_msgs::ChangeDeltasGeometry::Request& req)
+void waitTillDeltasGeometryIsSet(const eRobotsCarts selected_cart,
+                                 const agribot_msgs::ChangeDeltasGeometry::Request& req)
 {
   const CartsStatus& cartsStatus = CommHandlerControl.getCartsStatus();
   uint8_t cart_state = agribot_msgs::ChangeDeltasGeometry::Response::UNKNOWN_CATERPILLAR_GEOMETRY;
@@ -226,8 +227,8 @@ void wait_till_deltas_geometry_is_set(const eRobotsCarts selected_cart, const ag
   }
 }
 
-void set_deltas_geometry_result(agribot_msgs::ChangeDeltasGeometry::Response& res,  // NOLINT(runtime/references)
-                                const agribot_msgs::ChangeDeltasGeometry::Request& req)
+void setDeltasGeometryResult(agribot_msgs::ChangeDeltasGeometry::Response& res,  // NOLINT(runtime/references)
+                             const agribot_msgs::ChangeDeltasGeometry::Request& req)
 {
   switch (req.cart_delta_command)
   {
@@ -243,15 +244,15 @@ void set_deltas_geometry_result(agribot_msgs::ChangeDeltasGeometry::Response& re
   }
 }
 
-bool deltas_change_geometry_service_execution(
+bool deltasChangeGeometryServiceExecution(
     const agribot_msgs::ChangeDeltasGeometry::Request& req,
     agribot_msgs::ChangeDeltasGeometry::Response& res,  // NOLINT(runtime/references)
     const eRobotsCarts selected_cart)
 {
-  if (send_deltas_geometry_command(selected_cart, req))
+  if (sendDeltasGeometryCommand(selected_cart, req))
   {
-    wait_till_deltas_geometry_is_set(selected_cart, req);
-    set_deltas_geometry_result(res, req);
+    waitTillDeltasGeometryIsSet(selected_cart, req);
+    setDeltasGeometryResult(res, req);
     return true;
   }
   else
@@ -265,17 +266,17 @@ bool front_deltas_geometry_service_callback(
     agribot_msgs::ChangeDeltasGeometry::Request& req,   // NOLINT(runtime/references)
     agribot_msgs::ChangeDeltasGeometry::Response& res)  // NOLINT(runtime/references)
 {
-  return deltas_change_geometry_service_execution(req, res, eRobotsCarts::FRONT_CART);
+  return deltasChangeGeometryServiceExecution(req, res, eRobotsCarts::FRONT_CART);
 }
 
 bool back_deltas_geometry_service_callback(
     agribot_msgs::ChangeDeltasGeometry::Request& req,   // NOLINT(runtime/references)
     agribot_msgs::ChangeDeltasGeometry::Response& res)  // NOLINT(runtime/references)
 {
-  return deltas_change_geometry_service_execution(req, res, eRobotsCarts::BACK_CART);
+  return deltasChangeGeometryServiceExecution(req, res, eRobotsCarts::BACK_CART);
 }
 
-void ttcontrol_connection_state(const std_msgs::String& msg)
+void ttcontrolConnectionState(const std_msgs::String& msg)
 {
   if (msg.data == TTCONTROL_CONNECTION_MSG)
   {
@@ -287,7 +288,7 @@ void ttcontrol_connection_state(const std_msgs::String& msg)
   }
 }
 
-bool read_encoders_data_file()
+bool readEncodersDataFile()
 {
   if (!CommHandlerControl.readCartsEncodersDataFile(READ_REGULAR_CARTS_ENCODERS_FILE))
   {
@@ -306,7 +307,7 @@ int main(int argc, char** argv)
 
   ros::Subscriber sub = n.subscribe("/agribot/control/caterpillar", 1000, frontCallback);
   ros::Subscriber sub_connection_state =
-      n.subscribe("/agribot/ttcontrol/connection_state", 1, ttcontrol_connection_state);
+      n.subscribe("/agribot/ttcontrol/connection_state", 1, ttcontrolConnectionState);
   ros::Publisher CartsStatusPublisher =
       n.advertise<agribot_msgs::AgribotCaterpillar>("/agribot/encoder/caterpillar", 1);
   ros::Publisher FrontCartAnglePublisher = n.advertise<std_msgs::Float32>("/agribot/encoder/cart/front", 1);
@@ -324,7 +325,7 @@ int main(int argc, char** argv)
   std::string path_to_carts_encoders_file;
   n.getParam("path_to_encoder_file", path_to_carts_encoders_file);
   CommHandlerControl.setPathToCartsEncodersDataFile(path_to_carts_encoders_file);
-  if (!read_encoders_data_file())
+  if (!readEncodersDataFile())
   {
     ROS_ERROR_STREAM("[AgribotControlNode] Failed to read carts angle data file content ! Robots carts encoders "
                      "values are not inited! \n"
@@ -379,7 +380,7 @@ int main(int argc, char** argv)
     // when connected, read and send encoders value initialization till the confirmation
     if (!CommHandlerControl.getEncodersConfirmedStatus() && CommHandlerControl.getTTControlConnectionStatus())
     {
-      if (!read_encoders_data_file())
+      if (!readEncodersDataFile())
       {
         ROS_ERROR_STREAM("[AgribotControlNode] Failed to read carts angle data file content ! Robots carts encoders "
                          "values are not inited! \n"

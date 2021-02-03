@@ -70,7 +70,8 @@ class TTCommControl
   std::ofstream encoder_data_file_output_;
   bool ttcontrol_is_connected_;
   bool ttcontrol_carts_angle_confirmed_;
-  void prepareVelocitiesFrame(can_frame& frame, const float velocity, const uint8_t start_byte);
+  void prepareVelocitiesFrame(can_frame& frame, const float velocity,  // NOLINT(runtime/references)
+                              const uint8_t start_byte);
   float decodeVelocitiy(const uint8_t start_byte, const can_frame& frame);
   float decodeAngle(const can_frame& frame);
   uint32_t decodeEncoderValue(const can_frame& frame);
@@ -119,10 +120,10 @@ public:
   void sendDeltasGeometryCommand(const uint8_t front_cart_command, const uint8_t back_cart_command);
   void sendCartsEncodersInitialization();
   void sendVelocities(const float front_linear, const float front_angular, const float back_linear,
-                       const float back_angular);
+                      const float back_angular);
   void sendSignalsParameters(const int ditter_period, const int ditter_amplitude, const int encoder_period);
   void sendCartsPIDParameters(const double kp, const double ki, const double kd, const double acc,
-                               const uint8_t frame_type);
+                              const uint8_t frame_type);
   void sendCaterpillarPIDParameters(const uint kp, const uint ki, const uint kd, const uint8_t frame_type);
   void sendCaterpillarBaseSignal(const uint forward_base, const uint backward_base, const uint8_t frame_type);
   const CartsStatus& getCartsStatus() const;
