@@ -5,6 +5,7 @@
 #pragma once
 
 #include <agribot_common/Can.h>
+#include <agribot_msgs/ChangeDeltasGeometry.h>
 #include <hal_ttcontrol_communication/CartsStatus.h>
 #include <cmath>
 #include <iostream>
@@ -69,17 +70,21 @@ class TTCommControl
   std::ofstream encoder_data_file_output_;
   bool ttcontrol_is_connected_;
   bool ttcontrol_carts_angle_confirmed_;
-  void vPrepareVelocitiesFrame(can_frame* frame, const float velocity, const uint8_t start_byte);
-  float fDecodeVelocitiy(const uint8_t start_byte, const can_frame& frame);
-  float fDecodeAngle(const can_frame& frame);
-  uint32_t uiDecodeEncoderValue(const can_frame& frame);
-  void vDecodeCartsGeometryState(const can_frame& frame);
-  void vSetVelocitiy(const eVelocities enum_velo, const can_frame& frame);
-  inline bool bCheckIfCanBusIdsMatch(const uint32_t id_to_check, const uint msg_id);
-  inline void vSetReceivedCanBusIdsBitMask(const uint32_t mask_to_set);
-  inline bool bCheckIfBitIsSet(const uint32_t number_to_check, const uint32_t mask_to_check);
-  inline void vClearBitInReceivedMsgsRegister(const uint32_t mask_to_check);
-  inline uint8_t u8SetDeltasGeometryCommandByte(const uint8_t command);
+  void prepareVelocitiesFrame(can_frame& frame, const float velocity, const uint8_t start_byte);
+  float decodeVelocitiy(const uint8_t start_byte, const can_frame& frame);
+  float decodeAngle(const can_frame& frame);
+  uint32_t decodeEncoderValue(const can_frame& frame);
+  void decodeCartsGeometryState(const can_frame& frame);
+  void setVelocity(const eVelocities enum_velo, const can_frame& frame);
+  inline bool checkIfCanBusIdsMatch(const uint32_t id_to_check, const uint msg_id);
+  inline void setReceivedCanBusIdsBitMask(const uint32_t mask_to_set);
+  inline bool checkIfBitIsSet(const uint32_t number_to_check, const uint32_t mask_to_check);
+  inline void clearBitInReceivedMsgsRegister(const uint32_t mask_to_check);
+  inline uint8_t returnDeltasGeometryCommandByte(const uint8_t command);
+  inline uint8_t extract_fourth_byte(const uint32_t four_byte_number);
+  inline uint8_t extract_third_byte(const uint32_t four_byte_number);
+  inline uint8_t extract_second_byte(const uint32_t four_byte_number);
+  inline uint8_t extract_first_byte(const uint32_t four_byte_number);
 
 public:
   const struct eTTControlParamsType
@@ -101,30 +106,29 @@ public:
   explicit TTCommControl(const char* pchCanChannel);
   ~TTCommControl();
   void update();
-  void vReceiveCanFrames();
-  void vParseCanFrames();
-  void vSetTTControlConnectionStatus(const bool& connected);
-  bool bGetTTControlConnectionStatus();
-  bool bGetEncodersConfirmedStatus() const;
-  void vConfirmAdvantechReadiness();
-  bool bWaritForTTControlReadiness();
-  void vSetPathToCartsEncodersDataFile(const std::string& path_to_file);
-  bool bReadCartsEncodersDataFile(const bool backup_file);
-  uint32_t iExtractEncoderInitValueFromFile(std::ifstream& file_input);
-  bool bWriteEncodersDataFile();
-  void vSendDeltasGeometryCommand(const uint8_t front_cart_command, const uint8_t back_cart_command);
-  void vSendCartsEncodersInitialization();
-  void vSendVelocities(const float front_linear, const float front_angular, const float back_linear,
+  void receiveCanFrames();
+  void parseCanFrames();
+  void setTTControlConnectionStatus(const bool& connected);
+  bool getTTControlConnectionStatus();
+  bool getEncodersConfirmedStatus() const;
+  void confirmAdvantechReadiness();
+  void setPathToCartsEncodersDataFile(const std::string& path_to_file);
+  bool readCartsEncodersDataFile(const bool backup_file);
+  uint32_t extractEncoderInitValueFromFile(std::ifstream& file_input);
+  bool writeEncodersDataFile();
+  void sendDeltasGeometryCommand(const uint8_t front_cart_command, const uint8_t back_cart_command);
+  void sendCartsEncodersInitialization();
+  void sendVelocities(const float front_linear, const float front_angular, const float back_linear,
                        const float back_angular);
-  void vSendSignalsParameters(const int ditter_period, const int ditter_amplitude, const int encoder_period);
-  void vSendCartsPIDParameters(const double kp, const double ki, const double kd, const double acc,
+  void sendSignalsParameters(const int ditter_period, const int ditter_amplitude, const int encoder_period);
+  void sendCartsPIDParameters(const double kp, const double ki, const double kd, const double acc,
                                const uint8_t frame_type);
-  void vSendCaterpillarPIDParameters(const uint kp, const uint ki, const uint kd, const uint8_t frame_type);
-  void vSendCaterpillarBaseSignal(const uint forward_base, const uint backward_base, const uint8_t frame_type);
+  void sendCaterpillarPIDParameters(const uint kp, const uint ki, const uint kd, const uint8_t frame_type);
+  void sendCaterpillarBaseSignal(const uint forward_base, const uint backward_base, const uint8_t frame_type);
   const CartsStatus& getCartsStatus() const;
-  float fGetFrontCartAngle() const;
-  float fGetBackCartAngle() const;
-  int iGetErrorCode() const;
-  void vClearReceivedCanBusIdBit(const uint32_t mask_to_check);
-  bool bCheckReceivedCanBusIdBit(const uint32_t mask_to_check);
+  float getFrontCartAngle() const;
+  float getBackCartAngle() const;
+  int getErrorCode() const;
+  void clearReceivedCanBusIdBit(const uint32_t mask_to_check);
+  bool checkReceivedCanBusIdBit(const uint32_t mask_to_check);
 };

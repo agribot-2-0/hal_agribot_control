@@ -20,8 +20,12 @@ constexpr bool READ_REGULAR_CARTS_ENCODERS_FILE = true;
 constexpr std::string_view TTCONTROL_CONNECTION_MSG = "connected";
 constexpr bool TTCONTROL_CONNECTED = true;
 constexpr bool TTCONTROL_DISCONNECTED = false;
-constexpr uint8_t FRONT_CART = 1;
-constexpr uint8_t BACK_CART = 0;
+
+enum eRobotsCarts : uint8_t 
+{
+  FRONT_CART = 1,
+  BACK_CART = 0
+};
 
 const struct TTCONTROL_PARAMETER_FLAGS
 {
@@ -48,44 +52,44 @@ void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersCo
   // in turns
   if (level == 0xFFFFFFFF)
   {
-    CommHandlerControl.vSendSignalsParameters(config.ditter_period_int, config.ditter_amplitude_int,
+    CommHandlerControl.sendSignalsParameters(config.ditter_period_int, config.ditter_amplitude_int,
                                               config.encoder_period_int);
-    CommHandlerControl.vSendCartsPIDParameters(
+    CommHandlerControl.sendCartsPIDParameters(
         config.front_kp_t_double, config.front_ki_t_double, config.front_kd_t_double, config.front_acc_t_double,
         CommHandlerControl.TTControlParamsFrameType.TTCONTROL_FRONT_PID_T_PARAMS_TYPE);
-    CommHandlerControl.vSendCartsPIDParameters(
+    CommHandlerControl.sendCartsPIDParameters(
         config.front_kp_r_double, config.front_ki_r_double, config.front_kd_r_double, config.front_acc_r_double,
         CommHandlerControl.TTControlParamsFrameType.TTCONTROL_FRONT_PID_R_PARAMS_TYPE);
-    CommHandlerControl.vSendCartsPIDParameters(
+    CommHandlerControl.sendCartsPIDParameters(
         config.back_kp_t_double, config.back_ki_t_double, config.back_kd_t_double, config.back_acc_t_double,
         CommHandlerControl.TTControlParamsFrameType.TTCONTROL_BACK_PID_T_PARAMS_TYPE);
-    CommHandlerControl.vSendCartsPIDParameters(
+    CommHandlerControl.sendCartsPIDParameters(
         config.back_kp_r_double, config.back_ki_r_double, config.back_kd_r_double, config.back_acc_r_double,
         CommHandlerControl.TTControlParamsFrameType.TTCONTROL_BACK_PID_R_PARAMS_TYPE);
-    CommHandlerControl.vSendCaterpillarPIDParameters(
+    CommHandlerControl.sendCaterpillarPIDParameters(
         config.front_left_caterpillar_kp, config.front_left_caterpillar_ki, config.front_left_caterpillar_kd,
         CommHandlerControl.TTControlParamsFrameType.TTCONTROL_FRONT_LEFT_CATERPILLAR_PID_PARAMS_TYPE);
 
     ros::Duration(0.5).sleep();  // sleep for half a second, to give TTControl time to read and save the parameters
-    CommHandlerControl.vSendCaterpillarBaseSignal(
+    CommHandlerControl.sendCaterpillarBaseSignal(
         config.front_left_caterpillar_signal_base_forward, config.front_left_caterpillar_signal_base_backward,
         CommHandlerControl.TTControlParamsFrameType.TTCONTROL_FRONT_LEFT_CATERPILLAR_SIGNAL_BASE_TYPE);
-    CommHandlerControl.vSendCaterpillarPIDParameters(
+    CommHandlerControl.sendCaterpillarPIDParameters(
         config.front_right_caterpillar_kp, config.front_right_caterpillar_ki, config.front_right_caterpillar_kd,
         CommHandlerControl.TTControlParamsFrameType.TTCONTROL_FRONT_RIGHT_CATERPILLAR_PID_PARAMS_TYPE);
-    CommHandlerControl.vSendCaterpillarBaseSignal(
+    CommHandlerControl.sendCaterpillarBaseSignal(
         config.front_right_caterpillar_signal_base_forward, config.front_right_caterpillar_signal_base_backward,
         CommHandlerControl.TTControlParamsFrameType.TTCONTROL_FRONT_RIGHT_CATERPILLAR_SIGNAL_BASE_TYPE);
-    CommHandlerControl.vSendCaterpillarPIDParameters(
+    CommHandlerControl.sendCaterpillarPIDParameters(
         config.back_left_caterpillar_kp, config.back_left_caterpillar_ki, config.back_left_caterpillar_kd,
         CommHandlerControl.TTControlParamsFrameType.TTCONTROL_BACK_LEFT_CATERPILLAR_PID_PARAMS_TYPE);
-    CommHandlerControl.vSendCaterpillarBaseSignal(
+    CommHandlerControl.sendCaterpillarBaseSignal(
         config.back_left_caterpillar_signal_base_forward, config.back_left_caterpillar_signal_base_backward,
         CommHandlerControl.TTControlParamsFrameType.TTCONTROL_BACK_LEFT_CATERPILLAR_SIGNAL_BASE_TYPE);
-    CommHandlerControl.vSendCaterpillarPIDParameters(
+    CommHandlerControl.sendCaterpillarPIDParameters(
         config.back_right_caterpillar_kp, config.back_right_caterpillar_ki, config.back_right_caterpillar_kd,
         CommHandlerControl.TTControlParamsFrameType.TTCONTROL_BACK_RIGHT_CATERPILLAR_PID_PARAMS_TYPE);
-    CommHandlerControl.vSendCaterpillarBaseSignal(
+    CommHandlerControl.sendCaterpillarBaseSignal(
         config.back_right_caterpillar_signal_base_forward, config.back_right_caterpillar_signal_base_backward,
         CommHandlerControl.TTControlParamsFrameType.TTCONTROL_BACK_RIGHT_CATERPILLAR_SIGNAL_BASE_TYPE);
   }
@@ -93,78 +97,78 @@ void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersCo
   {
     if (level & TTControl_param_flags.TTCONTROL_SIGNAL_PARAMS_FLAG)
     {
-      CommHandlerControl.vSendSignalsParameters(config.ditter_period_int, config.ditter_amplitude_int,
+      CommHandlerControl.sendSignalsParameters(config.ditter_period_int, config.ditter_amplitude_int,
                                                 config.encoder_period_int);
     }
     if (level & TTControl_param_flags.TTCONTROL_FRONT_PID_T_PARAMS_FLAG)
     {
-      CommHandlerControl.vSendCartsPIDParameters(
+      CommHandlerControl.sendCartsPIDParameters(
           config.front_kp_t_double, config.front_ki_t_double, config.front_kd_t_double, config.front_acc_t_double,
           CommHandlerControl.TTControlParamsFrameType.TTCONTROL_FRONT_PID_T_PARAMS_TYPE);
     }
     if (level & TTControl_param_flags.TTCONTROL_FRONT_PID_R_PARAMS_FLAG)
     {
-      CommHandlerControl.vSendCartsPIDParameters(
+      CommHandlerControl.sendCartsPIDParameters(
           config.front_kp_r_double, config.front_ki_r_double, config.front_kd_r_double, config.front_acc_r_double,
           CommHandlerControl.TTControlParamsFrameType.TTCONTROL_FRONT_PID_R_PARAMS_TYPE);
     }
     if (level & TTControl_param_flags.TTCONTROL_BACK_PID_T_PARAMS_FLAG)
     {
-      CommHandlerControl.vSendCartsPIDParameters(
+      CommHandlerControl.sendCartsPIDParameters(
           config.back_kp_t_double, config.back_ki_t_double, config.back_kd_t_double, config.back_acc_t_double,
           CommHandlerControl.TTControlParamsFrameType.TTCONTROL_BACK_PID_T_PARAMS_TYPE);
     }
     if (level & TTControl_param_flags.TTCONTROL_BACK_PID_R_PARAMS_FLAG)
     {
-      CommHandlerControl.vSendCartsPIDParameters(
+      CommHandlerControl.sendCartsPIDParameters(
           config.back_kp_r_double, config.back_ki_r_double, config.back_kd_r_double, config.back_acc_r_double,
           CommHandlerControl.TTControlParamsFrameType.TTCONTROL_BACK_PID_R_PARAMS_TYPE);
     }
     if (level & TTControl_param_flags.TTCONTROL_FRONT_LEFT_CATERPILLAR_PID_PARAMS_FLAG)
     {
-      CommHandlerControl.vSendCaterpillarPIDParameters(
+      CommHandlerControl.sendCaterpillarPIDParameters(
           config.front_left_caterpillar_kp, config.front_left_caterpillar_ki, config.front_left_caterpillar_kd,
           CommHandlerControl.TTControlParamsFrameType.TTCONTROL_FRONT_LEFT_CATERPILLAR_PID_PARAMS_TYPE);
     }
     if (level & TTControl_param_flags.TTCONTROL_FRONT_LEFT_CATERPILLAR_SIGNALS_BASE_FLAG)
     {
-      CommHandlerControl.vSendCaterpillarBaseSignal(
+      CommHandlerControl.sendCaterpillarBaseSignal(
           config.front_left_caterpillar_signal_base_forward, config.front_left_caterpillar_signal_base_backward,
           CommHandlerControl.TTControlParamsFrameType.TTCONTROL_FRONT_LEFT_CATERPILLAR_SIGNAL_BASE_TYPE);
     }
     if (level & TTControl_param_flags.TTCONTROL_FRONT_RIGHT_CATERPILLAR_PID_PARAMS_FLAG)
     {
-      CommHandlerControl.vSendCaterpillarPIDParameters(
+      CommHandlerControl.sendCaterpillarPIDParameters(
           config.front_right_caterpillar_kp, config.front_right_caterpillar_ki, config.front_right_caterpillar_kd,
           CommHandlerControl.TTControlParamsFrameType.TTCONTROL_FRONT_RIGHT_CATERPILLAR_PID_PARAMS_TYPE);
     }
     if (level & TTControl_param_flags.TTCONTROL_FRONT_RIGHT_CATERPILLAR_SIGNALS_BASE_FLAG)
     {
-      CommHandlerControl.vSendCaterpillarBaseSignal(
+      CommHandlerControl.sendCaterpillarBaseSignal(
           config.front_right_caterpillar_signal_base_forward, config.front_right_caterpillar_signal_base_backward,
           CommHandlerControl.TTControlParamsFrameType.TTCONTROL_FRONT_RIGHT_CATERPILLAR_SIGNAL_BASE_TYPE);
     }
     if (level & TTControl_param_flags.TTCONTROL_BACK_LEFT_CATERPILLAR_PID_PARAMS_FLAG)
     {
-      CommHandlerControl.vSendCaterpillarPIDParameters(
+      CommHandlerControl.sendCaterpillarPIDParameters(
           config.back_left_caterpillar_kp, config.back_left_caterpillar_ki, config.back_left_caterpillar_kd,
           CommHandlerControl.TTControlParamsFrameType.TTCONTROL_BACK_LEFT_CATERPILLAR_PID_PARAMS_TYPE);
     }
     if (level & TTControl_param_flags.TTCONTROL_BACK_LEFT_CATERPILLAR_SIGNALS_BASE_FLAG)
     {
-      CommHandlerControl.vSendCaterpillarBaseSignal(
+      CommHandlerControl.sendCaterpillarBaseSignal(
           config.back_left_caterpillar_signal_base_forward, config.back_left_caterpillar_signal_base_backward,
           CommHandlerControl.TTControlParamsFrameType.TTCONTROL_BACK_LEFT_CATERPILLAR_SIGNAL_BASE_TYPE);
     }
     if (level & TTControl_param_flags.TTCONTROL_BACK_RIGHT_CATERPILLAR_PID_PARAMS_FLAG)
     {
-      CommHandlerControl.vSendCaterpillarPIDParameters(
+      CommHandlerControl.sendCaterpillarPIDParameters(
           config.back_right_caterpillar_kp, config.back_right_caterpillar_ki, config.back_right_caterpillar_kd,
           CommHandlerControl.TTControlParamsFrameType.TTCONTROL_BACK_RIGHT_CATERPILLAR_PID_PARAMS_TYPE);
     }
     if (level & TTControl_param_flags.TTCONTROL_BACK_RIGHT_CATERPILLAR_SIGNALS_BASE_FLAG)
     {
-      CommHandlerControl.vSendCaterpillarBaseSignal(
+      CommHandlerControl.sendCaterpillarBaseSignal(
           config.back_right_caterpillar_signal_base_forward, config.back_right_caterpillar_signal_base_backward,
           CommHandlerControl.TTControlParamsFrameType.TTCONTROL_BACK_RIGHT_CATERPILLAR_SIGNAL_BASE_TYPE);
     }
@@ -173,22 +177,24 @@ void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersCo
 
 void frontCallback(const agribot_msgs::AgribotCaterpillar& msg)
 {
-  CommHandlerControl.vSendVelocities(msg.front_linear, msg.front_angular, msg.back_linear, msg.back_angular);
+  CommHandlerControl.sendVelocities(msg.front_linear, msg.front_angular, msg.back_linear, msg.back_angular);
 }
 
-bool send_deltas_geometry_command(const bool cart_pick, const uint8_t command)
+bool send_deltas_geometry_command(const eRobotsCarts selected_cart, const agribot_msgs::ChangeDeltasGeometry::Request& req)
 {
-  if (command == eDeltasGeometryState::DELTAS_GEOMETRY_STATE_ELEVATED ||
-      command == eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL)
+  if (req.cart_delta_command == agribot_msgs::ChangeDeltasGeometry::Request::ELEVATED_CATERPILLAR_GEOMETRY ||
+      req.cart_delta_command == agribot_msgs::ChangeDeltasGeometry::Request::NORMAL_CATERPILLAR_GEOMETRY)
   {
-    if (cart_pick)
+    if (selected_cart == eRobotsCarts::FRONT_CART)
     {
-      CommHandlerControl.vSendDeltasGeometryCommand(command, eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN);
+      CommHandlerControl.sendDeltasGeometryCommand(
+          req.cart_delta_command, agribot_msgs::ChangeDeltasGeometry::Request::UNKNOWN_CATERPILLAR_GEOMETRY);
       return true;
     }
     else
     {
-      CommHandlerControl.vSendDeltasGeometryCommand(eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN, command);
+      CommHandlerControl.sendDeltasGeometryCommand(
+          agribot_msgs::ChangeDeltasGeometry::Request::UNKNOWN_CATERPILLAR_GEOMETRY, req.cart_delta_command);
       return true;
     }
   }
@@ -198,53 +204,37 @@ bool send_deltas_geometry_command(const bool cart_pick, const uint8_t command)
   }
 }
 
-void wait_till_deltas_geometry_is_set(const uint8_t cart_pick, const uint8_t desired_geometry)
+void wait_till_deltas_geometry_is_set(const eRobotsCarts selected_cart, const agribot_msgs::ChangeDeltasGeometry::Request& req)
 {
-  const CartsStatus& cartStatus = CommHandlerControl.getCartsStatus();
-  uint8_t cart_state = eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN;
-  if (cart_pick)
+  const CartsStatus& cartsStatus = CommHandlerControl.getCartsStatus();
+  uint8_t cart_state = agribot_msgs::ChangeDeltasGeometry::Response::UNKNOWN_CATERPILLAR_GEOMETRY;
+  if (selected_cart == eRobotsCarts::FRONT_CART)
   {
-    while (cart_state != desired_geometry)
+    while (cart_state != req.cart_delta_command)
     {
-      cart_state = cartStatus.bGetFrontCartGeometryState();
+      cart_state = cartsStatus.getFrontCartGeometryState();
       ros::Duration(0.1).sleep();
     }
   }
   else
   {
-    while (cart_state != desired_geometry)
+    while (cart_state != req.cart_delta_command)
     {
-      cart_state = cartStatus.bGetBackCartGeometryState();
+      cart_state = cartsStatus.getBackCartGeometryState();
       ros::Duration(0.1).sleep();
     }
-  }
-}
-
-uint8_t deltas_geometry_request_to_enum(const agribot_msgs::ChangeDeltasGeometry::Request& req)
-{
-  if (req.cart_delta_command == req.CHANGE_CATERPILLAR_GEOMETRY)
-  {
-    return eDeltasGeometryState::DELTAS_GEOMETRY_STATE_ELEVATED;
-  }
-  else if (req.cart_delta_command == req.NORMAL_CATERPILLAR_GEOMETRY)
-  {
-    return eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL;
-  }
-  else
-  {
-    return eDeltasGeometryState::DELTAS_GEOMETRY_STATE_UNKNOWN;
   }
 }
 
 void set_deltas_geometry_result(agribot_msgs::ChangeDeltasGeometry::Response& res,  // NOLINT(runtime/references)
-                                const uint8_t desired_geometry)
+                                const agribot_msgs::ChangeDeltasGeometry::Request& req)
 {
-  switch (desired_geometry)
+  switch (req.cart_delta_command)
   {
-    case eDeltasGeometryState::DELTAS_GEOMETRY_STATE_ELEVATED:
-      res.result = res.CHANGED_CATERPILLAR_GEOMETRY;
+    case agribot_msgs::ChangeDeltasGeometry::Request::ELEVATED_CATERPILLAR_GEOMETRY:
+      res.result = res.ELEVATED_CATERPILLAR_GEOMETRY;
       break;
-    case eDeltasGeometryState::DELTAS_GEOMETRY_STATE_NORMAL:
+    case agribot_msgs::ChangeDeltasGeometry::Request::NORMAL_CATERPILLAR_GEOMETRY:
       res.result = res.NORMAL_CATERPILLAR_GEOMETRY;
       break;
     default:
@@ -256,13 +246,12 @@ void set_deltas_geometry_result(agribot_msgs::ChangeDeltasGeometry::Response& re
 bool deltas_change_geometry_service_execution(
     const agribot_msgs::ChangeDeltasGeometry::Request& req,
     agribot_msgs::ChangeDeltasGeometry::Response& res,  // NOLINT(runtime/references)
-    const uint8_t cart_pick)
+    const eRobotsCarts selected_cart)
 {
-  uint8_t desired_geometry = deltas_geometry_request_to_enum(req);
-  if (send_deltas_geometry_command(cart_pick, desired_geometry))
+  if (send_deltas_geometry_command(selected_cart, req))
   {
-    wait_till_deltas_geometry_is_set(cart_pick, desired_geometry);
-    set_deltas_geometry_result(res, desired_geometry);
+    wait_till_deltas_geometry_is_set(selected_cart, req);
+    set_deltas_geometry_result(res, req);
     return true;
   }
   else
@@ -276,33 +265,33 @@ bool front_deltas_geometry_service_callback(
     agribot_msgs::ChangeDeltasGeometry::Request& req,   // NOLINT(runtime/references)
     agribot_msgs::ChangeDeltasGeometry::Response& res)  // NOLINT(runtime/references)
 {
-  return deltas_change_geometry_service_execution(req, res, FRONT_CART);
+  return deltas_change_geometry_service_execution(req, res, eRobotsCarts::FRONT_CART);
 }
 
 bool back_deltas_geometry_service_callback(
     agribot_msgs::ChangeDeltasGeometry::Request& req,   // NOLINT(runtime/references)
     agribot_msgs::ChangeDeltasGeometry::Response& res)  // NOLINT(runtime/references)
 {
-  return deltas_change_geometry_service_execution(req, res, BACK_CART);
+  return deltas_change_geometry_service_execution(req, res, eRobotsCarts::BACK_CART);
 }
 
 void ttcontrol_connection_state(const std_msgs::String& msg)
 {
   if (msg.data == TTCONTROL_CONNECTION_MSG)
   {
-    CommHandlerControl.vSetTTControlConnectionStatus(TTCONTROL_CONNECTED);
+    CommHandlerControl.setTTControlConnectionStatus(TTCONTROL_CONNECTED);
   }
   else
   {
-    CommHandlerControl.vSetTTControlConnectionStatus(TTCONTROL_DISCONNECTED);
+    CommHandlerControl.setTTControlConnectionStatus(TTCONTROL_DISCONNECTED);
   }
 }
 
 bool read_encoders_data_file()
 {
-  if (!CommHandlerControl.bReadCartsEncodersDataFile(READ_REGULAR_CARTS_ENCODERS_FILE))
+  if (!CommHandlerControl.readCartsEncodersDataFile(READ_REGULAR_CARTS_ENCODERS_FILE))
   {
-    return CommHandlerControl.bReadCartsEncodersDataFile(READ_BACKUP_CARTS_ENCODERS_FILE);
+    return CommHandlerControl.readCartsEncodersDataFile(READ_BACKUP_CARTS_ENCODERS_FILE);
   }
   return true;
 }
@@ -334,7 +323,7 @@ int main(int argc, char** argv)
   // angle initialization reading
   std::string path_to_carts_encoders_file;
   n.getParam("path_to_encoder_file", path_to_carts_encoders_file);
-  CommHandlerControl.vSetPathToCartsEncodersDataFile(path_to_carts_encoders_file);
+  CommHandlerControl.setPathToCartsEncodersDataFile(path_to_carts_encoders_file);
   if (!read_encoders_data_file())
   {
     ROS_ERROR_STREAM("[AgribotControlNode] Failed to read carts angle data file content ! Robots carts encoders "
@@ -342,53 +331,53 @@ int main(int argc, char** argv)
                      << "Attempted path: " << path_to_carts_encoders_file);
     return -1;
   }
-  CommHandlerControl.vSendCartsEncodersInitialization();
+  CommHandlerControl.sendCartsEncodersInitialization();
   callback_function_object = boost::bind(&callbackDynamicReconfigure, _1, _2);
   server.setCallback(callback_function_object);
   uint8_t encoder_init_timeout_counter = 0;
   while (ros::ok())
   {
-    CommHandlerControl.vReceiveCanFrames();
-    CommHandlerControl.vParseCanFrames();
-    if (CommHandlerControl.bCheckReceivedCanBusIdBit(VELOCITIES_MASK))
+    CommHandlerControl.receiveCanFrames();
+    CommHandlerControl.parseCanFrames();
+    if (CommHandlerControl.checkReceivedCanBusIdBit(VELOCITIES_MASK))
     {
       const CartsStatus& cartStatus = CommHandlerControl.getCartsStatus();
       AgribotCaterpillarMsg.header.stamp = ros::Time::now();
       AgribotCaterpillarMsg.header.frame_id = "hal_caterpillar_feedback";
-      AgribotCaterpillarMsg.front_linear = cartStatus.fGetFrontLinear();
-      AgribotCaterpillarMsg.front_angular = cartStatus.fGetFrontAngular();
-      AgribotCaterpillarMsg.back_linear = cartStatus.fGetBackLinear();
-      AgribotCaterpillarMsg.back_angular = cartStatus.fGetBackAngular();
+      AgribotCaterpillarMsg.front_linear = cartStatus.getFrontLinear();
+      AgribotCaterpillarMsg.front_angular = cartStatus.getFrontAngular();
+      AgribotCaterpillarMsg.back_linear = cartStatus.getBackLinear();
+      AgribotCaterpillarMsg.back_angular = cartStatus.getBackAngular();
       CartsStatusPublisher.publish(AgribotCaterpillarMsg);
-      CommHandlerControl.vClearReceivedCanBusIdBit(VELOCITIES_MASK);
+      CommHandlerControl.clearReceivedCanBusIdBit(VELOCITIES_MASK);
     }
-    if (CommHandlerControl.bCheckReceivedCanBusIdBit(FRONT_ANGLE_MASK))
+    if (CommHandlerControl.checkReceivedCanBusIdBit(FRONT_ANGLE_MASK))
     {
-      FrontAngleMsg.data = CommHandlerControl.fGetFrontCartAngle();
+      FrontAngleMsg.data = CommHandlerControl.getFrontCartAngle();
       FrontCartAnglePublisher.publish(FrontAngleMsg);
-      CommHandlerControl.vClearReceivedCanBusIdBit(FRONT_ANGLE_MASK);
+      CommHandlerControl.clearReceivedCanBusIdBit(FRONT_ANGLE_MASK);
     }
-    if (CommHandlerControl.bCheckReceivedCanBusIdBit(BACK_ANGLE_MASK))
+    if (CommHandlerControl.checkReceivedCanBusIdBit(BACK_ANGLE_MASK))
     {
-      BackAngleMsg.data = CommHandlerControl.fGetBackCartAngle();
+      BackAngleMsg.data = CommHandlerControl.getBackCartAngle();
       BackCartAnglePublisher.publish(BackAngleMsg);
-      CommHandlerControl.vClearReceivedCanBusIdBit(BACK_ANGLE_MASK);
+      CommHandlerControl.clearReceivedCanBusIdBit(BACK_ANGLE_MASK);
     }
-    if (CommHandlerControl.bCheckReceivedCanBusIdBit(AUTOMATIC_STATE_REQUEST_MASK))
+    if (CommHandlerControl.checkReceivedCanBusIdBit(AUTOMATIC_STATE_REQUEST_MASK))
     {
       // TODO(Michal/Adam): Implement some diagnostics
       ROS_INFO("[AgribotControlNode] Received automatic mode request");
       usleep(WAIT_FOR_TTCONTROL);
-      CommHandlerControl.vConfirmAdvantechReadiness();
-      CommHandlerControl.vClearReceivedCanBusIdBit(AUTOMATIC_STATE_REQUEST_MASK);
+      CommHandlerControl.confirmAdvantechReadiness();
+      CommHandlerControl.clearReceivedCanBusIdBit(AUTOMATIC_STATE_REQUEST_MASK);
     }
-    if (CommHandlerControl.bCheckReceivedCanBusIdBit(AUTOMATIC_STATE_REQUEST_ERROR_MASK))
+    if (CommHandlerControl.checkReceivedCanBusIdBit(AUTOMATIC_STATE_REQUEST_ERROR_MASK))
     {
-      ROS_ERROR("[AgribotControlNode] Automatic state request error: %d", CommHandlerControl.iGetErrorCode());
-      CommHandlerControl.vClearReceivedCanBusIdBit(AUTOMATIC_STATE_REQUEST_ERROR_MASK);
+      ROS_ERROR("[AgribotControlNode] Automatic state request error: %d", CommHandlerControl.getErrorCode());
+      CommHandlerControl.clearReceivedCanBusIdBit(AUTOMATIC_STATE_REQUEST_ERROR_MASK);
     }
     // when connected, read and send encoders value initialization till the confirmation
-    if (!CommHandlerControl.bGetEncodersConfirmedStatus() && CommHandlerControl.bGetTTControlConnectionStatus())
+    if (!CommHandlerControl.getEncodersConfirmedStatus() && CommHandlerControl.getTTControlConnectionStatus())
     {
       if (!read_encoders_data_file())
       {
@@ -397,14 +386,14 @@ int main(int argc, char** argv)
                          << "Attempted path: " << path_to_carts_encoders_file);
         return -1;
       }
-      CommHandlerControl.vSendCartsEncodersInitialization();
+      CommHandlerControl.sendCartsEncodersInitialization();
     }
     // check if the carts has been initialized and write the new received values to file
-    if (CommHandlerControl.bGetEncodersConfirmedStatus())
+    if (CommHandlerControl.getEncodersConfirmedStatus())
     {
       // check if both angle data reached us
       encoder_init_timeout_counter = 0;
-      if (!CommHandlerControl.bWriteEncodersDataFile())
+      if (!CommHandlerControl.writeEncodersDataFile())
       {
         ROS_ERROR("[AgribotControlNode] Failed to write carts encoders data to file!");
       }

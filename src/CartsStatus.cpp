@@ -4,62 +4,62 @@
 
 #include <hal_ttcontrol_communication/CartsStatus.h>
 
-void CartsStatus::vSetFrontLinear(float fVelo)
+void CartsStatus::setFrontLinear(const float velo)
 {
-    _fFrontLinear = fVelo;
+    front_linear_ = velo;
 }
 
-void CartsStatus::vSetFrontAngular(float fVelo)
+void CartsStatus::setFrontAngular(const float velo)
 {
-    _fFrontAngular = fVelo;
+    front_angular_ = velo;
 }
 
-void CartsStatus::vSetBackLinear(float fVelo)
+void CartsStatus::setBackLinear(const float velo)
 {
-    _fBackLinear = fVelo;
+    back_linear_ = velo;
 }
 
-void CartsStatus::vSetBackAngular(float fVelo)
+void CartsStatus::setBackAngular(const float velo)
 {
-    _fBackAngular = fVelo;
+    back_angular_ = velo;
 }
 
-void CartsStatus::vSetFrontCartGeometryState(const uint8_t geometry_state)
+void CartsStatus::setFrontCartGeometryState(const uint8_t geometry_state)
 {
     front_cart_geometry_state_ = geometry_state;
 }
 
-void CartsStatus::vSetBackCartGeometryState(const uint8_t geometry_state)
+void CartsStatus::setBackCartGeometryState(const uint8_t geometry_state)
 {
     back_cart_geometry_state_ = geometry_state;
 }
 
-float CartsStatus::fGetFrontLinear() const
+float CartsStatus::getFrontLinear() const
 {
-    return _fFrontLinear;
+    return front_linear_;
 }
 
-float CartsStatus::fGetFrontAngular() const
+float CartsStatus::getFrontAngular() const
 {
-    return _fFrontAngular;
+    return front_angular_;
 }
 
-float CartsStatus::fGetBackLinear() const
+float CartsStatus::getBackLinear() const
 {
-    return _fBackLinear;
+    return back_linear_;
 }
 
-float CartsStatus::fGetBackAngular() const
+float CartsStatus::getBackAngular() const
 {
-    return _fBackAngular;
+    return back_angular_;
 }
 
-uint8_t CartsStatus::bGetFrontCartGeometryState() const
+uint8_t CartsStatus::getFrontCartGeometryState() const
 {
     return front_cart_geometry_state_;
 }
 
-uint8_t CartsStatus::bGetBackCartGeometryState() const
+uint8_t CartsStatus::getBackCartGeometryState() const
 {
     return back_cart_geometry_state_;
 }

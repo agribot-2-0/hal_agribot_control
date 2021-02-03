@@ -5,34 +5,27 @@
 #pragma once
 #include <stdint.h>
 
-enum eDeltasGeometryState : uint8_t
-{
-   DELTAS_GEOMETRY_STATE_UNKNOWN = 0x02,
-   DELTAS_GEOMETRY_STATE_ELEVATED = 0x01,
-   DELTAS_GEOMETRY_STATE_NORMAL = 0x00
-};
-
 class CartsStatus
 {
  private:
-    float _fFrontLinear;
-    float _fFrontAngular;
-    float _fBackLinear;
-    float _fBackAngular;
+    float front_linear_;
+    float front_angular_;
+    float back_linear_;
+    float back_angular_;
     uint8_t front_cart_geometry_state_;
     uint8_t back_cart_geometry_state_;
  public:
-    void vSetFrontLinear(const float fVelo);
-    void vSetFrontAngular(const float fVelo);
-    void vSetBackLinear(const float fVelo);
-    void vSetBackAngular(const float fVelo);
-    void vSetFrontCartGeometryState(const uint8_t geometry_state);
-    void vSetBackCartGeometryState(const uint8_t geometry_state);
+    void setFrontLinear(const float velo);
+    void setFrontAngular(const float velo);
+    void setBackLinear(const float velo);
+    void setBackAngular(const float velo);
+    void setFrontCartGeometryState(const uint8_t geometry_state);
+    void setBackCartGeometryState(const uint8_t geometry_state);
 
-    float fGetFrontLinear()const;
-    float fGetFrontAngular() const;
-    float fGetBackLinear() const;
-    float fGetBackAngular() const;
-    uint8_t bGetFrontCartGeometryState() const;
-    uint8_t bGetBackCartGeometryState() const;
+    float getFrontLinear()const;
+    float getFrontAngular() const;
+    float getBackLinear() const;
+    float getBackAngular() const;
+    uint8_t getFrontCartGeometryState() const;
+    uint8_t getBackCartGeometryState() const;
 };
