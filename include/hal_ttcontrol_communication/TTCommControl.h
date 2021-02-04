@@ -68,14 +68,14 @@ class TTCommControl
   float fDecodeVelocitiy(uint8_t start_byte, can_frame frame);
   float fDecodeAngle(can_frame frame);
   uint uiDecodeEncoderValue(can_frame frame);
-  void vDecodeTrackEncoderSumValue(const can_frame frame);
+  void decodeTrackEncoderSumValue(const can_frame& frame);
   void vSetVelocitiy(eVelocities enum_velo, can_frame frame);
   std::ifstream _encoder_data_file_input;
   std::ofstream _encoder_data_file_output;
   bool _ttcontrol_is_connected;
   bool _ttcontrol_carts_angle_confirmed;
-  inline uint8_t u8GetLowerHalfOfByte(const uint8_t byte);
-  inline uint8_t u8GetUpperHalfOfByte(const uint8_t byte);
+  inline uint8_t getLowerHalfOfByte(const uint8_t byte);
+  inline uint8_t getUpperHalfOfByte(const uint8_t byte);
 
 public:
   const struct eTTControlParamsType

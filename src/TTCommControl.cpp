@@ -94,17 +94,17 @@ uint TTCommControl::uiDecodeEncoderValue(can_frame frame)
           (static_cast<uint32_t>(frame.data[CARTS_ENCODER_LOW_BYTE_POSITION])));
 }
 
-inline uint8_t TTCommControl::u8GetLowerHalfOfByte(const uint8_t byte)
+inline uint8_t TTCommControl::getLowerHalfOfByte(const uint8_t byte)
 {
   return (byte & GET_LOWER_HALF_OF_THE_BYTE);
 }
 
-inline uint8_t TTCommControl::u8GetUpperHalfOfByte(const uint8_t byte)
+inline uint8_t TTCommControl::getUpperHalfOfByte(const uint8_t byte)
 {
   return (byte & GET_UPPER_HALF_OF_THE_BYTE);
 }
 
-void TTCommControl::vDecodeTrackEncoderSumValue(const can_frame frame)
+void TTCommControl::decodeTrackEncoderSumValue(const can_frame& frame)
 {
   // get the encoder sum
   uint32_t encoder_sum_without_sign =
@@ -113,16 +113,16 @@ void TTCommControl::vDecodeTrackEncoderSumValue(const can_frame frame)
        (static_cast<uint32_t>(frame.data[TRACK_ENCODER_SUM_LOW_BYTE_POSITION + 1]) << 8) |
        (static_cast<uint32_t>(frame.data[TRACK_ENCODER_SUM_LOW_BYTE_POSITION])));
   // get the track ID
-  uint8_t track_id = u8GetLowerHalfOfByte(frame.data[TRACK_ENCODER_ID_BYTE_POSITION]);
+  uint8_t track_id = getLowerHalfOfByte(frame.data[TRACK_ENCODER_ID_BYTE_POSITION]);
   // get the sign of the sum, if its on, then the sum is negative
   if ((frame.data[TRACK_ENCODER_ID_BYTE_POSITION] & TRACK_ENCODER_SIGN_BIT_MASK) == TRACK_ENCODER_SIGN_BIT_MASK)
   {
-    _cart.vSetTrackEncoderSum(track_id, -static_cast<int32_t>(encoder_sum_without_sign));
+    _cart.setTrackEncoderSum(track_id, -static_cast<int32_t>(encoder_sum_without_sign));
   }
   // if its off then the sum is positive
   else
   {
-    _cart.vSetTrackEncoderSum(track_id, static_cast<int32_t>(encoder_sum_without_sign));
+    _cart.setTrackEncoderSum(track_id, static_cast<int32_t>(encoder_sum_without_sign));
   }
 }
 
@@ -242,7 +242,7 @@ uint8_t TTCommControl::u8ParseCanFrames()
     }
     if ((TRACK_ENCODER_SUM_ID & ADDR_MASK) == (message.can_id & ADDR_MASK))
     {
-      vDecodeTrackEncoderSumValue(message);
+      decodeTrackEncoderSumValue(message);
       status |= TRACK_ENCODER_SUM_MASK;
     }
     // if there is protocol frame in _frames_queue

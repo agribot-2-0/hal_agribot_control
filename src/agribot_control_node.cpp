@@ -277,10 +277,10 @@ int main(int argc, char** argv)
       CartsStatus cartStatus = CommHandlerControl.getCartsStatus();
       EncoderSumMsg.header.stamp = ros::Time::now();
       EncoderSumMsg.header.frame_id = "hal_tracks_encoders_sum_feedback";
-      EncoderSumMsg.front_left_encoder_sum = cartStatus.iGetTrackEncoderSum(FRONT_LEFT_TRACK_ENCODER);
-      EncoderSumMsg.front_right_encoder_sum = cartStatus.iGetTrackEncoderSum(FRONT_RIGHT_TRACK_ENCODER);
-      EncoderSumMsg.back_left_encoder_sum = cartStatus.iGetTrackEncoderSum(BACK_LEFT_TRACK_ENCODER);
-      EncoderSumMsg.back_right_encoder_sum = cartStatus.iGetTrackEncoderSum(BACK_RIGHT_TRACK_ENCODER);
+      EncoderSumMsg.front_left_encoder_sum = cartStatus.getTrackEncoderSum(FRONT_LEFT_TRACK_ENCODER);
+      EncoderSumMsg.front_right_encoder_sum = cartStatus.getTrackEncoderSum(FRONT_RIGHT_TRACK_ENCODER);
+      EncoderSumMsg.back_left_encoder_sum = cartStatus.getTrackEncoderSum(BACK_LEFT_TRACK_ENCODER);
+      EncoderSumMsg.back_right_encoder_sum = cartStatus.getTrackEncoderSum(BACK_RIGHT_TRACK_ENCODER);
       TrackEncoderSumPublisher.publish(EncoderSumMsg);
     }
     // if automatic state request error frame received in u8ParseCanFrames()
