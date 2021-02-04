@@ -20,20 +20,20 @@ class CartsStatus
     float _fFrontAngular;
     float _fBackLinear;
     float _fBackAngular;
-    int32_t _front_left_track_encoder_sum;
-    int32_t _front_right_track_encoder_sum;
-    int32_t _back_left_track_encoder_sum;
-    int32_t _back_right_track_encoder_sum;
+    int32_t front_left_track_encoder_sum_;
+    int32_t front_right_track_encoder_sum_;
+    int32_t back_left_track_encoder_sum_;
+    int32_t back_right_track_encoder_sum_;
  public:
     void vSetFrontLinear(float fVelo);
     void vSetFrontAngular(float fVelo);
     void vSetBackLinear(float fVelo);
     void vSetBackAngular(float fVelo);
-    void vSetTrackEncoderSum(const uint8_t track_ID, const int32_t encoder_sum);
+    void setTrackEncoderSum(const uint8_t track_ID, const int32_t encoder_sum);
 
     float fGetFrontLinear() const;
     float fGetFrontAngular() const;
     float fGetBackLinear() const;
     float fGetBackAngular() const;
-    int32_t iGetTrackEncoderSum(const uint8_t track_ID) const;
+    int32_t getTrackEncoderSum(const uint8_t track_ID) const;
 };
