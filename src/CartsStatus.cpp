@@ -4,24 +4,24 @@
 
 #include <hal_ttcontrol_communication/CartsStatus.h>
 
-void CartsStatus::setFrontLinear(const float velo)
+void CartsStatus::setFrontLinearVelocity(const float velocity)
 {
-  front_linear_ = velo;
+  front_linear_velocity_ = velocity;
 }
 
-void CartsStatus::setFrontAngular(const float velo)
+void CartsStatus::setFrontAngularVelocity(const float velocity)
 {
-  front_angular_ = velo;
+  front_angular_velocity_ = velocity;
 }
 
-void CartsStatus::setBackLinear(const float velo)
+void CartsStatus::setBackLinearVelocity(const float velocity)
 {
-  back_linear_ = velo;
+  back_linear_velocity_ = velocity;
 }
 
-void CartsStatus::setBackAngular(const float velo)
+void CartsStatus::setBackAngularVelocity(const float velocity)
 {
-  back_angular_ = velo;
+  back_angular_velocity_ = velocity;
 }
 
 void CartsStatus::setFrontCartGeometryState(const uint8_t geometry_state)
@@ -34,24 +34,24 @@ void CartsStatus::setBackCartGeometryState(const uint8_t geometry_state)
   back_cart_geometry_state_ = geometry_state;
 }
 
-float CartsStatus::getFrontLinear() const
+float CartsStatus::getFrontLinearVelocity() const
 {
-  return front_linear_;
+  return front_linear_velocity_;
 }
 
-float CartsStatus::getFrontAngular() const
+float CartsStatus::getFrontAngularVelocity() const
 {
-  return front_angular_;
+  return front_angular_velocity_;
 }
 
-float CartsStatus::getBackLinear() const
+float CartsStatus::getBackLinearVelocity() const
 {
-  return back_linear_;
+  return back_linear_velocity_;
 }
 
-float CartsStatus::getBackAngular() const
+float CartsStatus::getBackAngularVelocity() const
 {
-  return back_angular_;
+  return back_angular_velocity_;
 }
 
 uint8_t CartsStatus::getFrontCartGeometryState() const

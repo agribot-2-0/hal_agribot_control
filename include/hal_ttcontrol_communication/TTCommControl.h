@@ -14,12 +14,12 @@
 #include <queue>
 #include <string>
 
-using std::uint8_t;
-using std::uint16_t;
-using std::uint32_t;
-using std::int8_t;
 using std::int16_t;
 using std::int32_t;
+using std::int8_t;
+using std::uint16_t;
+using std::uint32_t;
+using std::uint8_t;
 
 constexpr uint8_t VELOCITIES_MASK = 0x01;
 constexpr uint8_t FRONT_ANGLE_MASK = 0x02;
@@ -38,22 +38,39 @@ constexpr uint8_t ENCODER_PERIOD_BYTE = 4;
 constexpr uint8_t KP_FIRST_BYTE = 1;
 constexpr uint8_t KI_FIRST_BYTE = 3;
 constexpr uint8_t KD_FIRST_BYTE = 5;
-constexpr uint8_t ACC_FIRST_BYTE = 6;
+constexpr uint8_t ACCELERATION_FIRST_BYTE = 6;
 constexpr uint K_RESOLUTION_MULTIPLIER = 10000;
 constexpr uint KD_RESOLUTION_MULTIPLIER = 100;
-constexpr uint ACC_RESOLUTION_MULTIPLIER = 1000;
+constexpr uint ACCELERATION_RESOLUTION_MULTIPLIER = 1000;
 constexpr uint8_t KP_CATERPILLAR_FIRST_BYTE = 1;
 constexpr uint8_t KI_CATERPILLAR_FIRST_BYTE = 3;
 constexpr uint8_t KD_CATERPILLAR_FIRST_BYTE = 5;
 constexpr uint8_t FORWARD_SIGNAL_BASE_FIRST_BYTE = 1;
 constexpr uint8_t BACKWARD_SIGNAL_BASE_FIRST_BYTE = 3;
 
-enum eVelocities
+enum TTControlParamsType : uint8_t
 {
-  FRONT_LINEAR = 0,
-  FRONT_ANGULAR = 2,
-  BACK_LINEAR = 4,
-  BACK_ANGULAR = 6
+  ttcontrol_signals_params_type = 0,
+  ttcontrol_front_pid_t_params_type = 1,
+  ttcontrol_front_pid_r_params_type = 2,
+  ttcontrol_back_pid_t_params_type = 3,
+  ttcontrol_back_pid_r_params_type = 4,
+  ttcontrol_front_left_caterpillar_pid_params_type = 5,
+  ttcontrol_front_left_caterpillar_signal_base_type = 6,
+  ttcontrol_front_right_caterpillar_pid_params_type = 7,
+  ttcontrol_front_right_caterpillar_signal_base_type = 8,
+  ttcontrol_back_left_caterpillar_pid_params_type = 9,
+  ttcontrol_back_left_caterpillar_signal_base_type = 10,
+  ttcontrol_back_right_caterpillar_pid_params_type = 11,
+  ttcontrol_back_right_caterpillar_signal_base_type = 12
+};
+
+enum VelocityType
+{
+  front_linear = 0,
+  front_angular = 2,
+  back_linear = 4,
+  back_angular = 6
 };
 
 class TTCommControl
@@ -84,7 +101,7 @@ class TTCommControl
   float decodeAngle(const can_frame& frame);
   uint32_t decodeEncoderValue(const can_frame& frame);
   void decodeCartsGeometryState(const can_frame& frame);
-  void setVelocity(const eVelocities enum_velo, const can_frame& frame);
+  void setVelocity(const VelocityType velocity_specification, const can_frame& frame);
   inline bool checkIfCanBusIdsMatch(const uint32_t id_to_check, const uint msg_id);
   inline void setReceivedCanBusIdsBitMask(const uint32_t mask_to_set);
   inline bool checkIfBitIsSet(const uint32_t number_to_check, const uint32_t mask_to_check);
@@ -96,29 +113,13 @@ class TTCommControl
   inline uint8_t extractFirstByte(const uint32_t four_byte_number);
 
 public:
-  const struct eTTControlParamsType
-  {
-    uint8_t TTCONTROL_SIGNALS_PARAMS_TYPE = 0;
-    uint8_t TTCONTROL_FRONT_PID_T_PARAMS_TYPE = 1;
-    uint8_t TTCONTROL_FRONT_PID_R_PARAMS_TYPE = 2;
-    uint8_t TTCONTROL_BACK_PID_T_PARAMS_TYPE = 3;
-    uint8_t TTCONTROL_BACK_PID_R_PARAMS_TYPE = 4;
-    uint8_t TTCONTROL_FRONT_LEFT_CATERPILLAR_PID_PARAMS_TYPE = 5;
-    uint8_t TTCONTROL_FRONT_LEFT_CATERPILLAR_SIGNAL_BASE_TYPE = 6;
-    uint8_t TTCONTROL_FRONT_RIGHT_CATERPILLAR_PID_PARAMS_TYPE = 7;
-    uint8_t TTCONTROL_FRONT_RIGHT_CATERPILLAR_SIGNAL_BASE_TYPE = 8;
-    uint8_t TTCONTROL_BACK_LEFT_CATERPILLAR_PID_PARAMS_TYPE = 9;
-    uint8_t TTCONTROL_BACK_LEFT_CATERPILLAR_SIGNAL_BASE_TYPE = 10;
-    uint8_t TTCONTROL_BACK_RIGHT_CATERPILLAR_PID_PARAMS_TYPE = 11;
-    uint8_t TTCONTROL_BACK_RIGHT_CATERPILLAR_SIGNAL_BASE_TYPE = 12;
-  } TTControlParamsFrameType;
   explicit TTCommControl(const char* pchCanChannel);
   ~TTCommControl();
   void update();
   void receiveCanFrames();
   void parseCanFrames();
-  void setTTControlConnectionStatus(const bool& connected);
-  bool getTTControlConnectionStatus();
+  void setTtcontrolConnectionStatus(const bool& connected);
+  bool getTtcontrolConnectionStatus();
   bool getEncodersConfirmedStatus() const;
   void confirmAdvantechReadiness();
   void setPathToCartsEncodersDataFile(const std::string& path_to_file);
@@ -130,9 +131,9 @@ public:
   void sendVelocities(const float front_linear, const float front_angular, const float back_linear,
                       const float back_angular);
   void sendSignalsParameters(const int ditter_period, const int ditter_amplitude, const int encoder_period);
-  void sendCartsPIDParameters(const double kp, const double ki, const double kd, const double acc,
+  void sendCartsPidParameters(const double kp, const double ki, const double kd, const double acceleration,
                               const uint8_t frame_type);
-  void sendCaterpillarPIDParameters(const uint kp, const uint ki, const uint kd, const uint8_t frame_type);
+  void sendCaterpillarPidParameters(const uint kp, const uint ki, const uint kd, const uint8_t frame_type);
   void sendCaterpillarBaseSignal(const uint forward_base, const uint backward_base, const uint8_t frame_type);
   const CartsStatus& getCartsStatus() const;
   float getFrontCartAngle() const;

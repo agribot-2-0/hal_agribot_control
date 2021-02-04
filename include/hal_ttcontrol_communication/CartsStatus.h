@@ -10,25 +10,25 @@ using std::uint8_t;
 class CartsStatus
 {
 private:
-  float front_linear_;
-  float front_angular_;
-  float back_linear_;
-  float back_angular_;
+  float front_linear_velocity_;
+  float front_angular_velocity_;
+  float back_linear_velocity_;
+  float back_angular_velocity_;
   uint8_t front_cart_geometry_state_;
   uint8_t back_cart_geometry_state_;
 
 public:
-  void setFrontLinear(const float velo);
-  void setFrontAngular(const float velo);
-  void setBackLinear(const float velo);
-  void setBackAngular(const float velo);
+  void setFrontLinearVelocity(const float velocity);
+  void setFrontAngularVelocity(const float velocity);
+  void setBackLinearVelocity(const float velocity);
+  void setBackAngularVelocity(const float velocity);
   void setFrontCartGeometryState(const uint8_t geometry_state);
   void setBackCartGeometryState(const uint8_t geometry_state);
 
-  float getFrontLinear() const;
-  float getFrontAngular() const;
-  float getBackLinear() const;
-  float getBackAngular() const;
+  float getFrontLinearVelocity() const;
+  float getFrontAngularVelocity() const;
+  float getBackLinearVelocity() const;
+  float getBackAngularVelocity() const;
   uint8_t getFrontCartGeometryState() const;
   uint8_t getBackCartGeometryState() const;
 };
