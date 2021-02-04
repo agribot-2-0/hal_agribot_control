@@ -82,10 +82,10 @@ class TTCommControl
   inline bool checkIfBitIsSet(const uint32_t number_to_check, const uint32_t mask_to_check);
   inline void clearBitInReceivedMsgsRegister(const uint32_t mask_to_check);
   inline uint8_t returnDeltasGeometryCommandByte(const uint8_t command);
-  inline uint8_t extract_fourth_byte(const uint32_t four_byte_number);
-  inline uint8_t extract_third_byte(const uint32_t four_byte_number);
-  inline uint8_t extract_second_byte(const uint32_t four_byte_number);
-  inline uint8_t extract_first_byte(const uint32_t four_byte_number);
+  inline uint8_t extractFourthByte(const uint32_t four_byte_number);
+  inline uint8_t extractThirdByte(const uint32_t four_byte_number);
+  inline uint8_t extractSecondByte(const uint32_t four_byte_number);
+  inline uint8_t extractFirstByte(const uint32_t four_byte_number);
 
 public:
   const struct eTTControlParamsType

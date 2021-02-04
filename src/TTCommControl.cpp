@@ -62,22 +62,22 @@ constexpr float CARTS_ENCODERS_RESOLUTION = 0.036;
 constexpr uint DELIMITER_MIDDLE_LENGTH = 1;
 constexpr uint DELIMITER_ENDING_LENGTH = 2;
 
-inline uint8_t TTCommControl::extract_fourth_byte(const uint32_t four_byte_number)
+inline uint8_t TTCommControl::extractFourthByte(const uint32_t four_byte_number)
 {
   return static_cast<uint8_t>((four_byte_number & GET_FOURTH_BYTE) >> 24);
 }
 
-inline uint8_t TTCommControl::extract_third_byte(const uint32_t four_byte_number)
+inline uint8_t TTCommControl::extractThirdByte(const uint32_t four_byte_number)
 {
   return static_cast<uint8_t>((four_byte_number & GET_THIRD_BYTE) >> 16);
 }
 
-inline uint8_t TTCommControl::extract_second_byte(const uint32_t four_byte_number)
+inline uint8_t TTCommControl::extractSecondByte(const uint32_t four_byte_number)
 {
   return static_cast<uint8_t>((four_byte_number & GET_SECOND_BYTE) >> 8);
 }
 
-inline uint8_t TTCommControl::extract_first_byte(const uint32_t four_byte_number)
+inline uint8_t TTCommControl::extractFirstByte(const uint32_t four_byte_number)
 {
   return static_cast<uint8_t>(four_byte_number & GET_FIRST_BYTE);
 }
@@ -86,21 +86,21 @@ void TTCommControl::prepareVelocitiesFrame(can_frame& frame, const float velocit
 {
   int16_t i16_velocity = (velocity * VELO_FRAME_ENCODE_CONST);
 
-  frame.data[start_byte] = extract_second_byte(static_cast<uint32_t>(i16_velocity));
+  frame.data[start_byte] = extractSecondByte(static_cast<uint32_t>(i16_velocity));
   // if sending velo is below zero
   if (i16_velocity < 0)
   {
     // perform below substraction to achive inversed number
     i16_velocity = INVERSE_INT16_CONST - i16_velocity;
-    frame.data[start_byte] = extract_second_byte(static_cast<uint32_t>(i16_velocity));
+    frame.data[start_byte] = extractSecondByte(static_cast<uint32_t>(i16_velocity));
     // toggle sign bit
     frame.data[start_byte] |= SIGN_BIT;
   }
   else
   {
-    frame.data[start_byte] = extract_second_byte(static_cast<uint32_t>(i16_velocity));
+    frame.data[start_byte] = extractSecondByte(static_cast<uint32_t>(i16_velocity));
   }
-  frame.data[start_byte + 1] = extract_first_byte(static_cast<uint32_t>(i16_velocity));
+  frame.data[start_byte + 1] = extractFirstByte(static_cast<uint32_t>(i16_velocity));
 }
 
 float TTCommControl::decodeVelocitiy(const uint8_t start_byte, const can_frame& frame)
@@ -366,12 +366,12 @@ void TTCommControl::sendCartsEncodersInitialization()
   message.can_id = PROTOCOL_RESPONSE_FRAME_ID;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[0] = TTC_CARTS_ANGLE_INITIALIZATION;
-  message.data[1] = extract_third_byte(init_front_cart_encoder_value_);
-  message.data[2] = extract_second_byte(init_front_cart_encoder_value_);
-  message.data[3] = extract_first_byte(init_front_cart_encoder_value_);
-  message.data[4] = extract_third_byte(init_back_cart_encoder_value_);
-  message.data[5] = extract_second_byte(init_back_cart_encoder_value_);
-  message.data[6] = extract_first_byte(init_back_cart_encoder_value_);
+  message.data[1] = extractThirdByte(init_front_cart_encoder_value_);
+  message.data[2] = extractSecondByte(init_front_cart_encoder_value_);
+  message.data[3] = extractFirstByte(init_front_cart_encoder_value_);
+  message.data[4] = extractThirdByte(init_back_cart_encoder_value_);
+  message.data[5] = extractSecondByte(init_back_cart_encoder_value_);
+  message.data[6] = extractFirstByte(init_back_cart_encoder_value_);
   message.data[7] = 0;
   can_handler_.iSendFrame(&message);
 }
@@ -395,10 +395,10 @@ void TTCommControl::sendSignalsParameters(const int ditter_period, const int dit
   message.can_id = CONFIG_FRAME_CAN_ID;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[CONFIG_FRAME_TYPE_BYTE] = TTControlParamsFrameType.TTCONTROL_SIGNALS_PARAMS_TYPE;
-  message.data[DITTER_PERIOD_BYTE] = extract_first_byte(static_cast<uint32_t>(ditter_period));
-  message.data[DITTER_AMPLITUDE_FIRST_BYTE] = extract_first_byte(static_cast<uint32_t>(ditter_amplitude));
-  message.data[DITTER_AMPLITUDE_FIRST_BYTE + 1] = extract_second_byte(static_cast<uint32_t>(ditter_amplitude));
-  message.data[ENCODER_PERIOD_BYTE] = extract_first_byte(static_cast<uint32_t>(encoder_period));
+  message.data[DITTER_PERIOD_BYTE] = extractFirstByte(static_cast<uint32_t>(ditter_period));
+  message.data[DITTER_AMPLITUDE_FIRST_BYTE] = extractFirstByte(static_cast<uint32_t>(ditter_amplitude));
+  message.data[DITTER_AMPLITUDE_FIRST_BYTE + 1] = extractSecondByte(static_cast<uint32_t>(ditter_amplitude));
+  message.data[ENCODER_PERIOD_BYTE] = extractFirstByte(static_cast<uint32_t>(encoder_period));
   // dont-care bytes
   message.data[ENCODER_PERIOD_BYTE + 1] = 0xFF;
   message.data[ENCODER_PERIOD_BYTE + 2] = 0xFF;
@@ -413,13 +413,13 @@ void TTCommControl::sendCartsPIDParameters(const double kp, const double ki, con
   message.can_id = CONFIG_FRAME_CAN_ID;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[CONFIG_FRAME_TYPE_BYTE] = frame_type;
-  message.data[KP_FIRST_BYTE] = extract_first_byte(static_cast<uint32_t>(kp * K_RESOLUTION_MULTIPLIER));
-  message.data[KP_FIRST_BYTE + 1] = extract_second_byte(static_cast<uint32_t>(kp * K_RESOLUTION_MULTIPLIER));
-  message.data[KI_FIRST_BYTE] = extract_first_byte(static_cast<uint32_t>(ki * K_RESOLUTION_MULTIPLIER));
-  message.data[KI_FIRST_BYTE + 1] = extract_second_byte(static_cast<uint32_t>(ki * K_RESOLUTION_MULTIPLIER));
-  message.data[KD_FIRST_BYTE] = extract_first_byte(static_cast<uint32_t>(kd * KD_RESOLUTION_MULTIPLIER));
-  message.data[ACC_FIRST_BYTE] = extract_first_byte(static_cast<uint32_t>(acc * ACC_RESOLUTION_MULTIPLIER));
-  message.data[ACC_FIRST_BYTE + 1] = extract_second_byte(static_cast<uint32_t>(acc * ACC_RESOLUTION_MULTIPLIER));
+  message.data[KP_FIRST_BYTE] = extractFirstByte(static_cast<uint32_t>(kp * K_RESOLUTION_MULTIPLIER));
+  message.data[KP_FIRST_BYTE + 1] = extractSecondByte(static_cast<uint32_t>(kp * K_RESOLUTION_MULTIPLIER));
+  message.data[KI_FIRST_BYTE] = extractFirstByte(static_cast<uint32_t>(ki * K_RESOLUTION_MULTIPLIER));
+  message.data[KI_FIRST_BYTE + 1] = extractSecondByte(static_cast<uint32_t>(ki * K_RESOLUTION_MULTIPLIER));
+  message.data[KD_FIRST_BYTE] = extractFirstByte(static_cast<uint32_t>(kd * KD_RESOLUTION_MULTIPLIER));
+  message.data[ACC_FIRST_BYTE] = extractFirstByte(static_cast<uint32_t>(acc * ACC_RESOLUTION_MULTIPLIER));
+  message.data[ACC_FIRST_BYTE + 1] = extractSecondByte(static_cast<uint32_t>(acc * ACC_RESOLUTION_MULTIPLIER));
   can_handler_.iSendFrame(&message);
 }
 
@@ -429,12 +429,12 @@ void TTCommControl::sendCaterpillarPIDParameters(const uint kp, const uint ki, c
   message.can_id = CONFIG_FRAME_CAN_ID;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[CONFIG_FRAME_TYPE_BYTE] = frame_type;
-  message.data[KP_CATERPILLAR_FIRST_BYTE] = extract_first_byte(kp);
-  message.data[KP_CATERPILLAR_FIRST_BYTE + 1] = extract_second_byte(kp);
-  message.data[KI_CATERPILLAR_FIRST_BYTE] = extract_first_byte(ki);
-  message.data[KI_CATERPILLAR_FIRST_BYTE + 1] = extract_second_byte(ki);
-  message.data[KD_CATERPILLAR_FIRST_BYTE] = extract_first_byte(kd);
-  message.data[KD_CATERPILLAR_FIRST_BYTE + 1] = extract_second_byte(kd);
+  message.data[KP_CATERPILLAR_FIRST_BYTE] = extractFirstByte(kp);
+  message.data[KP_CATERPILLAR_FIRST_BYTE + 1] = extractSecondByte(kp);
+  message.data[KI_CATERPILLAR_FIRST_BYTE] = extractFirstByte(ki);
+  message.data[KI_CATERPILLAR_FIRST_BYTE + 1] = extractSecondByte(ki);
+  message.data[KD_CATERPILLAR_FIRST_BYTE] = extractFirstByte(kd);
+  message.data[KD_CATERPILLAR_FIRST_BYTE + 1] = extractSecondByte(kd);
   // dont care byte
   message.data[KD_CATERPILLAR_FIRST_BYTE + 2] = 0xFF;
   can_handler_.iSendFrame(&message);
@@ -447,10 +447,10 @@ void TTCommControl::sendCaterpillarBaseSignal(const uint forward_base, const uin
   message.can_id = CONFIG_FRAME_CAN_ID;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[CONFIG_FRAME_TYPE_BYTE] = frame_type;
-  message.data[FORWARD_SIGNAL_BASE_FIRST_BYTE] = extract_first_byte(forward_base);
-  message.data[FORWARD_SIGNAL_BASE_FIRST_BYTE + 1] = extract_second_byte(forward_base);
-  message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE] = extract_first_byte(backward_base);
-  message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 1] = extract_second_byte(backward_base);
+  message.data[FORWARD_SIGNAL_BASE_FIRST_BYTE] = extractFirstByte(forward_base);
+  message.data[FORWARD_SIGNAL_BASE_FIRST_BYTE + 1] = extractSecondByte(forward_base);
+  message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE] = extractFirstByte(backward_base);
+  message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 1] = extractSecondByte(backward_base);
   // dont care bytes
   message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 2] = 0xFF;
   message.data[BACKWARD_SIGNAL_BASE_FIRST_BYTE + 3] = 0xFF;
