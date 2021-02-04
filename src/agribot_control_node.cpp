@@ -11,6 +11,14 @@
 #include <std_msgs/Float32.h>
 #include <std_msgs/String.h>
 #include <string_view>
+#include <cstdint>
+
+using std::uint8_t;
+using std::uint16_t;
+using std::uint32_t;
+using std::int8_t;
+using std::int16_t;
+using std::int32_t;
 
 constexpr char used_can[] = "can0";
 constexpr uint WAIT_FOR_TTCONTROL = 100000;
@@ -262,16 +270,15 @@ bool deltasChangeGeometryServiceExecution(
   }
 }
 
-bool front_deltas_geometry_service_callback(
+bool frontDeltasGeometryServiceCallback(
     agribot_msgs::ChangeDeltasGeometry::Request& req,   // NOLINT(runtime/references)
     agribot_msgs::ChangeDeltasGeometry::Response& res)  // NOLINT(runtime/references)
 {
   return deltasChangeGeometryServiceExecution(req, res, eRobotsCarts::FRONT_CART);
 }
 
-bool back_deltas_geometry_service_callback(
-    agribot_msgs::ChangeDeltasGeometry::Request& req,   // NOLINT(runtime/references)
-    agribot_msgs::ChangeDeltasGeometry::Response& res)  // NOLINT(runtime/references)
+bool backDeltasGeometryServiceCallback(agribot_msgs::ChangeDeltasGeometry::Request& req,   // NOLINT(runtime/references)
+                                       agribot_msgs::ChangeDeltasGeometry::Response& res)  // NOLINT(runtime/references)
 {
   return deltasChangeGeometryServiceExecution(req, res, eRobotsCarts::BACK_CART);
 }
@@ -315,10 +322,10 @@ int main(int argc, char** argv)
   agribot_msgs::AgribotCaterpillar AgribotCaterpillarMsg;
   dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig> server;
   dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>::CallbackType callback_function_object;
-  ros::ServiceServer service_front = n.advertiseService("agribot/cart/caterpillar/front/change_deltas_geometry",
-                                                        front_deltas_geometry_service_callback);
+  ros::ServiceServer service_front =
+      n.advertiseService("agribot/cart/caterpillar/front/change_deltas_geometry", frontDeltasGeometryServiceCallback);
   ros::ServiceServer service_back =
-      n.advertiseService("agribot/cart/caterpillar/back/change_deltas_geometry", back_deltas_geometry_service_callback);
+      n.advertiseService("agribot/cart/caterpillar/back/change_deltas_geometry", backDeltasGeometryServiceCallback);
   std_msgs::Float32 FrontAngleMsg;
   std_msgs::Float32 BackAngleMsg;
   // angle initialization reading

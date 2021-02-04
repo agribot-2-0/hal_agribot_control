@@ -3,7 +3,9 @@
  */
 
 #pragma once
-#include <stdint.h>
+#include <cstdint>
+
+using std::uint8_t;
 
 class CartsStatus
 {

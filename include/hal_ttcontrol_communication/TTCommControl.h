@@ -7,11 +7,19 @@
 #include <agribot_common/Can.h>
 #include <agribot_msgs/ChangeDeltasGeometry.h>
 #include <hal_ttcontrol_communication/CartsStatus.h>
+#include <cstdint>
 #include <cmath>
 #include <iostream>
 #include <fstream>
 #include <queue>
 #include <string>
+
+using std::uint8_t;
+using std::uint16_t;
+using std::uint32_t;
+using std::int8_t;
+using std::int16_t;
+using std::int32_t;
 
 constexpr uint8_t VELOCITIES_MASK = 0x01;
 constexpr uint8_t FRONT_ANGLE_MASK = 0x02;
