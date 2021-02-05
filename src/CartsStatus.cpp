@@ -4,6 +4,8 @@
 
 #include <hal_ttcontrol_communication/CartsStatus.h>
 
+using std::uint8_t;
+
 void CartsStatus::setFrontLinearVelocity(const float velocity)
 {
   front_linear_velocity_ = velocity;

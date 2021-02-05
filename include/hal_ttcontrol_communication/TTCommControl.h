@@ -24,22 +24,39 @@ constexpr std::uint8_t TTC_OK = 0x01;
 constexpr std::uint8_t TTC_AUTOMATIC_MODE_REQUEST = 0x20;
 constexpr std::uint8_t TTC_CARTS_ANGLE_INITIALIZATION = 0x30;
 
-constexpr std::uint8_t CONFIG_FRAME_TYPE_BYTE = 0;
-constexpr std::uint8_t DITTER_PERIOD_BYTE = 1;
-constexpr std::uint8_t DITTER_AMPLITUDE_FIRST_BYTE = 2;
-constexpr std::uint8_t ENCODER_PERIOD_BYTE = 4;
-constexpr std::uint8_t KP_FIRST_BYTE = 1;
-constexpr std::uint8_t KI_FIRST_BYTE = 3;
-constexpr std::uint8_t KD_FIRST_BYTE = 5;
-constexpr std::uint8_t ACCELERATION_FIRST_BYTE = 6;
-constexpr std::uint32_t K_RESOLUTION_MULTIPLIER = 10000;
-constexpr std::uint32_t KD_RESOLUTION_MULTIPLIER = 100;
-constexpr std::uint32_t ACCELERATION_RESOLUTION_MULTIPLIER = 1000;
-constexpr std::uint8_t KP_CATERPILLAR_FIRST_BYTE = 1;
-constexpr std::uint8_t KI_CATERPILLAR_FIRST_BYTE = 3;
-constexpr std::uint8_t KD_CATERPILLAR_FIRST_BYTE = 5;
-constexpr std::uint8_t FORWARD_SIGNAL_BASE_FIRST_BYTE = 1;
-constexpr std::uint8_t BACKWARD_SIGNAL_BASE_FIRST_BYTE = 3;
+enum ConfigFrameBytePositions : uint8_t
+{
+  config_frame_type_byte = 0,
+  ditter_period_byte = 1,
+  ditter_amplitude_first_byte = 2,
+  encoder_period_byte = 4,
+  kp_first_byte = 1,
+  ki_first_byte = 3,
+  kd_first_byte = 5,
+  kp_caterpillar_first_byte = 1,
+  ki_caterpillar_first_byte = 3,
+  kd_caterpillar_first_byte = 5,
+  forward_signal_base_first_byte = 1,
+  backward_signal_base_first_byte = 3,
+  acceleration_first_byte = 6
+};
+
+enum TransmitCanIds : uint32_t
+{
+  protocol_response_frame = 0x00EF64C8,
+  deltas_geometry_command_frame = 0x00FFDCC8,
+  velocity_control_frame = 0x00FFD0C8,
+  config_frame = 0x00FFDBC8
+};
+
+enum ReceiveCanIds : uint32_t
+{
+  front_angle_frame = 0xAA20,
+  back_angle_frame = 0xAA21,
+  velocity_frame = 0x00FFD064,
+  deltas_geometry_feedback_frame = 0x00FFDC64,
+  protocol_frame = 0x00EFC864
+};
 
 enum TTControlParamsType : std::uint8_t
 {
@@ -126,8 +143,10 @@ public:
   void sendSignalsParameters(const int ditter_period, const int ditter_amplitude, const int encoder_period);
   void sendCartsPidParameters(const double kp, const double ki, const double kd, const double acceleration,
                               const std::uint8_t frame_type);
-  void sendCaterpillarPidParameters(const std::uint32_t kp, const std::uint32_t ki, const std::uint32_t kd, const std::uint8_t frame_type);
-  void sendCaterpillarBaseSignal(const std::uint32_t forward_base, const std::uint32_t backward_base, const std::uint8_t frame_type);
+  void sendCaterpillarPidParameters(const std::uint32_t kp, const std::uint32_t ki, const std::uint32_t kd,
+                                    const std::uint8_t frame_type);
+  void sendCaterpillarBaseSignal(const std::uint32_t forward_base, const std::uint32_t backward_base,
+                                 const std::uint8_t frame_type);
   const CartsStatus& getCartsStatus() const;
   float getFrontCartAngle() const;
   float getBackCartAngle() const;
