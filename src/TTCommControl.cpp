@@ -4,24 +4,41 @@
 
 #include <hal_ttcontrol_communication/TTCommControl.h>
 
+using std::int16_t;
+using std::int32_t;
+using std::int8_t;
+using std::uint16_t;
+using std::uint32_t;
+using std::uint8_t;
+
 // mask used for extracting address and source, without PG
 constexpr uint8_t TTCONTROL_J1939_NODE_ID = 0x64;
-constexpr uint TWO_LAST_BYTES_ADDRESS_MASK = 0xFFFF;
+constexpr uint8_t ADVANTECH_J1939_NODE_ID = 0xC8;
+constexpr uint32_t TWO_LAST_BYTES_ADDRESS_MASK = 0xFFFF;
 constexpr uint8_t FULL_CAN_FRAME_BYTE_NUMBER = 8;
 constexpr uint8_t TWO_BYTE_CAN_FRAME = 2;
-constexpr uint PROTOCOL_FRAME_ID = 0x00EFC864;
-constexpr uint PROTOCOL_RESPONSE_FRAME_ID = 0x00EF64C8;
-constexpr uint VELOCITY_FRAME_ID = 0x00FFD064;
-constexpr uint FRONT_ANGLE_ID = 0xAA20;
-constexpr uint BACK_ANGLE_ID = 0xAA21;
-constexpr uint DELTAS_GEOMETRY_FEEDBACK_ID = 0x00FFDC64;
-constexpr uint DELTAS_GEOMETRY_COMMAND_ID = 0x00FFDCC8;
-constexpr uint VELOCITY_CONTROL_FRAME_ID = 0x00FFD0C8;
-constexpr uint CONFIG_FRAME_CAN_ID = 0x00FFDBC8;
+
+enum TransmitCanIds : uint32_t
+{
+  PROTOCOL_RESPONSE_FRAME = 0x00EF64C8,
+  DELTAS_GEOMETRY_COMMAND_FRAME = 0x00FFDCC8,
+  VELOCITY_CONTROL_FRAME = 0x00FFD0C8,
+  CONFIG_FRAME = 0x00FFDBC8
+};
+
+enum ReceiveCanIds : uint32_t
+{
+  FRONT_ANGLE_FRAME = 0xAA20,
+  BACK_ANGLE_FRAME = 0xAA21,
+  VELOCITY_FRAME = 0x00FFD064,
+  DELTAS_GEOMETRY_FEEDBACK_FRAME = 0x00FFDC64,
+  PROTOCOL_FRAME = 0x00EFC864
+};
+
 constexpr double DEG_TO_RAD = (M_PI / 180.0);  // TODO(adam): use the function from agribot_common.h
 
-constexpr uint SIGN_BIT = 0x80;
-constexpr uint DATA_BITS = 0x7F;
+constexpr uint8_t SIGN_BIT = 0x80;
+constexpr uint8_t DATA_BITS = 0x7F;
 
 // protocol data bytes
 constexpr uint8_t PROTOCOL_PURPOSE_BYTE = 0;
@@ -34,19 +51,19 @@ constexpr bool DELTAS_GEOMETRY_UP = true;
 constexpr bool DELTAS_GEOMETRY_DOWN = false;
 // Encode velocity frame coming from TTC - check TTC-Advantech
 // protocol DS for more info
-constexpr uint VELOCITY_FRAME_ENCODE_CONST = 1000;
+constexpr uint32_t VELOCITY_FRAME_ENCODE_CONST = 1000;
 // Decode velocity frame coming from TTC - check TTC-Advantech
 // protocol DS for more info
 constexpr float VELOCITY_FRAME_DECODE_CONST = 0.001;
 // Decode angle frame - check inclinometer DS for more info
 constexpr float ANGLE_FRAME_DECODE_CONST_MULTIPLIER = 0.214;
 constexpr float ANGLE_FRAME_DECODE_CONST_OFFSET = -180;
-constexpr uint INVERSE_INT16_CONST = 32768;
+constexpr uint32_t INVERSE_INT16_CONST = 32768;
 constexpr uint32_t GET_FOURTH_BYTE = 0xFF000000;
 constexpr uint32_t GET_THIRD_BYTE = 0x00FF0000;
 constexpr uint32_t GET_SECOND_BYTE = 0x0000FF00;
 constexpr uint32_t GET_FIRST_BYTE = 0x000000FF;
-constexpr uint CARTS_ANGLE_RESOLUTION = 1000;
+constexpr uint32_t CARTS_ANGLE_RESOLUTION = 1000;
 constexpr float RAD_TO_DEG = (180.0 / M_PI);  // TODO(adam): use the function from agribot_common.h
 constexpr uint8_t CARTS_ENCODER_HIGH_BYTE_POSITION = 1;
 constexpr uint8_t CARTS_ENCODER_LOW_BYTE_POSITION = 0;
@@ -54,13 +71,13 @@ constexpr uint8_t CARTS_ENCODER_LOW_BYTE_POSITION = 0;
 // rounding to the beginning of the measures exceeding the 360 degrees
 // the encoders natural limits are from 10000 (-360 deg) to 30000(360 deg)
 // but practically we should never reach them
-constexpr int CARTS_ENCODERS_ZERO_VALUE = 20000;
+constexpr int32_t CARTS_ENCODERS_ZERO_VALUE = 20000;
 // carts encoders have 10000 impulses per one full turn (360 deg)
 // so the resolution is 360 deg/10000
 constexpr float CARTS_ENCODERS_RESOLUTION = 0.036;
 
-constexpr uint DELIMITER_MIDDLE_LENGTH = 1;
-constexpr uint DELIMITER_ENDING_LENGTH = 2;
+constexpr uint32_t DELIMITER_MIDDLE_LENGTH = 1;
+constexpr uint32_t DELIMITER_ENDING_LENGTH = 2;
 
 inline uint8_t TTCommControl::extractFourthByte(const uint32_t four_byte_number)
 {
@@ -228,10 +245,11 @@ TTCommControl::~TTCommControl()
   while (!frames_queue_.empty())
   {
     frames_queue_.pop();
+    _t
   }
 }
 
-inline bool TTCommControl::checkIfCanBusIdsMatch(const uint32_t id_to_check, const uint msg_id)
+inline bool TTCommControl::checkIfCanBusIdsMatch(const uint32_t id_to_check, const uint32_t msg_id)
 {
   return ((id_to_check & TWO_LAST_BYTES_ADDRESS_MASK) == (msg_id & TWO_LAST_BYTES_ADDRESS_MASK));
 }
@@ -267,7 +285,7 @@ void TTCommControl::parseCanFrames()
   while (!frames_queue_.empty())
   {
     message = frames_queue_.front();
-    if (checkIfCanBusIdsMatch(VELOCITY_FRAME_ID, message.can_id))
+    if (checkIfCanBusIdsMatch(ReceiveCanIds::VELOCITY_FRAME, message.can_id))
     {
       setVelocity(VelocityType::front_linear, message);
       setVelocity(VelocityType::front_angular, message);
@@ -275,26 +293,26 @@ void TTCommControl::parseCanFrames()
       setVelocity(VelocityType::back_angular, message);
       setReceivedCanBusIdsBitMask(VELOCITIES_MASK);
     }
-    if (checkIfCanBusIdsMatch(FRONT_ANGLE_ID, message.can_id))
+    if (checkIfCanBusIdsMatch(ReceiveCanIds::FRONT_ANGLE_FRAME, message.can_id))
     {
       front_cart_encoder_unread_ = true;
       front_cart_encoder_value_ = decodeEncoderValue(message);
       front_cart_angle_ = decodeAngle(message) * DEG_TO_RAD;
       setReceivedCanBusIdsBitMask(FRONT_ANGLE_MASK);
     }
-    if (checkIfCanBusIdsMatch(BACK_ANGLE_ID, message.can_id))
+    if (checkIfCanBusIdsMatch(ReceiveCanIds::BACK_ANGLE_FRAME, message.can_id))
     {
       back_cart_encoder_unread_ = true;
       back_cart_encoder_value_ = decodeEncoderValue(message);
       back_cart_angle_ = decodeAngle(message) * DEG_TO_RAD;
       setReceivedCanBusIdsBitMask(BACK_ANGLE_MASK);
     }
-    if (checkIfCanBusIdsMatch(DELTAS_GEOMETRY_FEEDBACK_ID, message.can_id))
+    if (checkIfCanBusIdsMatch(ReceiveCanIds::DELTAS_GEOMETRY_FEEDBACK_FRAME, message.can_id))
     {
       decodeCartsGeometryState(message);
       setReceivedCanBusIdsBitMask(GEOMETRY_FEEDBACK_MASK);
     }
-    if (checkIfCanBusIdsMatch(PROTOCOL_FRAME_ID, message.can_id))
+    if (checkIfCanBusIdsMatch(ReceiveCanIds::PROTOCOL_FRAME, message.can_id))
     {
       // if TTControl confirms angle receiving
       if (message.data[PROTOCOL_PURPOSE_BYTE] == TTC_CARTS_ANGLE_INITIALIZATION)
@@ -324,7 +342,7 @@ void TTCommControl::parseCanFrames()
 void TTCommControl::confirmAdvantechReadiness()
 {
   can_frame message;
-  message.can_id = PROTOCOL_RESPONSE_FRAME_ID;
+  message.can_id = TransmitCanIds::PROTOCOL_RESPONSE_FRAME;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[0] = TTC_AUTOMATIC_MODE_REQUEST;
   message.data[1] = TTCONTROL_J1939_NODE_ID;  // INFO byte, send the TTControl node ID to confirm readiness
@@ -353,7 +371,7 @@ inline uint8_t TTCommControl::returnDeltasGeometryCommandByte(const uint8_t comm
 void TTCommControl::sendDeltasGeometryCommand(const uint8_t front_cart_command, const uint8_t back_cart_command)
 {
   can_frame message;
-  message.can_id = DELTAS_GEOMETRY_COMMAND_ID;
+  message.can_id = TransmitCanIds::DELTAS_GEOMETRY_COMMAND_FRAME;
   message.can_dlc = TWO_BYTE_CAN_FRAME;
   message.data[FRONT_DELTA_GEOMETRY_BYTE] = returnDeltasGeometryCommandByte(front_cart_command);
   message.data[BACK_DELTA_GEOMETRY_BYTE] = returnDeltasGeometryCommandByte(back_cart_command);
@@ -363,7 +381,7 @@ void TTCommControl::sendDeltasGeometryCommand(const uint8_t front_cart_command, 
 void TTCommControl::sendCartsEncodersInitialization()
 {
   can_frame message;
-  message.can_id = PROTOCOL_RESPONSE_FRAME_ID;
+  message.can_id = TransmitCanIds::PROTOCOL_RESPONSE_FRAME;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[0] = TTC_CARTS_ANGLE_INITIALIZATION;
   message.data[1] = extractThirdByte(init_front_cart_encoder_value_);
@@ -380,7 +398,7 @@ void TTCommControl::sendVelocities(const float front_linear, const float front_a
                                    const float back_angular)
 {
   can_frame message;
-  message.can_id = VELOCITY_CONTROL_FRAME_ID;
+  message.can_id = TransmitCanIds::VELOCITY_CONTROL_FRAME;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   prepareVelocitiesFrame(message, front_linear, 0);
   prepareVelocitiesFrame(message, front_angular, 2);
@@ -392,7 +410,7 @@ void TTCommControl::sendVelocities(const float front_linear, const float front_a
 void TTCommControl::sendSignalsParameters(const int ditter_period, const int ditter_amplitude, const int encoder_period)
 {
   can_frame message;
-  message.can_id = CONFIG_FRAME_CAN_ID;
+  message.can_id = TransmitCanIds::CONFIG_FRAME;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[CONFIG_FRAME_TYPE_BYTE] = TTControlParamsType::ttcontrol_signals_params_type;
   message.data[DITTER_PERIOD_BYTE] = extractFirstByte(static_cast<uint32_t>(ditter_period));
@@ -410,7 +428,7 @@ void TTCommControl::sendCartsPidParameters(const double kp, const double ki, con
                                            const uint8_t frame_type)
 {
   can_frame message;
-  message.can_id = CONFIG_FRAME_CAN_ID;
+  message.can_id = TransmitCanIds::CONFIG_FRAME;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[CONFIG_FRAME_TYPE_BYTE] = frame_type;
   message.data[KP_FIRST_BYTE] = extractFirstByte(static_cast<uint32_t>(kp * K_RESOLUTION_MULTIPLIER));
@@ -425,10 +443,11 @@ void TTCommControl::sendCartsPidParameters(const double kp, const double ki, con
   can_handler_.iSendFrame(&message);
 }
 
-void TTCommControl::sendCaterpillarPidParameters(const uint kp, const uint ki, const uint kd, const uint8_t frame_type)
+void TTCommControl::sendCaterpillarPidParameters(const uint32_t kp, const uint32_t ki, const uint32_t kd,
+                                                 const uint8_t frame_type)
 {
   can_frame message;
-  message.can_id = CONFIG_FRAME_CAN_ID;
+  message.can_id = TransmitCanIds::CONFIG_FRAME;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[CONFIG_FRAME_TYPE_BYTE] = frame_type;
   message.data[KP_CATERPILLAR_FIRST_BYTE] = extractFirstByte(kp);
@@ -442,11 +461,11 @@ void TTCommControl::sendCaterpillarPidParameters(const uint kp, const uint ki, c
   can_handler_.iSendFrame(&message);
 }
 
-void TTCommControl::sendCaterpillarBaseSignal(const uint forward_base, const uint backward_base,
+void TTCommControl::sendCaterpillarBaseSignal(const uint32_t forward_base, const uint32_t backward_base,
                                               const uint8_t frame_type)
 {
   can_frame message;
-  message.can_id = CONFIG_FRAME_CAN_ID;
+  message.can_id = TransmitCanIds::CONFIG_FRAME;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[CONFIG_FRAME_TYPE_BYTE] = frame_type;
   message.data[FORWARD_SIGNAL_BASE_FIRST_BYTE] = extractFirstByte(forward_base);
@@ -475,7 +494,7 @@ float TTCommControl::getBackCartAngle() const
   return back_cart_angle_;
 }
 
-int TTCommControl::getErrorCode() const
+std::int32_t TTCommControl::getErrorCode() const
 {
   return err_code_;
 }
