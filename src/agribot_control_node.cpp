@@ -37,19 +37,19 @@ enum RobotsCarts : uint8_t
 
 enum TTControlParameterFlags : uint32_t
 {
-  ttcontrol_signal_params_flag = 0x01,
-  ttcontrol_front_pid_t_params_flag = 0x02,
-  ttcontrol_front_pid_r_params_flag = 0x04,
-  ttcontrol_back_pid_t_params_flag = 0x08,
-  ttcontrol_back_pid_r_params_flag = 0x10,
-  ttcontrol_front_left_caterpillar_pid_params_flag = 0x20,
-  ttcontrol_front_left_caterpillar_signals_base_flag = 0x40,
-  ttcontrol_front_right_caterpillar_pid_params_flag = 0x80,
-  ttcontrol_front_right_caterpillar_signals_base_flag = 0x100,
-  ttcontrol_back_left_caterpillar_pid_params_flag = 0x200,
-  ttcontrol_back_left_caterpillar_signals_base_flag = 0x400,
-  ttcontrol_back_right_caterpillar_pid_params_flag = 0x800,
-  ttcontrol_back_right_caterpillar_signals_base_flag = 0x1000
+  signal_params_flag = 0x01,
+  front_pid_t_params_flag = 0x02,
+  front_pid_r_params_flag = 0x04,
+  back_pid_t_params_flag = 0x08,
+  back_pid_r_params_flag = 0x10,
+  front_left_caterpillar_pid_params_flag = 0x20,
+  front_left_caterpillar_signals_base_flag = 0x40,
+  front_right_caterpillar_pid_params_flag = 0x80,
+  front_right_caterpillar_signals_base_flag = 0x100,
+  back_left_caterpillar_pid_params_flag = 0x200,
+  back_left_caterpillar_signals_base_flag = 0x400,
+  back_right_caterpillar_pid_params_flag = 0x800,
+  back_right_caterpillar_signals_base_flag = 0x1000
 };
 
 TTCommControl CommHandlerControl(used_can);
@@ -64,121 +64,121 @@ void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersCo
                                              config.encoder_period_int);
     CommHandlerControl.sendCartsPidParameters(config.front_kp_t_double, config.front_ki_t_double,
                                               config.front_kd_t_double, config.front_acc_t_double,
-                                              TTControlParamsType::ttcontrol_front_pid_t_params_type);
+                                              TTControlParamsType::front_pid_t);
     CommHandlerControl.sendCartsPidParameters(config.front_kp_r_double, config.front_ki_r_double,
                                               config.front_kd_r_double, config.front_acc_r_double,
-                                              TTControlParamsType::ttcontrol_front_pid_r_params_type);
+                                              TTControlParamsType::front_pid_r);
     CommHandlerControl.sendCartsPidParameters(config.back_kp_t_double, config.back_ki_t_double, config.back_kd_t_double,
                                               config.back_acc_t_double,
-                                              TTControlParamsType::ttcontrol_back_pid_t_params_type);
+                                              TTControlParamsType::back_pid_t);
     CommHandlerControl.sendCartsPidParameters(config.back_kp_r_double, config.back_ki_r_double, config.back_kd_r_double,
                                               config.back_acc_r_double,
-                                              TTControlParamsType::ttcontrol_back_pid_r_params_type);
+                                              TTControlParamsType::back_pid_r);
     CommHandlerControl.sendCaterpillarPidParameters(
         config.front_left_caterpillar_kp, config.front_left_caterpillar_ki, config.front_left_caterpillar_kd,
-        TTControlParamsType::ttcontrol_front_left_caterpillar_pid_params_type);
+        TTControlParamsType::front_left_caterpillar_pid);
 
     ros::Duration(0.5).sleep();  // sleep for half a second, to give TTControl time to read and save the parameters
     CommHandlerControl.sendCaterpillarBaseSignal(
         config.front_left_caterpillar_signal_base_forward, config.front_left_caterpillar_signal_base_backward,
-        TTControlParamsType::ttcontrol_front_left_caterpillar_signal_base_type);
+        TTControlParamsType::front_left_caterpillar_signal_base);
     CommHandlerControl.sendCaterpillarPidParameters(
         config.front_right_caterpillar_kp, config.front_right_caterpillar_ki, config.front_right_caterpillar_kd,
-        TTControlParamsType::ttcontrol_front_right_caterpillar_pid_params_type);
+        TTControlParamsType::front_right_caterpillar_pid);
     CommHandlerControl.sendCaterpillarBaseSignal(
         config.front_right_caterpillar_signal_base_forward, config.front_right_caterpillar_signal_base_backward,
-        TTControlParamsType::ttcontrol_front_right_caterpillar_signal_base_type);
+        TTControlParamsType::front_right_caterpillar_signal_base);
     CommHandlerControl.sendCaterpillarPidParameters(
         config.back_left_caterpillar_kp, config.back_left_caterpillar_ki, config.back_left_caterpillar_kd,
-        TTControlParamsType::ttcontrol_back_left_caterpillar_pid_params_type);
+        TTControlParamsType::back_left_caterpillar_pid);
     CommHandlerControl.sendCaterpillarBaseSignal(config.back_left_caterpillar_signal_base_forward,
                                                  config.back_left_caterpillar_signal_base_backward,
-                                                 TTControlParamsType::ttcontrol_back_left_caterpillar_signal_base_type);
+                                                 TTControlParamsType::back_left_caterpillar_signal_base);
     CommHandlerControl.sendCaterpillarPidParameters(
         config.back_right_caterpillar_kp, config.back_right_caterpillar_ki, config.back_right_caterpillar_kd,
-        TTControlParamsType::ttcontrol_back_right_caterpillar_pid_params_type);
+        TTControlParamsType::back_right_caterpillar_pid_params);
     CommHandlerControl.sendCaterpillarBaseSignal(
         config.back_right_caterpillar_signal_base_forward, config.back_right_caterpillar_signal_base_backward,
-        TTControlParamsType::ttcontrol_back_right_caterpillar_signal_base_type);
+        TTControlParamsType::back_right_caterpillar_signal_base);
   }
   else
   {
-    if (level & TTControlParameterFlags::ttcontrol_signal_params_flag)
+    if (level & TTControlParameterFlags::signal_params_flag)
     {
       CommHandlerControl.sendSignalsParameters(config.ditter_period_int, config.ditter_amplitude_int,
                                                config.encoder_period_int);
     }
-    if (level & TTControlParameterFlags::ttcontrol_front_pid_t_params_flag)
+    if (level & TTControlParameterFlags::front_pid_t_params_flag)
     {
       CommHandlerControl.sendCartsPidParameters(config.front_kp_t_double, config.front_ki_t_double,
                                                 config.front_kd_t_double, config.front_acc_t_double,
-                                                TTControlParamsType::ttcontrol_front_pid_t_params_type);
+                                                TTControlParamsType::front_pid_t);
     }
-    if (level & TTControlParameterFlags::ttcontrol_front_pid_r_params_flag)
+    if (level & TTControlParameterFlags::front_pid_r_params_flag)
     {
       CommHandlerControl.sendCartsPidParameters(config.front_kp_r_double, config.front_ki_r_double,
                                                 config.front_kd_r_double, config.front_acc_r_double,
-                                                TTControlParamsType::ttcontrol_front_pid_r_params_type);
+                                                TTControlParamsType::front_pid_r);
     }
-    if (level & TTControlParameterFlags::ttcontrol_back_pid_t_params_flag)
+    if (level & TTControlParameterFlags::back_pid_t_params_flag)
     {
       CommHandlerControl.sendCartsPidParameters(config.back_kp_t_double, config.back_ki_t_double,
                                                 config.back_kd_t_double, config.back_acc_t_double,
-                                                TTControlParamsType::ttcontrol_back_pid_t_params_type);
+                                                TTControlParamsType::back_pid_t);
     }
-    if (level & TTControlParameterFlags::ttcontrol_back_pid_r_params_flag)
+    if (level & TTControlParameterFlags::back_pid_r_params_flag)
     {
       CommHandlerControl.sendCartsPidParameters(config.back_kp_r_double, config.back_ki_r_double,
                                                 config.back_kd_r_double, config.back_acc_r_double,
-                                                TTControlParamsType::ttcontrol_back_pid_r_params_type);
+                                                TTControlParamsType::back_pid_r);
     }
-    if (level & TTControlParameterFlags::ttcontrol_front_left_caterpillar_pid_params_flag)
+    if (level & TTControlParameterFlags::front_left_caterpillar_pid_params_flag)
     {
       CommHandlerControl.sendCaterpillarPidParameters(
           config.front_left_caterpillar_kp, config.front_left_caterpillar_ki, config.front_left_caterpillar_kd,
-          TTControlParamsType::ttcontrol_front_left_caterpillar_pid_params_type);
+          TTControlParamsType::front_left_caterpillar_pid);
     }
-    if (level & TTControlParameterFlags::ttcontrol_front_left_caterpillar_signals_base_flag)
+    if (level & TTControlParameterFlags::front_left_caterpillar_signals_base_flag)
     {
       CommHandlerControl.sendCaterpillarBaseSignal(
           config.front_left_caterpillar_signal_base_forward, config.front_left_caterpillar_signal_base_backward,
-          TTControlParamsType::ttcontrol_front_left_caterpillar_signal_base_type);
+          TTControlParamsType::front_left_caterpillar_signal_base);
     }
-    if (level & TTControlParameterFlags::ttcontrol_front_right_caterpillar_pid_params_flag)
+    if (level & TTControlParameterFlags::front_right_caterpillar_pid_params_flag)
     {
       CommHandlerControl.sendCaterpillarPidParameters(
           config.front_right_caterpillar_kp, config.front_right_caterpillar_ki, config.front_right_caterpillar_kd,
-          TTControlParamsType::ttcontrol_front_right_caterpillar_pid_params_type);
+          TTControlParamsType::front_right_caterpillar_pid);
     }
-    if (level & TTControlParameterFlags::ttcontrol_front_right_caterpillar_signals_base_flag)
+    if (level & TTControlParameterFlags::front_right_caterpillar_signals_base_flag)
     {
       CommHandlerControl.sendCaterpillarBaseSignal(
           config.front_right_caterpillar_signal_base_forward, config.front_right_caterpillar_signal_base_backward,
-          TTControlParamsType::ttcontrol_front_right_caterpillar_signal_base_type);
+          TTControlParamsType::front_right_caterpillar_signal_base);
     }
-    if (level & TTControlParameterFlags::ttcontrol_back_left_caterpillar_pid_params_flag)
+    if (level & TTControlParameterFlags::back_left_caterpillar_pid_params_flag)
     {
       CommHandlerControl.sendCaterpillarPidParameters(
           config.back_left_caterpillar_kp, config.back_left_caterpillar_ki, config.back_left_caterpillar_kd,
-          TTControlParamsType::ttcontrol_back_left_caterpillar_pid_params_type);
+          TTControlParamsType::back_left_caterpillar_pid);
     }
-    if (level & TTControlParameterFlags::ttcontrol_back_left_caterpillar_signals_base_flag)
+    if (level & TTControlParameterFlags::back_left_caterpillar_signals_base_flag)
     {
       CommHandlerControl.sendCaterpillarBaseSignal(
           config.back_left_caterpillar_signal_base_forward, config.back_left_caterpillar_signal_base_backward,
-          TTControlParamsType::ttcontrol_back_left_caterpillar_signal_base_type);
+          TTControlParamsType::back_left_caterpillar_signal_base);
     }
-    if (level & TTControlParameterFlags::ttcontrol_back_right_caterpillar_pid_params_flag)
+    if (level & TTControlParameterFlags::back_right_caterpillar_pid_params_flag)
     {
       CommHandlerControl.sendCaterpillarPidParameters(
           config.back_right_caterpillar_kp, config.back_right_caterpillar_ki, config.back_right_caterpillar_kd,
-          TTControlParamsType::ttcontrol_back_right_caterpillar_pid_params_type);
+          TTControlParamsType::back_right_caterpillar_pid_params);
     }
-    if (level & TTControlParameterFlags::ttcontrol_back_right_caterpillar_signals_base_flag)
+    if (level & TTControlParameterFlags::back_right_caterpillar_signals_base_flag)
     {
       CommHandlerControl.sendCaterpillarBaseSignal(
           config.back_right_caterpillar_signal_base_forward, config.back_right_caterpillar_signal_base_backward,
-          TTControlParamsType::ttcontrol_back_right_caterpillar_signal_base_type);
+          TTControlParamsType::back_right_caterpillar_signal_base);
     }
   }
 }

@@ -60,19 +60,19 @@ enum ReceiveCanIds : uint32_t
 
 enum TTControlParamsType : std::uint8_t
 {
-  ttcontrol_signals_params_type = 0,
-  ttcontrol_front_pid_t_params_type = 1,
-  ttcontrol_front_pid_r_params_type = 2,
-  ttcontrol_back_pid_t_params_type = 3,
-  ttcontrol_back_pid_r_params_type = 4,
-  ttcontrol_front_left_caterpillar_pid_params_type = 5,
-  ttcontrol_front_left_caterpillar_signal_base_type = 6,
-  ttcontrol_front_right_caterpillar_pid_params_type = 7,
-  ttcontrol_front_right_caterpillar_signal_base_type = 8,
-  ttcontrol_back_left_caterpillar_pid_params_type = 9,
-  ttcontrol_back_left_caterpillar_signal_base_type = 10,
-  ttcontrol_back_right_caterpillar_pid_params_type = 11,
-  ttcontrol_back_right_caterpillar_signal_base_type = 12
+  signals = 0,
+  front_pid_t = 1,
+  front_pid_r = 2,
+  back_pid_t = 3,
+  back_pid_r = 4,
+  front_left_caterpillar_pid = 5,
+  front_left_caterpillar_signal_base = 6,
+  front_right_caterpillar_pid = 7,
+  front_right_caterpillar_signal_base = 8,
+  back_left_caterpillar_pid = 9,
+  back_left_caterpillar_signal_base = 10,
+  back_right_caterpillar_pid_params = 11,
+  back_right_caterpillar_signal_base = 12
 };
 
 enum VelocityType
