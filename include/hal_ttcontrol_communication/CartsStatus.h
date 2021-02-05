@@ -1,24 +1,32 @@
 /*
-* Copyright (C) 2020 Agribot. All rights reserved.
-*/
+ * Copyright (C) 2020 Agribot. All rights reserved.
+ */
 
 #pragma once
+#include <cstdint>
 
 class CartsStatus
 {
- private:
-    float _fFrontLinear;
-    float _fFrontAngular;
-    float _fBackLinear;
-    float _fBackAngular;
- public:
-    void vSetFrontLinear(float fVelo);
-    void vSetFrontAngular(float fVelo);
-    void vSetBackLinear(float fVelo);
-    void vSetBackAngular(float fVelo);
+private:
+  float front_linear_velocity_;
+  float front_angular_velocity_;
+  float back_linear_velocity_;
+  float back_angular_velocity_;
+  std::uint8_t front_cart_geometry_state_;
+  std::uint8_t back_cart_geometry_state_;
 
-    float fGetFrontLinear();
-    float fGetFrontAngular();
-    float fGetBackLinear();
-    float fGetBackAngular();
+public:
+  void setFrontLinearVelocity(const float velocity);
+  void setFrontAngularVelocity(const float velocity);
+  void setBackLinearVelocity(const float velocity);
+  void setBackAngularVelocity(const float velocity);
+  void setFrontCartGeometryState(const std::uint8_t geometry_state);
+  void setBackCartGeometryState(const std::uint8_t geometry_state);
+
+  float getFrontLinearVelocity() const;
+  float getFrontAngularVelocity() const;
+  float getBackLinearVelocity() const;
+  float getBackAngularVelocity() const;
+  std::uint8_t getFrontCartGeometryState() const;
+  std::uint8_t getBackCartGeometryState() const;
 };

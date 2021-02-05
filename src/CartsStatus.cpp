@@ -1,45 +1,67 @@
 /*
-* Copyright (C) 2020 Agribot. All rights reserved.
-*/
+ * Copyright (C) 2020 Agribot. All rights reserved.
+ */
 
 #include <hal_ttcontrol_communication/CartsStatus.h>
 
-void CartsStatus::vSetFrontLinear(float fVelo)
+using std::uint8_t;
+
+void CartsStatus::setFrontLinearVelocity(const float velocity)
 {
-    _fFrontLinear = fVelo;
+  front_linear_velocity_ = velocity;
 }
 
-void CartsStatus::vSetFrontAngular(float fVelo)
+void CartsStatus::setFrontAngularVelocity(const float velocity)
 {
-    _fFrontAngular = fVelo;
+  front_angular_velocity_ = velocity;
 }
 
-void CartsStatus::vSetBackLinear(float fVelo)
+void CartsStatus::setBackLinearVelocity(const float velocity)
 {
-    _fBackLinear = fVelo;
+  back_linear_velocity_ = velocity;
 }
 
-void CartsStatus::vSetBackAngular(float fVelo)
+void CartsStatus::setBackAngularVelocity(const float velocity)
 {
-    _fBackAngular = fVelo;
+  back_angular_velocity_ = velocity;
 }
 
-float CartsStatus::fGetFrontLinear()
+void CartsStatus::setFrontCartGeometryState(const uint8_t geometry_state)
 {
-    return _fFrontLinear;
+  front_cart_geometry_state_ = geometry_state;
 }
 
-float CartsStatus::fGetFrontAngular()
+void CartsStatus::setBackCartGeometryState(const uint8_t geometry_state)
 {
-    return _fFrontAngular;
+  back_cart_geometry_state_ = geometry_state;
 }
 
-float CartsStatus::fGetBackLinear()
+float CartsStatus::getFrontLinearVelocity() const
 {
-    return _fBackLinear;
+  return front_linear_velocity_;
 }
 
-float CartsStatus::fGetBackAngular()
+float CartsStatus::getFrontAngularVelocity() const
 {
-    return _fBackAngular;
+  return front_angular_velocity_;
+}
+
+float CartsStatus::getBackLinearVelocity() const
+{
+  return back_linear_velocity_;
+}
+
+float CartsStatus::getBackAngularVelocity() const
+{
+  return back_angular_velocity_;
+}
+
+uint8_t CartsStatus::getFrontCartGeometryState() const
+{
+  return front_cart_geometry_state_;
+}
+
+uint8_t CartsStatus::getBackCartGeometryState() const
+{
+  return back_cart_geometry_state_;
 }
