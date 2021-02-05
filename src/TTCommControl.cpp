@@ -393,7 +393,7 @@ void TTCommControl::sendSignalsParameters(const int ditter_period, const int dit
   can_frame message;
   message.can_id = TransmitCanIds::config_frame;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
-  message.data[ConfigFrameBytePositions::config_frame_type_byte] = TTControlParamsType::ttcontrol_signals_params_type;
+  message.data[ConfigFrameBytePositions::config_frame_type_byte] = TTControlParameterType::signals;
   message.data[ConfigFrameBytePositions::ditter_period_byte] = extractFirstByte(static_cast<uint32_t>(ditter_period));
   message.data[ConfigFrameBytePositions::ditter_amplitude_first_byte] =
       extractFirstByte(static_cast<uint32_t>(ditter_amplitude));

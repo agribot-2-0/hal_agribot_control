@@ -58,7 +58,7 @@ enum ReceiveCanIds : uint32_t
   protocol_frame = 0x00EFC864
 };
 
-enum TTControlParamsType : std::uint8_t
+enum TTControlParameterType : std::uint8_t
 {
   signals = 0,
   front_pid_t = 1,
@@ -71,7 +71,7 @@ enum TTControlParamsType : std::uint8_t
   front_right_caterpillar_signal_base = 8,
   back_left_caterpillar_pid = 9,
   back_left_caterpillar_signal_base = 10,
-  back_right_caterpillar_pid_params = 11,
+  back_right_caterpillar_pid = 11,
   back_right_caterpillar_signal_base = 12
 };
 
