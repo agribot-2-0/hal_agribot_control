@@ -4,40 +4,83 @@
 
 #include <hal_ttcontrol_communication/CartsStatus.h>
 
-void CartsStatus::vSetFrontLinear(float fVelo)
+using std::uint32_t;
+using std::uint8_t;
+
+void CartsStatus::setFrontLinearVelocity(const float velocity)
 {
-  _fFrontLinear = fVelo;
+  front_linear_velocity_ = velocity;
 }
 
-void CartsStatus::vSetFrontAngular(float fVelo)
+void CartsStatus::setFrontAngularVelocity(const float velocity)
 {
-  _fFrontAngular = fVelo;
+  front_angular_velocity_ = velocity;
 }
 
-void CartsStatus::vSetBackLinear(float fVelo)
+void CartsStatus::setBackLinearVelocity(const float velocity)
 {
-  _fBackLinear = fVelo;
+  back_linear_velocity_ = velocity;
 }
 
-void CartsStatus::vSetBackAngular(float fVelo)
+void CartsStatus::setBackAngularVelocity(const float velocity)
 {
-  _fBackAngular = fVelo;
+  back_angular_velocity_ = velocity;
 }
 
-void CartsStatus::setTrackEncoderSum(const uint8_t track_ID, const int32_t encoder_sum)
+void CartsStatus::setFrontCartGeometryState(const uint8_t geometry_state)
 {
-  switch (track_ID)
+  front_cart_geometry_state_ = geometry_state;
+}
+
+void CartsStatus::setBackCartGeometryState(const uint8_t geometry_state)
+{
+  back_cart_geometry_state_ = geometry_state;
+}
+
+float CartsStatus::getFrontLinearVelocity() const
+{
+  return front_linear_velocity_;
+}
+
+float CartsStatus::getFrontAngularVelocity() const
+{
+  return front_angular_velocity_;
+}
+
+float CartsStatus::getBackLinearVelocity() const
+{
+  return back_linear_velocity_;
+}
+
+float CartsStatus::getBackAngularVelocity() const
+{
+  return back_angular_velocity_;
+}
+
+uint8_t CartsStatus::getFrontCartGeometryState() const
+{
+  return front_cart_geometry_state_;
+}
+
+uint8_t CartsStatus::getBackCartGeometryState() const
+{
+  return back_cart_geometry_state_;
+}
+
+void CartsStatus::setTrackEncoderSum(const uint8_t track_id, const int32_t encoder_sum)
+{
+  switch (track_id)
   {
-    case eEncoderCaterpillarID::FRONT_LEFT_TRACK_ENCODER:
+    case EncoderTrackId::front_left:
       front_left_track_encoder_sum_ = encoder_sum;
       break;
-    case eEncoderCaterpillarID::FRONT_RIGHT_TRACK_ENCODER:
+    case EncoderTrackId::front_right:
       front_right_track_encoder_sum_ = encoder_sum;
       break;
-    case eEncoderCaterpillarID::BACK_LEFT_TRACK_ENCODER:
+    case EncoderTrackId::back_left:
       back_left_track_encoder_sum_ = encoder_sum;
       break;
-    case eEncoderCaterpillarID::BACK_RIGHT_TRACK_ENCODER:
+    case EncoderTrackId::back_right:
       back_right_track_encoder_sum_ = encoder_sum;
       break;
     default:
@@ -45,40 +88,20 @@ void CartsStatus::setTrackEncoderSum(const uint8_t track_ID, const int32_t encod
   }
 }
 
-int32_t CartsStatus::getTrackEncoderSum(const uint8_t track_ID) const
+int32_t CartsStatus::getTrackEncoderSum(const uint8_t track_id) const
 {
-  switch (track_ID)
+  switch (track_id)
   {
-    case eEncoderCaterpillarID::FRONT_LEFT_TRACK_ENCODER:
+    case EncoderTrackId::front_left:
       return front_left_track_encoder_sum_;
-    case eEncoderCaterpillarID::FRONT_RIGHT_TRACK_ENCODER:
+    case EncoderTrackId::front_right:
       return front_right_track_encoder_sum_;
-    case eEncoderCaterpillarID::BACK_LEFT_TRACK_ENCODER:
+    case EncoderTrackId::back_left:
       return back_left_track_encoder_sum_;
-    case eEncoderCaterpillarID::BACK_RIGHT_TRACK_ENCODER:
+    case EncoderTrackId::back_right:
       return back_right_track_encoder_sum_;
     default:
       break;
   }
   return 0;
-}
-
-float CartsStatus::fGetFrontLinear() const
-{
-  return _fFrontLinear;
-}
-
-float CartsStatus::fGetFrontAngular() const
-{
-  return _fFrontAngular;
-}
-
-float CartsStatus::fGetBackLinear() const
-{
-  return _fBackLinear;
-}
-
-float CartsStatus::fGetBackAngular() const
-{
-  return _fBackAngular;
 }

@@ -1,39 +1,46 @@
 /*
-* Copyright (C) 2020 Agribot. All rights reserved.
-*/
+ * Copyright (C) 2020 Agribot. All rights reserved.
+ */
 
 #pragma once
 #include <cstdint>
 
-enum eEncoderCaterpillarID : uint8_t
+enum EncoderTrackId : uint8_t
 {
-   FRONT_LEFT_TRACK_ENCODER = 0x01,
-   FRONT_RIGHT_TRACK_ENCODER = 0x02,
-   BACK_LEFT_TRACK_ENCODER = 0x04,
-   BACK_RIGHT_TRACK_ENCODER = 0x08
+  front_left = 0x01,
+  front_right = 0x02,
+  back_left = 0x04,
+  back_right = 0x08
 };
 
 class CartsStatus
 {
- private:
-    float _fFrontLinear;
-    float _fFrontAngular;
-    float _fBackLinear;
-    float _fBackAngular;
-    int32_t front_left_track_encoder_sum_;
-    int32_t front_right_track_encoder_sum_;
-    int32_t back_left_track_encoder_sum_;
-    int32_t back_right_track_encoder_sum_;
- public:
-    void vSetFrontLinear(float fVelo);
-    void vSetFrontAngular(float fVelo);
-    void vSetBackLinear(float fVelo);
-    void vSetBackAngular(float fVelo);
-    void setTrackEncoderSum(const uint8_t track_ID, const int32_t encoder_sum);
+private:
+  float front_linear_velocity_;
+  float front_angular_velocity_;
+  float back_linear_velocity_;
+  float back_angular_velocity_;
+  std::uint8_t front_cart_geometry_state_;
+  std::uint8_t back_cart_geometry_state_;
+  std::int32_t front_left_track_encoder_sum_;
+  std::int32_t front_right_track_encoder_sum_;
+  std::int32_t back_left_track_encoder_sum_;
+  std::int32_t back_right_track_encoder_sum_;
 
-    float fGetFrontLinear() const;
-    float fGetFrontAngular() const;
-    float fGetBackLinear() const;
-    float fGetBackAngular() const;
-    int32_t getTrackEncoderSum(const uint8_t track_ID) const;
+public:
+  void setFrontLinearVelocity(const float velocity);
+  void setFrontAngularVelocity(const float velocity);
+  void setBackLinearVelocity(const float velocity);
+  void setBackAngularVelocity(const float velocity);
+  void setFrontCartGeometryState(const std::uint8_t geometry_state);
+  void setBackCartGeometryState(const std::uint8_t geometry_state);
+  void setTrackEncoderSum(const std::uint8_t track_id, const std::int32_t encoder_sum);
+
+  float getFrontLinearVelocity() const;
+  float getFrontAngularVelocity() const;
+  float getBackLinearVelocity() const;
+  float getBackAngularVelocity() const;
+  std::uint8_t getFrontCartGeometryState() const;
+  std::uint8_t getBackCartGeometryState() const;
+  std::int32_t getTrackEncoderSum(const std::uint8_t track_id) const;
 };
