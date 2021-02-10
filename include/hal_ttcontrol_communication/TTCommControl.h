@@ -133,6 +133,8 @@ class TTCommControl
   inline std::uint8_t extractFirstByte(const std::uint32_t four_byte_number);
   inline std::uint8_t getLowerHalfOfByte(const std::uint8_t byte);
   inline std::uint8_t getUpperHalfOfByte(const std::uint8_t byte);
+  inline std::uint32_t parseBytesToU32Lsb(uint8_t start_byte, const can_frame& frame);
+  inline std::int32_t checkTrackEncoderSumSignBit(std::uint8_t bit_mask, std::uint8_t byte_to_check);
 
 public:
   explicit TTCommControl(const char* pchCanChannel);

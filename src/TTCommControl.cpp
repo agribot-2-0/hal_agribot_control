@@ -168,27 +168,37 @@ inline uint8_t TTCommControl::getUpperHalfOfByte(const uint8_t byte)
   return (byte & GET_UPPER_HALF_OF_THE_BYTE);
 }
 
+inline uint32_t TTCommControl::parseBytesToU32Lsb(uint8_t start_byte, const can_frame& frame)
+{
+  return ((static_cast<uint32_t>(frame.data[start_byte + 3]) << 24) |
+          (static_cast<uint32_t>(frame.data[start_byte + 2]) << 16) |
+          (static_cast<uint32_t>(frame.data[start_byte + 1]) << 8) | (static_cast<uint32_t>(frame.data[start_byte])));
+}
+
+inline int32_t TTCommControl::checkTrackEncoderSumSignBit(uint8_t bit_mask, uint8_t byte_to_check)
+{
+  // get the sign of the sum, if its on, then the sum is negative
+  if (checkIfBitIsSet(static_cast<uint32_t>(byte_to_check), static_cast<uint32_t>(bit_mask)))
+  {
+    return -1;
+  }
+  else
+  {
+    return 1;
+  }
+}
+
 void TTCommControl::decodeTrackEncoderSumValue(const can_frame& frame)
 {
   // get the encoder sum
-  uint32_t encoder_sum_without_sign =
-      ((static_cast<uint32_t>(frame.data[TRACK_ENCODER_SUM_LOW_BYTE_POSITION + 3]) << 24) |
-       (static_cast<uint32_t>(frame.data[TRACK_ENCODER_SUM_LOW_BYTE_POSITION + 2]) << 16) |
-       (static_cast<uint32_t>(frame.data[TRACK_ENCODER_SUM_LOW_BYTE_POSITION + 1]) << 8) |
-       (static_cast<uint32_t>(frame.data[TRACK_ENCODER_SUM_LOW_BYTE_POSITION])));
+  uint32_t encoder_sum_without_sign = parseBytesToU32Lsb(TRACK_ENCODER_SUM_LOW_BYTE_POSITION, frame);
   // get the track ID
   uint8_t track_id = getLowerHalfOfByte(frame.data[TRACK_ENCODER_ID_BYTE_POSITION]);
-  // get the sign of the sum, if its on, then the sum is negative
-  if (checkIfBitIsSet(static_cast<uint32_t>(frame.data[TRACK_ENCODER_ID_BYTE_POSITION]),
-                      static_cast<uint32_t>(TRACK_ENCODER_SIGN_BIT_MASK)))
-  {
-    cart_.setTrackEncoderSum(track_id, -static_cast<int32_t>(encoder_sum_without_sign));
-  }
-  // if its off then the sum is positive
-  else
-  {
-    cart_.setTrackEncoderSum(track_id, static_cast<int32_t>(encoder_sum_without_sign));
-  }
+  // set the decoded encoder sum value
+  cart_.setTrackEncoderSum(
+      static_cast<EncoderTrackId>(track_id),
+      static_cast<int32_t>(encoder_sum_without_sign) *
+          checkTrackEncoderSumSignBit(frame.data[TRACK_ENCODER_ID_BYTE_POSITION], TRACK_ENCODER_SIGN_BIT_MASK));
 }
 
 void TTCommControl::setVelocity(const VelocityType velocity_specification, const can_frame& frame)

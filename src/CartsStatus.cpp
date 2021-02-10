@@ -67,7 +67,7 @@ uint8_t CartsStatus::getBackCartGeometryState() const
   return back_cart_geometry_state_;
 }
 
-void CartsStatus::setTrackEncoderSum(const uint8_t track_id, const int32_t encoder_sum)
+void CartsStatus::setTrackEncoderSum(const EncoderTrackId track_id, const int32_t encoder_sum)
 {
   switch (track_id)
   {
@@ -88,7 +88,7 @@ void CartsStatus::setTrackEncoderSum(const uint8_t track_id, const int32_t encod
   }
 }
 
-int32_t CartsStatus::getTrackEncoderSum(const uint8_t track_id) const
+int32_t CartsStatus::getTrackEncoderSum(const EncoderTrackId track_id) const
 {
   switch (track_id)
   {
