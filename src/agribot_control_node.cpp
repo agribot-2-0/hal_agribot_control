@@ -2,6 +2,7 @@
  * Copyright (C) 2020 Agribot. All rights reserved.
  */
 #include <agribot_msgs/AgribotCaterpillar.h>
+#include <agribot_msgs/AgribotCaterpillarWheelsRotation.h>
 #include <agribot_msgs/ChangeDeltasGeometry.h>
 #include <hal_ttcontrol_communication/TTCommControl.h>
 #include <dynamic_reconfigure/server.h>
@@ -9,6 +10,7 @@
 #include <ros/console.h>
 #include <ros/ros.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Int32.h>
 #include <std_msgs/String.h>
 #include <string_view>
 #include <cstdint>
@@ -53,7 +55,7 @@ enum TTControlParameterFlag : uint32_t
   every_flag_set = 0xFFFFFFFF
 };
 
-TTCommControl CommHandlerControl(used_can);
+TTCommControl ttcontrol_communication_handler(used_can);
 
 void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersConfig& config, uint32_t level)
 {
@@ -61,130 +63,133 @@ void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersCo
   // in turns
   if (level == TTControlParameterFlag::every_flag_set)
   {
-    CommHandlerControl.sendSignalsParameters(config.ditter_period_int, config.ditter_amplitude_int,
-                                             config.encoder_period_int);
-    CommHandlerControl.sendCartsPidParameters(config.front_kp_t_double, config.front_ki_t_double,
-                                              config.front_kd_t_double, config.front_acc_t_double,
-                                              TTControlParameterType::front_pid_t);
-    CommHandlerControl.sendCartsPidParameters(config.front_kp_r_double, config.front_ki_r_double,
-                                              config.front_kd_r_double, config.front_acc_r_double,
-                                              TTControlParameterType::front_pid_r);
-    CommHandlerControl.sendCartsPidParameters(config.back_kp_t_double, config.back_ki_t_double, config.back_kd_t_double,
-                                              config.back_acc_t_double, TTControlParameterType::back_pid_t);
-    CommHandlerControl.sendCartsPidParameters(config.back_kp_r_double, config.back_ki_r_double, config.back_kd_r_double,
-                                              config.back_acc_r_double, TTControlParameterType::back_pid_r);
-    CommHandlerControl.sendCaterpillarPidParameters(config.front_left_caterpillar_kp, config.front_left_caterpillar_ki,
-                                                    config.front_left_caterpillar_kd,
-                                                    TTControlParameterType::front_left_caterpillar_pid);
+    ttcontrol_communication_handler.sendSignalsParameters(config.ditter_period_int, config.ditter_amplitude_int,
+                                                          config.encoder_period_int);
+    ttcontrol_communication_handler.sendCartsPidParameters(config.front_kp_t_double, config.front_ki_t_double,
+                                                           config.front_kd_t_double, config.front_acc_t_double,
+                                                           TTControlParameterType::front_pid_t);
+    ttcontrol_communication_handler.sendCartsPidParameters(config.front_kp_r_double, config.front_ki_r_double,
+                                                           config.front_kd_r_double, config.front_acc_r_double,
+                                                           TTControlParameterType::front_pid_r);
+    ttcontrol_communication_handler.sendCartsPidParameters(config.back_kp_t_double, config.back_ki_t_double,
+                                                           config.back_kd_t_double, config.back_acc_t_double,
+                                                           TTControlParameterType::back_pid_t);
+    ttcontrol_communication_handler.sendCartsPidParameters(config.back_kp_r_double, config.back_ki_r_double,
+                                                           config.back_kd_r_double, config.back_acc_r_double,
+                                                           TTControlParameterType::back_pid_r);
+    ttcontrol_communication_handler.sendCaterpillarPidParameters(
+        config.front_left_caterpillar_kp, config.front_left_caterpillar_ki, config.front_left_caterpillar_kd,
+        TTControlParameterType::front_left_caterpillar_pid);
 
     ros::Duration(0.5).sleep();  // sleep for half a second, to give TTControl time to read and save the parameters
-    CommHandlerControl.sendCaterpillarBaseSignal(config.front_left_caterpillar_signal_base_forward,
-                                                 config.front_left_caterpillar_signal_base_backward,
-                                                 TTControlParameterType::front_left_caterpillar_signal_base);
-    CommHandlerControl.sendCaterpillarPidParameters(
+    ttcontrol_communication_handler.sendCaterpillarBaseSignal(
+        config.front_left_caterpillar_signal_base_forward, config.front_left_caterpillar_signal_base_backward,
+        TTControlParameterType::front_left_caterpillar_signal_base);
+    ttcontrol_communication_handler.sendCaterpillarPidParameters(
         config.front_right_caterpillar_kp, config.front_right_caterpillar_ki, config.front_right_caterpillar_kd,
         TTControlParameterType::front_right_caterpillar_pid);
-    CommHandlerControl.sendCaterpillarBaseSignal(config.front_right_caterpillar_signal_base_forward,
-                                                 config.front_right_caterpillar_signal_base_backward,
-                                                 TTControlParameterType::front_right_caterpillar_signal_base);
-    CommHandlerControl.sendCaterpillarPidParameters(config.back_left_caterpillar_kp, config.back_left_caterpillar_ki,
-                                                    config.back_left_caterpillar_kd,
-                                                    TTControlParameterType::back_left_caterpillar_pid);
-    CommHandlerControl.sendCaterpillarBaseSignal(config.back_left_caterpillar_signal_base_forward,
-                                                 config.back_left_caterpillar_signal_base_backward,
-                                                 TTControlParameterType::back_left_caterpillar_signal_base);
-    CommHandlerControl.sendCaterpillarPidParameters(config.back_right_caterpillar_kp, config.back_right_caterpillar_ki,
-                                                    config.back_right_caterpillar_kd,
-                                                    TTControlParameterType::back_right_caterpillar_pid);
-    CommHandlerControl.sendCaterpillarBaseSignal(config.back_right_caterpillar_signal_base_forward,
-                                                 config.back_right_caterpillar_signal_base_backward,
-                                                 TTControlParameterType::back_right_caterpillar_signal_base);
+    ttcontrol_communication_handler.sendCaterpillarBaseSignal(
+        config.front_right_caterpillar_signal_base_forward, config.front_right_caterpillar_signal_base_backward,
+        TTControlParameterType::front_right_caterpillar_signal_base);
+    ttcontrol_communication_handler.sendCaterpillarPidParameters(
+        config.back_left_caterpillar_kp, config.back_left_caterpillar_ki, config.back_left_caterpillar_kd,
+        TTControlParameterType::back_left_caterpillar_pid);
+    ttcontrol_communication_handler.sendCaterpillarBaseSignal(
+        config.back_left_caterpillar_signal_base_forward, config.back_left_caterpillar_signal_base_backward,
+        TTControlParameterType::back_left_caterpillar_signal_base);
+    ttcontrol_communication_handler.sendCaterpillarPidParameters(
+        config.back_right_caterpillar_kp, config.back_right_caterpillar_ki, config.back_right_caterpillar_kd,
+        TTControlParameterType::back_right_caterpillar_pid);
+    ttcontrol_communication_handler.sendCaterpillarBaseSignal(
+        config.back_right_caterpillar_signal_base_forward, config.back_right_caterpillar_signal_base_backward,
+        TTControlParameterType::back_right_caterpillar_signal_base);
   }
   else
   {
     if (level & TTControlParameterFlag::signal_params)
     {
-      CommHandlerControl.sendSignalsParameters(config.ditter_period_int, config.ditter_amplitude_int,
-                                               config.encoder_period_int);
+      ttcontrol_communication_handler.sendSignalsParameters(config.ditter_period_int, config.ditter_amplitude_int,
+                                                            config.encoder_period_int);
     }
     if (level & TTControlParameterFlag::front_pid_t_params)
     {
-      CommHandlerControl.sendCartsPidParameters(config.front_kp_t_double, config.front_ki_t_double,
-                                                config.front_kd_t_double, config.front_acc_t_double,
-                                                TTControlParameterType::front_pid_t);
+      ttcontrol_communication_handler.sendCartsPidParameters(config.front_kp_t_double, config.front_ki_t_double,
+                                                             config.front_kd_t_double, config.front_acc_t_double,
+                                                             TTControlParameterType::front_pid_t);
     }
     if (level & TTControlParameterFlag::front_pid_r_params)
     {
-      CommHandlerControl.sendCartsPidParameters(config.front_kp_r_double, config.front_ki_r_double,
-                                                config.front_kd_r_double, config.front_acc_r_double,
-                                                TTControlParameterType::front_pid_r);
+      ttcontrol_communication_handler.sendCartsPidParameters(config.front_kp_r_double, config.front_ki_r_double,
+                                                             config.front_kd_r_double, config.front_acc_r_double,
+                                                             TTControlParameterType::front_pid_r);
     }
     if (level & TTControlParameterFlag::back_pid_t_params)
     {
-      CommHandlerControl.sendCartsPidParameters(config.back_kp_t_double, config.back_ki_t_double,
-                                                config.back_kd_t_double, config.back_acc_t_double,
-                                                TTControlParameterType::back_pid_t);
+      ttcontrol_communication_handler.sendCartsPidParameters(config.back_kp_t_double, config.back_ki_t_double,
+                                                             config.back_kd_t_double, config.back_acc_t_double,
+                                                             TTControlParameterType::back_pid_t);
     }
     if (level & TTControlParameterFlag::back_pid_r_params)
     {
-      CommHandlerControl.sendCartsPidParameters(config.back_kp_r_double, config.back_ki_r_double,
-                                                config.back_kd_r_double, config.back_acc_r_double,
-                                                TTControlParameterType::back_pid_r);
+      ttcontrol_communication_handler.sendCartsPidParameters(config.back_kp_r_double, config.back_ki_r_double,
+                                                             config.back_kd_r_double, config.back_acc_r_double,
+                                                             TTControlParameterType::back_pid_r);
     }
     if (level & TTControlParameterFlag::front_left_caterpillar_pid_params)
     {
-      CommHandlerControl.sendCaterpillarPidParameters(
+      ttcontrol_communication_handler.sendCaterpillarPidParameters(
           config.front_left_caterpillar_kp, config.front_left_caterpillar_ki, config.front_left_caterpillar_kd,
           TTControlParameterType::front_left_caterpillar_pid);
     }
     if (level & TTControlParameterFlag::front_left_caterpillar_signals_base)
     {
-      CommHandlerControl.sendCaterpillarBaseSignal(config.front_left_caterpillar_signal_base_forward,
-                                                   config.front_left_caterpillar_signal_base_backward,
-                                                   TTControlParameterType::front_left_caterpillar_signal_base);
+      ttcontrol_communication_handler.sendCaterpillarBaseSignal(
+          config.front_left_caterpillar_signal_base_forward, config.front_left_caterpillar_signal_base_backward,
+          TTControlParameterType::front_left_caterpillar_signal_base);
     }
     if (level & TTControlParameterFlag::front_right_caterpillar_pid_params)
     {
-      CommHandlerControl.sendCaterpillarPidParameters(
+      ttcontrol_communication_handler.sendCaterpillarPidParameters(
           config.front_right_caterpillar_kp, config.front_right_caterpillar_ki, config.front_right_caterpillar_kd,
           TTControlParameterType::front_right_caterpillar_pid);
     }
     if (level & TTControlParameterFlag::front_right_caterpillar_signals_base)
     {
-      CommHandlerControl.sendCaterpillarBaseSignal(config.front_right_caterpillar_signal_base_forward,
-                                                   config.front_right_caterpillar_signal_base_backward,
-                                                   TTControlParameterType::front_right_caterpillar_signal_base);
+      ttcontrol_communication_handler.sendCaterpillarBaseSignal(
+          config.front_right_caterpillar_signal_base_forward, config.front_right_caterpillar_signal_base_backward,
+          TTControlParameterType::front_right_caterpillar_signal_base);
     }
     if (level & TTControlParameterFlag::back_left_caterpillar_pid_params)
     {
-      CommHandlerControl.sendCaterpillarPidParameters(config.back_left_caterpillar_kp, config.back_left_caterpillar_ki,
-                                                      config.back_left_caterpillar_kd,
-                                                      TTControlParameterType::back_left_caterpillar_pid);
+      ttcontrol_communication_handler.sendCaterpillarPidParameters(
+          config.back_left_caterpillar_kp, config.back_left_caterpillar_ki, config.back_left_caterpillar_kd,
+          TTControlParameterType::back_left_caterpillar_pid);
     }
     if (level & TTControlParameterFlag::back_left_caterpillar_signals_base)
     {
-      CommHandlerControl.sendCaterpillarBaseSignal(config.back_left_caterpillar_signal_base_forward,
-                                                   config.back_left_caterpillar_signal_base_backward,
-                                                   TTControlParameterType::back_left_caterpillar_signal_base);
+      ttcontrol_communication_handler.sendCaterpillarBaseSignal(
+          config.back_left_caterpillar_signal_base_forward, config.back_left_caterpillar_signal_base_backward,
+          TTControlParameterType::back_left_caterpillar_signal_base);
     }
     if (level & TTControlParameterFlag::back_right_caterpillar_pid_params)
     {
-      CommHandlerControl.sendCaterpillarPidParameters(
+      ttcontrol_communication_handler.sendCaterpillarPidParameters(
           config.back_right_caterpillar_kp, config.back_right_caterpillar_ki, config.back_right_caterpillar_kd,
           TTControlParameterType::back_right_caterpillar_pid);
     }
     if (level & TTControlParameterFlag::back_right_caterpillar_signals_base)
     {
-      CommHandlerControl.sendCaterpillarBaseSignal(config.back_right_caterpillar_signal_base_forward,
-                                                   config.back_right_caterpillar_signal_base_backward,
-                                                   TTControlParameterType::back_right_caterpillar_signal_base);
+      ttcontrol_communication_handler.sendCaterpillarBaseSignal(
+          config.back_right_caterpillar_signal_base_forward, config.back_right_caterpillar_signal_base_backward,
+          TTControlParameterType::back_right_caterpillar_signal_base);
     }
   }
 }
 
 void frontCallback(const agribot_msgs::AgribotCaterpillar& msg)
 {
-  CommHandlerControl.sendVelocities(msg.front_linear, msg.front_angular, msg.back_linear, msg.back_angular);
+  ttcontrol_communication_handler.sendVelocities(msg.front_linear, msg.front_angular, msg.back_linear,
+                                                 msg.back_angular);
 }
 
 bool sendDeltasGeometryCommand(const RobotsCarts selected_cart, const agribot_msgs::ChangeDeltasGeometry::Request& req)
@@ -194,13 +199,13 @@ bool sendDeltasGeometryCommand(const RobotsCarts selected_cart, const agribot_ms
   {
     if (selected_cart == RobotsCarts::front_cart)
     {
-      CommHandlerControl.sendDeltasGeometryCommand(
+      ttcontrol_communication_handler.sendDeltasGeometryCommand(
           req.cart_delta_command, agribot_msgs::ChangeDeltasGeometry::Request::UNKNOWN_CATERPILLAR_GEOMETRY);
       return true;
     }
     else
     {
-      CommHandlerControl.sendDeltasGeometryCommand(
+      ttcontrol_communication_handler.sendDeltasGeometryCommand(
           agribot_msgs::ChangeDeltasGeometry::Request::UNKNOWN_CATERPILLAR_GEOMETRY, req.cart_delta_command);
       return true;
     }
@@ -214,7 +219,7 @@ bool sendDeltasGeometryCommand(const RobotsCarts selected_cart, const agribot_ms
 void waitTillDeltasGeometryIsSet(const RobotsCarts selected_cart,
                                  const agribot_msgs::ChangeDeltasGeometry::Request& req)
 {
-  const CartsStatus& cartsStatus = CommHandlerControl.getCartsStatus();
+  const CartsStatus& cartsStatus = ttcontrol_communication_handler.getCartsStatus();
   uint8_t cart_state = agribot_msgs::ChangeDeltasGeometry::Response::UNKNOWN_CATERPILLAR_GEOMETRY;
   if (selected_cart == RobotsCarts::front_cart)
   {
@@ -286,19 +291,19 @@ void ttcontrolConnectionState(const std_msgs::String& msg)
 {
   if (msg.data == TTCONTROL_CONNECTION_MSG)
   {
-    CommHandlerControl.setTtcontrolConnectionStatus(TTCONTROL_CONNECTED);
+    ttcontrol_communication_handler.setTtcontrolConnectionStatus(TTCONTROL_CONNECTED);
   }
   else
   {
-    CommHandlerControl.setTtcontrolConnectionStatus(TTCONTROL_DISCONNECTED);
+    ttcontrol_communication_handler.setTtcontrolConnectionStatus(TTCONTROL_DISCONNECTED);
   }
 }
 
 bool readEncodersDataFile()
 {
-  if (!CommHandlerControl.readCartsEncodersDataFile(READ_REGULAR_CARTS_ENCODERS_FILE))
+  if (!ttcontrol_communication_handler.readCartsEncodersDataFile(READ_REGULAR_CARTS_ENCODERS_FILE))
   {
-    return CommHandlerControl.readCartsEncodersDataFile(READ_BACKUP_CARTS_ENCODERS_FILE);
+    return ttcontrol_communication_handler.readCartsEncodersDataFile(READ_BACKUP_CARTS_ENCODERS_FILE);
   }
   return true;
 }
@@ -314,23 +319,26 @@ int main(int argc, char** argv)
   ros::Subscriber sub = n.subscribe("/agribot/control/caterpillar", 1000, frontCallback);
   ros::Subscriber sub_connection_state =
       n.subscribe("/agribot/ttcontrol/connection_state", 1, ttcontrolConnectionState);
-  ros::Publisher CartsStatusPublisher =
+  ros::Publisher carts_status_publisher =
       n.advertise<agribot_msgs::AgribotCaterpillar>("/agribot/encoder/caterpillar", 1);
-  ros::Publisher FrontCartAnglePublisher = n.advertise<std_msgs::Float32>("/agribot/encoder/cart/front", 1);
-  ros::Publisher BackCartAnglePublisher = n.advertise<std_msgs::Float32>("/agribot/encoder/cart/back", 1);
-  agribot_msgs::AgribotCaterpillar AgribotCaterpillarMsg;
-  dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig> server;
+  ros::Publisher track_encoder_sum_publisher =
+      n.advertise<agribot_msgs::AgribotCaterpillarWheelsRotation>("/agribot/encoder/caterpillar/rotations/impulses", 1);
+  ros::Publisher front_cart_angle_publisher = n.advertise<std_msgs::Float32>("/agribot/encoder/cart/front", 1);
+  ros::Publisher back_cart_angle_publisher = n.advertise<std_msgs::Float32>("/agribot/encoder/cart/back", 1);
+  dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig> parameter_server;
   dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>::CallbackType callback_function_object;
   ros::ServiceServer service_front =
-      n.advertiseService("agribot/cart/caterpillar/front/change_deltas_geometry", frontDeltasGeometryServiceCallback);
+      n.advertiseService("/agribot/cart/caterpillar/front/change_deltas_geometry", frontDeltasGeometryServiceCallback);
   ros::ServiceServer service_back =
-      n.advertiseService("agribot/cart/caterpillar/back/change_deltas_geometry", backDeltasGeometryServiceCallback);
-  std_msgs::Float32 FrontAngleMsg;
-  std_msgs::Float32 BackAngleMsg;
-  // angle initialization reading
+      n.advertiseService("/agribot/cart/caterpillar/back/change_deltas_geometry", backDeltasGeometryServiceCallback);
+  std_msgs::Float32 front_angle_msg;
+  std_msgs::Float32 back_angle_msg;
+  agribot_msgs::AgribotCaterpillar agribot_caterpillar_msg;
+  agribot_msgs::AgribotCaterpillarWheelsRotation encoder_sum_msg;
+  // encoder initialization reading
   std::string path_to_carts_encoders_file;
   n.getParam("path_to_encoder_file", path_to_carts_encoders_file);
-  CommHandlerControl.setPathToCartsEncodersDataFile(path_to_carts_encoders_file);
+  ttcontrol_communication_handler.setPathToCartsEncodersDataFile(path_to_carts_encoders_file);
   if (!readEncodersDataFile())
   {
     ROS_ERROR_STREAM("[AgribotControlNode] Failed to read carts angle data file content ! Robots carts encoders "
@@ -338,53 +346,69 @@ int main(int argc, char** argv)
                      << "Attempted path: " << path_to_carts_encoders_file);
     return -1;
   }
-  CommHandlerControl.sendCartsEncodersInitialization();
+  ttcontrol_communication_handler.sendCartsEncodersInitialization();
   callback_function_object = boost::bind(&callbackDynamicReconfigure, _1, _2);
-  server.setCallback(callback_function_object);
+  parameter_server.setCallback(callback_function_object);
   uint8_t encoder_init_timeout_counter = 0;
   while (ros::ok())
   {
-    CommHandlerControl.receiveCanFrames();
-    CommHandlerControl.parseCanFrames();
-    if (CommHandlerControl.checkReceivedCanBusIdBit(VELOCITIES_MASK))
+    ttcontrol_communication_handler.receiveCanFrames();
+    ttcontrol_communication_handler.parseCanFrames();
+    if (ttcontrol_communication_handler.checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::velocities))
     {
-      const CartsStatus& cartStatus = CommHandlerControl.getCartsStatus();
-      AgribotCaterpillarMsg.header.stamp = ros::Time::now();
-      AgribotCaterpillarMsg.header.frame_id = "hal_caterpillar_feedback";
-      AgribotCaterpillarMsg.front_linear = cartStatus.getFrontLinearVelocity();
-      AgribotCaterpillarMsg.front_angular = cartStatus.getFrontAngularVelocity();
-      AgribotCaterpillarMsg.back_linear = cartStatus.getBackLinearVelocity();
-      AgribotCaterpillarMsg.back_angular = cartStatus.getBackAngularVelocity();
-      CartsStatusPublisher.publish(AgribotCaterpillarMsg);
-      CommHandlerControl.clearReceivedCanBusIdBit(VELOCITIES_MASK);
+      const CartsStatus& cart_status = ttcontrol_communication_handler.getCartsStatus();
+      agribot_caterpillar_msg.header.stamp = ros::Time::now();
+      agribot_caterpillar_msg.header.frame_id = "hal_caterpillar_feedback";
+      agribot_caterpillar_msg.front_linear = cart_status.getFrontLinearVelocity();
+      agribot_caterpillar_msg.front_angular = cart_status.getFrontAngularVelocity();
+      agribot_caterpillar_msg.back_linear = cart_status.getBackLinearVelocity();
+      agribot_caterpillar_msg.back_angular = cart_status.getBackAngularVelocity();
+      carts_status_publisher.publish(agribot_caterpillar_msg);
+      ttcontrol_communication_handler.clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::velocities);
     }
-    if (CommHandlerControl.checkReceivedCanBusIdBit(FRONT_ANGLE_MASK))
+    if (ttcontrol_communication_handler.checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::front_angle))
     {
-      FrontAngleMsg.data = CommHandlerControl.getFrontCartAngle();
-      FrontCartAnglePublisher.publish(FrontAngleMsg);
-      CommHandlerControl.clearReceivedCanBusIdBit(FRONT_ANGLE_MASK);
+      front_angle_msg.data = ttcontrol_communication_handler.getFrontCartAngle();
+      front_cart_angle_publisher.publish(front_angle_msg);
+      ttcontrol_communication_handler.clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::front_angle);
     }
-    if (CommHandlerControl.checkReceivedCanBusIdBit(BACK_ANGLE_MASK))
+    if (ttcontrol_communication_handler.checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::back_angle))
     {
-      BackAngleMsg.data = CommHandlerControl.getBackCartAngle();
-      BackCartAnglePublisher.publish(BackAngleMsg);
-      CommHandlerControl.clearReceivedCanBusIdBit(BACK_ANGLE_MASK);
+      back_angle_msg.data = ttcontrol_communication_handler.getBackCartAngle();
+      back_cart_angle_publisher.publish(back_angle_msg);
+      ttcontrol_communication_handler.clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::back_angle);
     }
-    if (CommHandlerControl.checkReceivedCanBusIdBit(AUTOMATIC_STATE_REQUEST_MASK))
+    if (ttcontrol_communication_handler.checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::automatic_state_request))
     {
       // TODO(Michal/Adam): Implement some diagnostics
       ROS_INFO("[AgribotControlNode] Received automatic mode request");
       usleep(WAIT_FOR_TTCONTROL);
-      CommHandlerControl.confirmAdvantechReadiness();
-      CommHandlerControl.clearReceivedCanBusIdBit(AUTOMATIC_STATE_REQUEST_MASK);
+      ttcontrol_communication_handler.confirmAdvantechReadiness();
+      ttcontrol_communication_handler.clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::automatic_state_request);
     }
-    if (CommHandlerControl.checkReceivedCanBusIdBit(AUTOMATIC_STATE_REQUEST_ERROR_MASK))
+    if (ttcontrol_communication_handler.checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::track_encoder_sum))
     {
-      ROS_ERROR("[AgribotControlNode] Automatic state request error: %d", CommHandlerControl.getErrorCode());
-      CommHandlerControl.clearReceivedCanBusIdBit(AUTOMATIC_STATE_REQUEST_ERROR_MASK);
+      CartsStatus cart_status = ttcontrol_communication_handler.getCartsStatus();
+      encoder_sum_msg.header.stamp = ros::Time::now();
+      encoder_sum_msg.header.frame_id = "hal_tracks_encoders_sum_feedback";
+      encoder_sum_msg.front_left = cart_status.getTrackEncoderSum(EncoderTrackId::front_left);
+      encoder_sum_msg.front_right = cart_status.getTrackEncoderSum(EncoderTrackId::front_right);
+      encoder_sum_msg.back_left = cart_status.getTrackEncoderSum(EncoderTrackId::back_left);
+      encoder_sum_msg.back_right = cart_status.getTrackEncoderSum(EncoderTrackId::back_right);
+      track_encoder_sum_publisher.publish(encoder_sum_msg);
+      ttcontrol_communication_handler.clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::track_encoder_sum);
+    }
+    if (ttcontrol_communication_handler.checkReceivedCanBusIdBit(
+            ReceivedFramesRegisterMask::automatic_state_request_error))
+    {
+      ROS_ERROR("[AgribotControlNode] Automatic state request error: %d",
+                ttcontrol_communication_handler.getErrorCode());
+      ttcontrol_communication_handler.clearReceivedCanBusIdBit(
+          ReceivedFramesRegisterMask::automatic_state_request_error);
     }
     // when connected, read and send encoders value initialization till the confirmation
-    if (!CommHandlerControl.getEncodersConfirmedStatus() && CommHandlerControl.getTtcontrolConnectionStatus())
+    if (!ttcontrol_communication_handler.getEncodersConfirmedStatus() &&
+        ttcontrol_communication_handler.getTtcontrolConnectionStatus())
     {
       if (!readEncodersDataFile())
       {
@@ -393,14 +417,14 @@ int main(int argc, char** argv)
                          << "Attempted path: " << path_to_carts_encoders_file);
         return -1;
       }
-      CommHandlerControl.sendCartsEncodersInitialization();
+      ttcontrol_communication_handler.sendCartsEncodersInitialization();
     }
     // check if the carts has been initialized and write the new received values to file
-    if (CommHandlerControl.getEncodersConfirmedStatus())
+    if (ttcontrol_communication_handler.getEncodersConfirmedStatus())
     {
       // check if both angle data reached us
       encoder_init_timeout_counter = 0;
-      if (!CommHandlerControl.writeEncodersDataFile())
+      if (!ttcontrol_communication_handler.writeEncodersDataFile())
       {
         ROS_ERROR("[AgribotControlNode] Failed to write carts encoders data to file!");
       }

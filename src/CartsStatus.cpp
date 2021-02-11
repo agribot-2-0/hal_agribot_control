@@ -4,6 +4,7 @@
 
 #include <hal_ttcontrol_communication/CartsStatus.h>
 
+using std::uint32_t;
 using std::uint8_t;
 
 void CartsStatus::setFrontLinearVelocity(const float velocity)
@@ -64,4 +65,43 @@ uint8_t CartsStatus::getFrontCartGeometryState() const
 uint8_t CartsStatus::getBackCartGeometryState() const
 {
   return back_cart_geometry_state_;
+}
+
+void CartsStatus::setTrackEncoderSum(const EncoderTrackId track_id, const int32_t encoder_sum)
+{
+  switch (track_id)
+  {
+    case EncoderTrackId::front_left:
+      front_left_track_encoder_sum_ = encoder_sum;
+      break;
+    case EncoderTrackId::front_right:
+      front_right_track_encoder_sum_ = encoder_sum;
+      break;
+    case EncoderTrackId::back_left:
+      back_left_track_encoder_sum_ = encoder_sum;
+      break;
+    case EncoderTrackId::back_right:
+      back_right_track_encoder_sum_ = encoder_sum;
+      break;
+    default:
+      break;
+  }
+}
+
+int32_t CartsStatus::getTrackEncoderSum(const EncoderTrackId track_id) const
+{
+  switch (track_id)
+  {
+    case EncoderTrackId::front_left:
+      return front_left_track_encoder_sum_;
+    case EncoderTrackId::front_right:
+      return front_right_track_encoder_sum_;
+    case EncoderTrackId::back_left:
+      return back_left_track_encoder_sum_;
+    case EncoderTrackId::back_right:
+      return back_right_track_encoder_sum_;
+    default:
+      break;
+  }
+  return 0;
 }

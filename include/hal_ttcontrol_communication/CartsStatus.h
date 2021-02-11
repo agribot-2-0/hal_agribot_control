@@ -5,6 +5,14 @@
 #pragma once
 #include <cstdint>
 
+enum class EncoderTrackId
+{
+  front_left = 0x01,
+  front_right = 0x02,
+  back_left = 0x04,
+  back_right = 0x08
+};
+
 class CartsStatus
 {
 private:
@@ -14,6 +22,10 @@ private:
   float back_angular_velocity_;
   std::uint8_t front_cart_geometry_state_;
   std::uint8_t back_cart_geometry_state_;
+  std::int32_t front_left_track_encoder_sum_;
+  std::int32_t front_right_track_encoder_sum_;
+  std::int32_t back_left_track_encoder_sum_;
+  std::int32_t back_right_track_encoder_sum_;
 
 public:
   void setFrontLinearVelocity(const float velocity);
@@ -22,6 +34,7 @@ public:
   void setBackAngularVelocity(const float velocity);
   void setFrontCartGeometryState(const std::uint8_t geometry_state);
   void setBackCartGeometryState(const std::uint8_t geometry_state);
+  void setTrackEncoderSum(const EncoderTrackId track_id, const std::int32_t encoder_sum);
 
   float getFrontLinearVelocity() const;
   float getFrontAngularVelocity() const;
@@ -29,4 +42,5 @@ public:
   float getBackAngularVelocity() const;
   std::uint8_t getFrontCartGeometryState() const;
   std::uint8_t getBackCartGeometryState() const;
+  std::int32_t getTrackEncoderSum(const EncoderTrackId track_id) const;
 };

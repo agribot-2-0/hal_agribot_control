@@ -14,17 +14,25 @@
 #include <queue>
 #include <string>
 
-constexpr std::uint8_t VELOCITIES_MASK = 0x01;
-constexpr std::uint8_t FRONT_ANGLE_MASK = 0x02;
-constexpr std::uint8_t BACK_ANGLE_MASK = 0x04;
-constexpr std::uint8_t AUTOMATIC_STATE_REQUEST_MASK = 0x10;
-constexpr std::uint8_t AUTOMATIC_STATE_REQUEST_ERROR_MASK = 0x20;
-constexpr std::uint8_t GEOMETRY_FEEDBACK_MASK = 0x40;
-constexpr std::uint8_t TTC_OK = 0x01;
-constexpr std::uint8_t TTC_AUTOMATIC_MODE_REQUEST = 0x20;
-constexpr std::uint8_t TTC_CARTS_ANGLE_INITIALIZATION = 0x30;
+enum ProtocolFrameBytesValues : std::uint8_t
+{
+  ttc_ok = 0x01,
+  ttc_automatic_mode_request = 0x20,
+  ttc_carts_encoders_initialization = 0x30
+};
 
-enum ConfigFrameBytePositions : uint8_t
+enum ReceivedFramesRegisterMask : std::uint32_t
+{
+  velocities = 0x01,
+  front_angle = 0x02,
+  back_angle = 0x04,
+  automatic_state_request = 0x10,
+  automatic_state_request_error = 0x20,
+  geometry_feedback = 0x40,
+  track_encoder_sum = 0x80
+};
+
+enum ConfigFrameBytePositions : std::uint8_t
 {
   config_frame_type_byte = 0,
   ditter_period_byte = 1,
@@ -41,7 +49,7 @@ enum ConfigFrameBytePositions : uint8_t
   acceleration_first_byte = 6
 };
 
-enum TransmitCanIds : uint32_t
+enum TransmitCanIds : std::uint32_t
 {
   protocol_response_frame = 0x00EF64C8,
   deltas_geometry_command_frame = 0x00FFDCC8,
@@ -49,13 +57,14 @@ enum TransmitCanIds : uint32_t
   config_frame = 0x00FFDBC8
 };
 
-enum ReceiveCanIds : uint32_t
+enum ReceiveCanIds : std::uint32_t
 {
   front_angle_frame = 0xAA20,
   back_angle_frame = 0xAA21,
   velocity_frame = 0x00FFD064,
   deltas_geometry_feedback_frame = 0x00FFDC64,
-  protocol_frame = 0x00EFC864
+  protocol_frame = 0x00EFC864,
+  track_encoder_sum_frame = 0x00FFD364
 };
 
 enum TTControlParameterType : std::uint8_t
@@ -97,7 +106,7 @@ class TTCommControl
   std::uint32_t init_back_cart_encoder_value_;
   std::uint32_t back_cart_encoder_value_;
   bool back_cart_encoder_unread_;
-  std::uint8_t err_code_ = TTC_OK;
+  std::uint8_t err_code_ = ProtocolFrameBytesValues::ttc_ok;
   std::string path_to_encoder_file_;
   std::string file_name_ = "/carts_encoder_state_files/carts_encoder_state_data.txt";
   std::string file_name_backup_ = "/carts_encoder_state_files/carts_encoder_state_data_backup.txt";
@@ -106,21 +115,26 @@ class TTCommControl
   bool ttcontrol_is_connected_;
   bool ttcontrol_carts_angle_confirmed_;
   void prepareVelocitiesFrame(can_frame& frame, const float velocity,  // NOLINT(runtime/references)
-                              const std::uint8_t start_byte);
-  float decodeVelocitiy(const std::uint8_t start_byte, const can_frame& frame);
-  float decodeAngle(const can_frame& frame);
-  std::uint32_t decodeEncoderValue(const can_frame& frame);
+                              const std::uint8_t start_byte) const;
+  float decodeVelocitiy(const std::uint8_t start_byte, const can_frame& frame) const;
+  float decodeAngle(const can_frame& frame) const;
+  std::uint32_t decodeEncoderValue(const can_frame& frame) const;
   void decodeCartsGeometryState(const can_frame& frame);
+  void decodeTrackEncoderSumValue(const can_frame& frame);
   void setVelocity(const VelocityType velocity_specification, const can_frame& frame);
-  inline bool checkIfCanBusIdsMatch(const std::uint32_t id_to_check, const std::uint32_t msg_id);
+  inline bool checkIfCanBusIdsMatch(const std::uint32_t id_to_check, const std::uint32_t msg_id) const;
   inline void setReceivedCanBusIdsBitMask(const std::uint32_t mask_to_set);
-  inline bool checkIfBitIsSet(const std::uint32_t number_to_check, const std::uint32_t mask_to_check);
+  inline bool checkIfBitIsSet(const std::uint32_t number_to_check, const std::uint32_t mask_to_check) const;
   inline void clearBitInReceivedMsgsRegister(const std::uint32_t mask_to_check);
-  inline std::uint8_t returnDeltasGeometryCommandByte(const std::uint8_t command);
-  inline std::uint8_t extractFourthByte(const std::uint32_t four_byte_number);
-  inline std::uint8_t extractThirdByte(const std::uint32_t four_byte_number);
-  inline std::uint8_t extractSecondByte(const std::uint32_t four_byte_number);
-  inline std::uint8_t extractFirstByte(const std::uint32_t four_byte_number);
+  inline std::uint8_t returnDeltasGeometryCommandByte(const std::uint8_t command) const;
+  inline std::uint8_t extractFourthByte(const std::uint32_t four_byte_number) const;
+  inline std::uint8_t extractThirdByte(const std::uint32_t four_byte_number) const;
+  inline std::uint8_t extractSecondByte(const std::uint32_t four_byte_number) const;
+  inline std::uint8_t extractFirstByte(const std::uint32_t four_byte_number) const;
+  inline std::uint8_t getLowerHalfOfByte(const std::uint8_t byte) const;
+  inline std::uint8_t getUpperHalfOfByte(const std::uint8_t byte) const;
+  inline std::uint32_t parseBytesToU32Lsb(uint8_t start_byte, const can_frame& frame) const;
+  inline std::int32_t checkTrackEncoderSumSignBit(std::uint8_t bit_mask, std::uint8_t byte_to_check) const;
 
 public:
   explicit TTCommControl(const char* pchCanChannel);
@@ -129,12 +143,12 @@ public:
   void receiveCanFrames();
   void parseCanFrames();
   void setTtcontrolConnectionStatus(const bool& connected);
-  bool getTtcontrolConnectionStatus();
+  bool getTtcontrolConnectionStatus() const;
   bool getEncodersConfirmedStatus() const;
   void confirmAdvantechReadiness();
   void setPathToCartsEncodersDataFile(const std::string& path_to_file);
   bool readCartsEncodersDataFile(const bool backup_file);
-  std::uint32_t extractEncoderInitValueFromFile(std::ifstream& file_input);
+  std::uint32_t extractEncoderInitValueFromFile(std::ifstream& file_input) const;
   bool writeEncodersDataFile();
   void sendDeltasGeometryCommand(const std::uint8_t front_cart_command, const std::uint8_t back_cart_command);
   void sendCartsEncodersInitialization();
@@ -152,5 +166,5 @@ public:
   float getBackCartAngle() const;
   std::int32_t getErrorCode() const;
   void clearReceivedCanBusIdBit(const std::uint32_t mask_to_check);
-  bool checkReceivedCanBusIdBit(const std::uint32_t mask_to_check);
+  bool checkReceivedCanBusIdBit(const std::uint32_t mask_to_check) const;
 };
