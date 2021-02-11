@@ -115,26 +115,26 @@ class TTCommControl
   bool ttcontrol_is_connected_;
   bool ttcontrol_carts_angle_confirmed_;
   void prepareVelocitiesFrame(can_frame& frame, const float velocity,  // NOLINT(runtime/references)
-                              const std::uint8_t start_byte);
-  float decodeVelocitiy(const std::uint8_t start_byte, const can_frame& frame);
-  float decodeAngle(const can_frame& frame);
-  std::uint32_t decodeEncoderValue(const can_frame& frame);
+                              const std::uint8_t start_byte) const;
+  float decodeVelocitiy(const std::uint8_t start_byte, const can_frame& frame) const;
+  float decodeAngle(const can_frame& frame) const;
+  std::uint32_t decodeEncoderValue(const can_frame& frame) const;
   void decodeCartsGeometryState(const can_frame& frame);
   void decodeTrackEncoderSumValue(const can_frame& frame);
   void setVelocity(const VelocityType velocity_specification, const can_frame& frame);
-  inline bool checkIfCanBusIdsMatch(const std::uint32_t id_to_check, const std::uint32_t msg_id);
+  inline bool checkIfCanBusIdsMatch(const std::uint32_t id_to_check, const std::uint32_t msg_id) const;
   inline void setReceivedCanBusIdsBitMask(const std::uint32_t mask_to_set);
-  inline bool checkIfBitIsSet(const std::uint32_t number_to_check, const std::uint32_t mask_to_check);
+  inline bool checkIfBitIsSet(const std::uint32_t number_to_check, const std::uint32_t mask_to_check) const;
   inline void clearBitInReceivedMsgsRegister(const std::uint32_t mask_to_check);
-  inline std::uint8_t returnDeltasGeometryCommandByte(const std::uint8_t command);
-  inline std::uint8_t extractFourthByte(const std::uint32_t four_byte_number);
-  inline std::uint8_t extractThirdByte(const std::uint32_t four_byte_number);
-  inline std::uint8_t extractSecondByte(const std::uint32_t four_byte_number);
-  inline std::uint8_t extractFirstByte(const std::uint32_t four_byte_number);
-  inline std::uint8_t getLowerHalfOfByte(const std::uint8_t byte);
-  inline std::uint8_t getUpperHalfOfByte(const std::uint8_t byte);
-  inline std::uint32_t parseBytesToU32Lsb(uint8_t start_byte, const can_frame& frame);
-  inline std::int32_t checkTrackEncoderSumSignBit(std::uint8_t bit_mask, std::uint8_t byte_to_check);
+  inline std::uint8_t returnDeltasGeometryCommandByte(const std::uint8_t command) const;
+  inline std::uint8_t extractFourthByte(const std::uint32_t four_byte_number) const;
+  inline std::uint8_t extractThirdByte(const std::uint32_t four_byte_number) const;
+  inline std::uint8_t extractSecondByte(const std::uint32_t four_byte_number) const;
+  inline std::uint8_t extractFirstByte(const std::uint32_t four_byte_number) const;
+  inline std::uint8_t getLowerHalfOfByte(const std::uint8_t byte) const;
+  inline std::uint8_t getUpperHalfOfByte(const std::uint8_t byte) const;
+  inline std::uint32_t parseBytesToU32Lsb(uint8_t start_byte, const can_frame& frame) const;
+  inline std::int32_t checkTrackEncoderSumSignBit(std::uint8_t bit_mask, std::uint8_t byte_to_check) const;
 
 public:
   explicit TTCommControl(const char* pchCanChannel);
@@ -143,12 +143,12 @@ public:
   void receiveCanFrames();
   void parseCanFrames();
   void setTtcontrolConnectionStatus(const bool& connected);
-  bool getTtcontrolConnectionStatus();
+  bool getTtcontrolConnectionStatus() const;
   bool getEncodersConfirmedStatus() const;
   void confirmAdvantechReadiness();
   void setPathToCartsEncodersDataFile(const std::string& path_to_file);
   bool readCartsEncodersDataFile(const bool backup_file);
-  std::uint32_t extractEncoderInitValueFromFile(std::ifstream& file_input);
+  std::uint32_t extractEncoderInitValueFromFile(std::ifstream& file_input) const;
   bool writeEncodersDataFile();
   void sendDeltasGeometryCommand(const std::uint8_t front_cart_command, const std::uint8_t back_cart_command);
   void sendCartsEncodersInitialization();
@@ -166,5 +166,5 @@ public:
   float getBackCartAngle() const;
   std::int32_t getErrorCode() const;
   void clearReceivedCanBusIdBit(const std::uint32_t mask_to_check);
-  bool checkReceivedCanBusIdBit(const std::uint32_t mask_to_check);
+  bool checkReceivedCanBusIdBit(const std::uint32_t mask_to_check) const;
 };

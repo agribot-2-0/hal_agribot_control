@@ -68,27 +68,27 @@ constexpr uint8_t TRACK_ENCODER_ID_BYTE_POSITION = 0;
 constexpr uint8_t TRACK_ENCODER_SIGN_BIT_MASK = 0x10;
 constexpr uint8_t TRACK_ENCODER_SUM_LOW_BYTE_POSITION = 1;
 
-inline uint8_t TTCommControl::extractFourthByte(const uint32_t four_byte_number)
+inline uint8_t TTCommControl::extractFourthByte(const uint32_t four_byte_number) const
 {
   return static_cast<uint8_t>((four_byte_number & GET_FOURTH_BYTE) >> 24);
 }
 
-inline uint8_t TTCommControl::extractThirdByte(const uint32_t four_byte_number)
+inline uint8_t TTCommControl::extractThirdByte(const uint32_t four_byte_number) const
 {
   return static_cast<uint8_t>((four_byte_number & GET_THIRD_BYTE) >> 16);
 }
 
-inline uint8_t TTCommControl::extractSecondByte(const uint32_t four_byte_number)
+inline uint8_t TTCommControl::extractSecondByte(const uint32_t four_byte_number) const
 {
   return static_cast<uint8_t>((four_byte_number & GET_SECOND_BYTE) >> 8);
 }
 
-inline uint8_t TTCommControl::extractFirstByte(const uint32_t four_byte_number)
+inline uint8_t TTCommControl::extractFirstByte(const uint32_t four_byte_number) const
 {
   return static_cast<uint8_t>(four_byte_number & GET_FIRST_BYTE);
 }
 
-void TTCommControl::prepareVelocitiesFrame(can_frame& frame, const float velocity, const uint8_t start_byte)
+void TTCommControl::prepareVelocitiesFrame(can_frame& frame, const float velocity, const uint8_t start_byte) const
 {
   int16_t velocity_to_parse = (velocity * VELOCITY_FRAME_ENCODE_CONST);
 
@@ -109,7 +109,7 @@ void TTCommControl::prepareVelocitiesFrame(can_frame& frame, const float velocit
   frame.data[start_byte + 1] = extractFirstByte(static_cast<uint32_t>(velocity_to_parse));
 }
 
-float TTCommControl::decodeVelocitiy(const uint8_t start_byte, const can_frame& frame)
+float TTCommControl::decodeVelocitiy(const uint8_t start_byte, const can_frame& frame) const
 {
   return (static_cast<float>((static_cast<int16_t>(frame.data[start_byte] & DATA_BITS)) << 8 |
                              frame.data[start_byte + 1])) *
@@ -144,7 +144,7 @@ void TTCommControl::decodeCartsGeometryState(const can_frame& frame)
   }
 }
 
-float TTCommControl::decodeAngle(const can_frame& frame)
+float TTCommControl::decodeAngle(const can_frame& frame) const
 {
   return (static_cast<float>(((static_cast<int32_t>(frame.data[CARTS_ENCODER_HIGH_BYTE_POSITION])) << 8 |
                               (static_cast<int32_t>(frame.data[CARTS_ENCODER_LOW_BYTE_POSITION]))) -
@@ -152,30 +152,30 @@ float TTCommControl::decodeAngle(const can_frame& frame)
           CARTS_ENCODERS_RESOLUTION);
 }
 
-uint32_t TTCommControl::decodeEncoderValue(const can_frame& frame)
+uint32_t TTCommControl::decodeEncoderValue(const can_frame& frame) const
 {
   return ((static_cast<uint32_t>(frame.data[CARTS_ENCODER_HIGH_BYTE_POSITION]) << 8) |
           (static_cast<uint32_t>(frame.data[CARTS_ENCODER_LOW_BYTE_POSITION])));
 }
 
-inline uint8_t TTCommControl::getLowerHalfOfByte(const uint8_t byte)
+inline uint8_t TTCommControl::getLowerHalfOfByte(const uint8_t byte) const
 {
   return (byte & GET_LOWER_HALF_OF_THE_BYTE);
 }
 
-inline uint8_t TTCommControl::getUpperHalfOfByte(const uint8_t byte)
+inline uint8_t TTCommControl::getUpperHalfOfByte(const uint8_t byte) const
 {
   return (byte & GET_UPPER_HALF_OF_THE_BYTE);
 }
 
-inline uint32_t TTCommControl::parseBytesToU32Lsb(uint8_t start_byte, const can_frame& frame)
+inline uint32_t TTCommControl::parseBytesToU32Lsb(const uint8_t start_byte, const can_frame& frame) const
 {
   return ((static_cast<uint32_t>(frame.data[start_byte + 3]) << 24) |
           (static_cast<uint32_t>(frame.data[start_byte + 2]) << 16) |
           (static_cast<uint32_t>(frame.data[start_byte + 1]) << 8) | (static_cast<uint32_t>(frame.data[start_byte])));
 }
 
-inline int32_t TTCommControl::checkTrackEncoderSumSignBit(uint8_t bit_mask, uint8_t byte_to_check)
+inline int32_t TTCommControl::checkTrackEncoderSumSignBit(const uint8_t bit_mask, const uint8_t byte_to_check) const
 {
   // get the sign of the sum, if its on, then the sum is negative
   if (checkIfBitIsSet(static_cast<uint32_t>(byte_to_check), static_cast<uint32_t>(bit_mask)))
@@ -246,7 +246,7 @@ void TTCommControl::setTtcontrolConnectionStatus(const bool& connected)
   ttcontrol_is_connected_ = connected;
 }
 
-bool TTCommControl::getTtcontrolConnectionStatus()
+bool TTCommControl::getTtcontrolConnectionStatus() const
 {
   return ttcontrol_is_connected_;
 }
@@ -280,7 +280,7 @@ TTCommControl::~TTCommControl()
   }
 }
 
-inline bool TTCommControl::checkIfCanBusIdsMatch(const uint32_t id_to_check, const uint32_t msg_id)
+inline bool TTCommControl::checkIfCanBusIdsMatch(const uint32_t id_to_check, const uint32_t msg_id) const
 {
   return ((id_to_check & TWO_LAST_BYTES_ADDRESS_MASK) == (msg_id & TWO_LAST_BYTES_ADDRESS_MASK));
 }
@@ -290,7 +290,7 @@ inline void TTCommControl::setReceivedCanBusIdsBitMask(const uint32_t mask_to_se
   received_msgs_register_ |= mask_to_set;
 }
 
-inline bool TTCommControl::checkIfBitIsSet(const uint32_t number_to_check, const uint32_t mask_to_check)
+inline bool TTCommControl::checkIfBitIsSet(const uint32_t number_to_check, const uint32_t mask_to_check) const
 {
   return ((number_to_check & mask_to_check) == mask_to_check);
 }
@@ -305,7 +305,7 @@ void TTCommControl::clearReceivedCanBusIdBit(const uint32_t mask_to_check)
   clearBitInReceivedMsgsRegister(mask_to_check);
 }
 
-bool TTCommControl::checkReceivedCanBusIdBit(const uint32_t mask_to_check)
+bool TTCommControl::checkReceivedCanBusIdBit(const uint32_t mask_to_check) const
 {
   return checkIfBitIsSet(received_msgs_register_, mask_to_check);
 }
@@ -391,7 +391,7 @@ void TTCommControl::confirmAdvantechReadiness()
   can_handler_.iSendFrame(&message);
 }
 
-inline uint8_t TTCommControl::returnDeltasGeometryCommandByte(const uint8_t command)
+inline uint8_t TTCommControl::returnDeltasGeometryCommandByte(const uint8_t command) const
 {
   if (command != agribot_msgs::ChangeDeltasGeometry::Request::ELEVATED_CATERPILLAR_GEOMETRY &&
       command != agribot_msgs::ChangeDeltasGeometry::Request::NORMAL_CATERPILLAR_GEOMETRY)
@@ -547,7 +547,7 @@ void TTCommControl::setPathToCartsEncodersDataFile(const std::string& path_to_fi
   path_to_encoder_file_ = path_to_file;
 }
 
-uint32_t TTCommControl::extractEncoderInitValueFromFile(std::ifstream& file_input)
+uint32_t TTCommControl::extractEncoderInitValueFromFile(std::ifstream& file_input) const
 {
   const char delimiter_middle = ':';
   const char delimiter_endline = ';';
