@@ -663,7 +663,7 @@ void TTCommControl::sendTplValveControlViaCan(SelectedTpl selection, TplControl 
       message.can_id = TransmitCanIds::tpl_control_front;
       break;
     case SelectedTpl::back:
-      message.can_id = TransmitCanIds::tpl_control_front;
+      message.can_id = TransmitCanIds::tpl_control_back;
       break;
   }
   message.can_dlc = TPL_CONTROL_FRAME_SIZE;
