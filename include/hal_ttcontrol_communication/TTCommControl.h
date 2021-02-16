@@ -7,6 +7,7 @@
 #include <agribot_common/Can.h>
 #include <agribot_msgs/ChangeDeltasGeometry.h>
 #include <hal_ttcontrol_communication/CartsStatus.h>
+#include <hal_ttcontrol_communication/TplControl.h>
 #include <cstdint>
 #include <cmath>
 #include <iostream>
@@ -54,7 +55,9 @@ enum TransmitCanIds : std::uint32_t
   protocol_response_frame = 0x00EF64C8,
   deltas_geometry_command_frame = 0x00FFDCC8,
   velocity_control_frame = 0x00FFD0C8,
-  config_frame = 0x00FFDBC8
+  config_frame = 0x00FFDBC8,
+  tpl_control_front = 0x00FFD1C8,
+  tpl_control_back = 0x00FFD2C8,
 };
 
 enum ReceiveCanIds : std::uint32_t
@@ -90,6 +93,12 @@ enum VelocityType
   front_angular = 2,
   back_linear = 4,
   back_angular = 6
+};
+
+enum class SelectedTpl
+{
+  front,
+  back
 };
 
 class TTCommControl
@@ -167,4 +176,5 @@ public:
   std::int32_t getErrorCode() const;
   void clearReceivedCanBusIdBit(const std::uint32_t mask_to_check);
   bool checkReceivedCanBusIdBit(const std::uint32_t mask_to_check) const;
+  void sendTplValveControlViaCan(SelectedTpl selection, TplControl control_values);
 };

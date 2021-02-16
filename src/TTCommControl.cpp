@@ -20,6 +20,7 @@ constexpr uint32_t GET_FOURTH_BYTE = 0xFF000000;
 constexpr uint32_t GET_THIRD_BYTE = 0x00FF0000;
 constexpr uint32_t GET_SECOND_BYTE = 0x0000FF00;
 constexpr uint32_t GET_FIRST_BYTE = 0x000000FF;
+constexpr uint8_t TPL_CONTROL_FRAME_SIZE = 6;
 constexpr uint8_t FULL_CAN_FRAME_BYTE_NUMBER = 8;
 constexpr uint8_t TWO_BYTE_CAN_FRAME = 2;
 // protocol data bytes
@@ -67,6 +68,8 @@ constexpr uint8_t SIGN_BYTE_FRAME_POSITION = 0x10;
 constexpr uint8_t TRACK_ENCODER_ID_BYTE_POSITION = 0;
 constexpr uint8_t TRACK_ENCODER_SIGN_BIT_MASK = 0x10;
 constexpr uint8_t TRACK_ENCODER_SUM_LOW_BYTE_POSITION = 1;
+
+constexpr uint8_t tpl_parse_constant = 110;
 
 inline uint8_t TTCommControl::extractFourthByte(const uint32_t four_byte_number) const
 {
@@ -649,4 +652,26 @@ bool TTCommControl::writeEncodersDataFile()
   }
 
   return true;
+}
+
+void TTCommControl::sendTplValveControlViaCan(SelectedTpl selection, TplControl control_values)
+{
+  can_frame message;
+  switch (selection)
+  {
+    case SelectedTpl::front:
+      message.can_id = TransmitCanIds::tpl_control_front;
+      break;
+    case SelectedTpl::back:
+      message.can_id = TransmitCanIds::tpl_control_front;
+      break;
+  }
+  message.can_dlc = TPL_CONTROL_FRAME_SIZE;
+  message.data[0] = control_values.pto_valve_control + tpl_parse_constant;
+  message.data[1] = control_values.red_qcf_valve_control + tpl_parse_constant;
+  message.data[2] = control_values.green_qcf_valve_control + tpl_parse_constant;
+  message.data[3] = control_values.blue_qcf_valve_control + tpl_parse_constant;
+  message.data[4] = control_values.height_actuator_control + tpl_parse_constant;
+  message.data[5] = control_values.angle_actuator_control + tpl_parse_constant;
+  can_handler_.iSendFrame(&message);
 }

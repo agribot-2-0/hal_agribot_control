@@ -4,7 +4,9 @@
 #include <agribot_msgs/AgribotCaterpillar.h>
 #include <agribot_msgs/AgribotCaterpillarWheelsRotation.h>
 #include <agribot_msgs/ChangeDeltasGeometry.h>
+#include <agribot_msgs/AgribotTool.h>
 #include <hal_ttcontrol_communication/TTCommControl.h>
+#include <hal_ttcontrol_communication/TplControl.h>
 #include <dynamic_reconfigure/server.h>
 #include <hal_agribot_control/TTControlParametersConfig.h>
 #include <ros/console.h>
@@ -54,6 +56,17 @@ enum TTControlParameterFlag : uint32_t
   back_right_caterpillar_signals_base = 0x1000,
   every_flag_set = 0xFFFFFFFF
 };
+
+TplControl tpl_control_msg_to_tpl_control_struct(const agribot_msgs::AgribotTool& msg)
+{
+  TplControl control_values;
+  control_values.angle_actuator_control = static_cast<std::int16_t>(msg.tpl_angle);
+  control_values.height_actuator_control = static_cast<std::int16_t>(msg.tpl_height);
+  control_values.red_qcf_valve_control = static_cast<std::int16_t>(msg.red_valve_flow);
+  control_values.green_qcf_valve_control = static_cast<std::int16_t>(msg.green_valve_flow);
+  control_values.blue_qcf_valve_control = static_cast<std::int16_t>(msg.blue_valve_flow);
+  return control_values;
+}
 
 TTCommControl ttcontrol_communication_handler(used_can);
 
@@ -192,6 +205,18 @@ void frontCallback(const agribot_msgs::AgribotCaterpillar& msg)
                                                  msg.back_angular);
 }
 
+void frontTplControlCallback(const agribot_msgs::AgribotTool& msg)
+{
+  ttcontrol_communication_handler.sendTplValveControlViaCan(SelectedTpl::front,
+                                                            tpl_control_msg_to_tpl_control_struct(msg));
+}
+
+void backTplControlCallback(const agribot_msgs::AgribotTool& msg)
+{
+  ttcontrol_communication_handler.sendTplValveControlViaCan(SelectedTpl::back,
+                                                            tpl_control_msg_to_tpl_control_struct(msg));
+}
+
 bool sendDeltasGeometryCommand(const RobotsCarts selected_cart, const agribot_msgs::ChangeDeltasGeometry::Request& req)
 {
   if (req.cart_delta_command == agribot_msgs::ChangeDeltasGeometry::Request::ELEVATED_CATERPILLAR_GEOMETRY ||
@@ -319,6 +344,8 @@ int main(int argc, char** argv)
   ros::Subscriber sub = n.subscribe("/agribot/control/caterpillar", 1000, frontCallback);
   ros::Subscriber sub_connection_state =
       n.subscribe("/agribot/ttcontrol/connection_state", 1, ttcontrolConnectionState);
+  ros::Subscriber tpl_front_control_sub = n.subscribe("/agribot/control/tool/front", 10, frontTplControlCallback);
+  ros::Subscriber tpl_back_control_sub = n.subscribe("/agribot/control/tool/back", 10, backTplControlCallback);
   ros::Publisher carts_status_publisher =
       n.advertise<agribot_msgs::AgribotCaterpillar>("/agribot/encoder/caterpillar", 1);
   ros::Publisher track_encoder_sum_publisher =
