@@ -60,11 +60,11 @@ enum TTControlParameterFlag : uint32_t
 TplControl tpl_control_msg_to_tpl_control_struct(const agribot_msgs::AgribotTool& msg)
 {
   TplControl control_values;
-  control_values.angle_actuator_control = static_cast<std::int16_t>(msg.tpl_angle);
-  control_values.height_actuator_control = static_cast<std::int16_t>(msg.tpl_height);
-  control_values.red_qcf_valve_control = static_cast<std::int16_t>(msg.red_valve_flow);
-  control_values.green_qcf_valve_control = static_cast<std::int16_t>(msg.green_valve_flow);
-  control_values.blue_qcf_valve_control = static_cast<std::int16_t>(msg.blue_valve_flow);
+  control_values.angle_actuator = static_cast<std::int16_t>(msg.tpl_angle);
+  control_values.height_actuator = static_cast<std::int16_t>(msg.tpl_height);
+  control_values.red_qcf_valve = static_cast<std::int16_t>(msg.red_valve_flow);
+  control_values.green_qcf_valve = static_cast<std::int16_t>(msg.green_valve_flow);
+  control_values.blue_qcf_valve = static_cast<std::int16_t>(msg.blue_valve_flow);
   return control_values;
 }
 

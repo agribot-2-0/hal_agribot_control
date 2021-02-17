@@ -667,11 +667,11 @@ void TTCommControl::sendTplValveControlViaCan(SelectedTpl selection, TplControl 
       break;
   }
   message.can_dlc = TPL_CONTROL_FRAME_SIZE;
-  message.data[0] = control_values.pto_valve_control + tpl_parse_constant;
-  message.data[1] = control_values.red_qcf_valve_control + tpl_parse_constant;
-  message.data[2] = control_values.green_qcf_valve_control + tpl_parse_constant;
-  message.data[3] = control_values.blue_qcf_valve_control + tpl_parse_constant;
-  message.data[4] = control_values.height_actuator_control + tpl_parse_constant;
-  message.data[5] = control_values.angle_actuator_control + tpl_parse_constant;
+  message.data[0] = control_values.pto_valve + tpl_parse_constant;
+  message.data[1] = control_values.red_qcf_valve + tpl_parse_constant;
+  message.data[2] = control_values.green_qcf_valve + tpl_parse_constant;
+  message.data[3] = control_values.blue_qcf_valve + tpl_parse_constant;
+  message.data[4] = control_values.height_actuator + tpl_parse_constant;
+  message.data[5] = control_values.angle_actuator + tpl_parse_constant;
   can_handler_.iSendFrame(&message);
 }

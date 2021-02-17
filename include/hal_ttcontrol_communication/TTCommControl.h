@@ -57,7 +57,7 @@ enum TransmitCanIds : std::uint32_t
   velocity_control_frame = 0x00FFD0C8,
   config_frame = 0x00FFDBC8,
   tpl_control_front = 0x00FFD1C8,
-  tpl_control_back = 0x00FFD2C8,
+  tpl_control_back = 0x00FFD2C8
 };
 
 enum ReceiveCanIds : std::uint32_t
