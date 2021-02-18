@@ -65,6 +65,7 @@ TplControl tpl_control_msg_to_tpl_control_struct(const agribot_msgs::AgribotTool
   control_values.red_qcf_valve = static_cast<std::int16_t>(msg.red_valve_flow);
   control_values.green_qcf_valve = static_cast<std::int16_t>(msg.green_valve_flow);
   control_values.blue_qcf_valve = static_cast<std::int16_t>(msg.blue_valve_flow);
+  control_values.pto_valve = static_cast<std::int16_t>(msg.pto_rpm);
   return control_values;
 }
 
