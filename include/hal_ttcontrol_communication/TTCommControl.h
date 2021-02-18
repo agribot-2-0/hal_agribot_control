@@ -148,7 +148,7 @@ class TTCommControl
   inline std::int32_t checkTrackEncoderSumSignBit(std::uint8_t bit_mask, std::uint8_t byte_to_check) const;
 
  public:
-  explicit TTCommControl();
+  TTCommControl();
   ~TTCommControl();
   void initializeCanHandler(std::unique_ptr<ICan> can_handler);
   void update();
@@ -179,6 +179,7 @@ class TTCommControl
   std::int32_t getErrorCode() const;
   void clearReceivedCanBusIdBit(const std::uint32_t mask_to_check);
   bool checkReceivedCanBusIdBit(const std::uint32_t mask_to_check) const;
-  void prepareTplControlFrame(SelectedTpl const selection, TplControl const control_values, can_frame& message) const;
+  void prepareTplControlFrame(SelectedTpl const selection, TplControl const control_values,
+                              can_frame& message) const;  // NOLINT(runtime/references)
   void sendTplValveControlViaCan(SelectedTpl const selection, TplControl const control_values) const;
 };
