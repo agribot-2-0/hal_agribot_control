@@ -273,19 +273,6 @@ Priority: 0x00, PGN: 0x0FFD1, Source adres: 0xC8, Interval: 200ms\\
 \end{tabular}
 \end{center}
 
-Advantech do TTControl, tuz tył\\
-Priority: 0x00, PGN: 0x0FFD2, Source adres: 0xC8, Interval: 200ms\\
-\textbf{Frame length = 6}
-\begin{center}
-\begin{tabular}{| p{65pt} | p{30pt} | p{70pt} | p{70pt} | p{75pt} | p{40pt} | p{40pt} |}
-    \hline 
-    ID & B0 & B1 & B2 & B3 & B4 & B5 \\ 
-    \hline
-    0x00FFD2C8 & PTO & VALVE\_RED & VALVE\_GREEN & VALVE\_BLUE & ACT\_HEI & ACT\_ANG \\
-    \hline
-\end{tabular}
-\end{center}
-
 \subsection{Stan silnika i czujników analogowych}
 TTControl obsługuje silnik spalinowy diesla, a także odczytuje czujniki analogowe, a następnie przesyła odczytywane dane do Advantecha. Dane te są przekazywane Advantechowi, ze stałym interwałem i nie wymagają potwierdzenia odbioru.
 
@@ -333,6 +320,35 @@ Priority: 0x00, PGN: 0x0FFD9, Source adres: 0x64, Interval: 50ms\\
  \hline
 \end{tabular}
 \end{left}\\
+
+\subsubsection{Stan zaworów TPL}
+TTControl wysyła ramki z aktualnym stanem zaworów. Stan zaworow to zwracany przez sterowniki salami szacowany poziom otwarcia, od -100\% do 100\%, odpowiadajace dzialaniu zaworu w kierunku B do A ( wartosc z minusem) i A do B (wartosc z plusem).
+
+TTControl do Advantech, tuz przód\\
+Priority: 0x00, PGN: 0x0FFD4, Source adres: 0x64, Interval: 200ms\\
+\textbf{Frame length = 6}
+\begin{center}
+\begin{tabular}{| p{65pt} | p{25pt} | p{70pt} | p{70pt} | p{75pt} | p{40pt} | p{40pt} |}
+    \hline 
+    ID & B0 & B1 & B2 & B3 & B4 & B5 \\ 
+    \hline
+    0x00FFD464 & PTO & VALVE\_RED & VALVE\_GREEN & VALVE\_BLUE & ACT\_HEI & ACT\_ANG \\
+    \hline
+\end{tabular}
+\end{center}
+
+TTControl do Advantech, tuz tyl\\
+Priority: 0x00, PGN: 0x0FFD5, Source adres: 0x64, Interval: 200ms\\
+\textbf{Frame length = 6}
+\begin{center}
+\begin{tabular}{| p{65pt} | p{30pt} | p{70pt} | p{70pt} | p{75pt} | p{40pt} | p{40pt} |}
+    \hline 
+    ID & B0 & B1 & B2 & B3 & B4 & B5 \\ 
+    \hline
+    0x00FFD564 & PTO & VALVE\_RED & VALVE\_GREEN & VALVE\_BLUE & ACT\_HEI & ACT\_ANG \\
+    \hline
+\end{tabular}
+\end{center}
 
 \subsubsection{Czujniki temperatury oleju}
 Czujniki zwracają wartość od -100 do 300 $\deg C$ i są zapisywane na dwóch bajtach. Robot posiada 2 czujniki temperatury oleju, na dnie zbiornika oleju i w chlodnicy oleju. Od otrzymanych z ramki danych nalezy odjac 100 zeby otrzymac wartosc temperatury.
