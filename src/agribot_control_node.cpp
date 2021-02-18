@@ -199,7 +199,7 @@ void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersCo
   }
 }
 
-void frontCallback(const agribot_msgs::AgribotCaterpillar& msg)
+void caterpillarsControlCallback(const agribot_msgs::AgribotCaterpillar& msg)
 {
   ttcontrol_communication_handler.sendVelocities(msg.front_linear, msg.front_angular, msg.back_linear,
                                                  msg.back_angular);
@@ -341,7 +341,7 @@ int main(int argc, char** argv)
   ros::AsyncSpinner spinner(2);  // Use 2 threads
   spinner.start();
 
-  ros::Subscriber sub = n.subscribe("/agribot/control/caterpillar", 1000, frontCallback);
+  ros::Subscriber sub = n.subscribe("/agribot/control/caterpillar", 10, caterpillarsControlCallback);
   ros::Subscriber sub_connection_state =
       n.subscribe("/agribot/ttcontrol/connection_state", 1, ttcontrolConnectionState);
   ros::Subscriber tpl_front_control_sub = n.subscribe("/agribot/control/tool/front", 10, frontTplControlCallback);
