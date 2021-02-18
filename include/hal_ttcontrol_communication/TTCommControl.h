@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <agribot_common/CanBus/ICan.h>
 #include <agribot_common/Can.h>
 #include <agribot_msgs/ChangeDeltasGeometry.h>
 #include <hal_ttcontrol_communication/CartsStatus.h>
@@ -14,6 +15,7 @@
 #include <fstream>
 #include <queue>
 #include <string>
+#include <memory>
 
 enum ProtocolFrameBytesValues : std::uint8_t
 {
@@ -103,7 +105,7 @@ enum class SelectedTpl
 
 class TTCommControl
 {
-  Can can_handler_;
+  std::unique_ptr<ICan> can_handler_;
   std::queue<can_frame> frames_queue_;
   CartsStatus cart_;
   std::uint32_t received_msgs_register_;
@@ -145,9 +147,10 @@ class TTCommControl
   inline std::uint32_t parseBytesToU32Lsb(uint8_t start_byte, const can_frame& frame) const;
   inline std::int32_t checkTrackEncoderSumSignBit(std::uint8_t bit_mask, std::uint8_t byte_to_check) const;
 
-public:
-  explicit TTCommControl(const char* pchCanChannel);
+ public:
+  explicit TTCommControl();
   ~TTCommControl();
+  void initializeCanHandler(std::unique_ptr<ICan> can_handler);
   void update();
   void receiveCanFrames();
   void parseCanFrames();
@@ -176,5 +179,6 @@ public:
   std::int32_t getErrorCode() const;
   void clearReceivedCanBusIdBit(const std::uint32_t mask_to_check);
   bool checkReceivedCanBusIdBit(const std::uint32_t mask_to_check) const;
-  void sendTplValveControlViaCan(SelectedTpl selection, TplControl control_values);
+  void prepareTplControlFrame(SelectedTpl const selection, TplControl const control_values, can_frame& message) const;
+  void sendTplValveControlViaCan(SelectedTpl const selection, TplControl const control_values) const;
 };

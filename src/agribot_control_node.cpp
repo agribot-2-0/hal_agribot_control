@@ -9,6 +9,7 @@
 #include <hal_ttcontrol_communication/TplControl.h>
 #include <dynamic_reconfigure/server.h>
 #include <hal_agribot_control/TTControlParametersConfig.h>
+#include <agribot_common/CommonFunctions/ros_common_functions.h>
 #include <ros/console.h>
 #include <ros/ros.h>
 #include <std_msgs/Float32.h>
@@ -24,7 +25,6 @@ using std::uint16_t;
 using std::uint32_t;
 using std::uint8_t;
 
-constexpr char used_can[] = "can0";
 constexpr uint WAIT_FOR_TTCONTROL = 100000;
 constexpr uint8_t CARTS_ENCODERS_INIT_TIMEOUT_LIMIT = 10;
 constexpr bool READ_BACKUP_CARTS_ENCODERS_FILE = false;
@@ -69,7 +69,7 @@ TplControl tpl_control_msg_to_tpl_control_struct(const agribot_msgs::AgribotTool
   return control_values;
 }
 
-TTCommControl ttcontrol_communication_handler(used_can);
+TTCommControl ttcontrol_communication_handler;
 
 void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersConfig& config, uint32_t level)
 {
@@ -337,6 +337,19 @@ bool readEncodersDataFile()
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "agribot_control");
+  std::string selected_can;
+  try
+  {
+    selected_can = ros_common_functions::getRosParam<std::string>("/hal_agribot_control/can_bus_name");
+  }
+  catch (const std::string& ex)
+  {
+    ROS_ERROR_STREAM("[HAL_AGRIBOT_CONTROL] " + ex);
+    ros::shutdown();
+  }
+  std::unique_ptr<Can> can_handler = std::make_unique<Can>();
+  can_handler->iInitialize(selected_can.c_str());
+  ttcontrol_communication_handler.initializeCanHandler(std::move(can_handler));
   ros::NodeHandle n;
   ros::Rate loop_rate(10);
   ros::AsyncSpinner spinner(2);  // Use 2 threads

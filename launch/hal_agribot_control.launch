@@ -1,5 +1,6 @@
 <launch>
     <param name="path_to_encoder_file" type="string" value="$(env AGRIBOT_HOME)/agribot/configs/hal/hal_agribot_control"/>
+    <rosparam command="load" file="$(env AGRIBOT_HOME)/agribot/configs/hal/hal_agribot_control/setup/selected_can.yaml"/>
     <node name="heartbeat_node" pkg="hal_agribot_control" type="heartbeat_node"/>
     <node name="agribot_control_node" pkg="hal_agribot_control" type="agribot_control_node"/>
 </launch>
