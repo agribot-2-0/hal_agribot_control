@@ -658,7 +658,7 @@ bool TTCommControl::writeEncodersDataFile()
   return true;
 }
 
-void TTCommControl::prepareTplControlFrame(SelectedTpl const selection, TplControl const control_values,
+void TTCommControl::prepareTplControlFrame(const SelectedTpl selection, const TplControl& control_values,
                                            can_frame& message) const
 {
   switch (selection)

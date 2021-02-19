@@ -179,7 +179,7 @@ class TTCommControl
   std::int32_t getErrorCode() const;
   void clearReceivedCanBusIdBit(const std::uint32_t mask_to_check);
   bool checkReceivedCanBusIdBit(const std::uint32_t mask_to_check) const;
-  void prepareTplControlFrame(SelectedTpl const selection, TplControl const control_values,
+  void prepareTplControlFrame(const SelectedTpl selection, const TplControl& control_values,
                               can_frame& message) const;  // NOLINT(runtime/references)
-  void sendTplValveControlViaCan(SelectedTpl const selection, const TplControl & control_values) const;
+  void sendTplValveControlViaCan(const SelectedTpl selection, const TplControl& control_values) const;
 };
