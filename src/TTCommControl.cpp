@@ -679,7 +679,7 @@ void TTCommControl::prepareTplControlFrame(const SelectedTpl selection, const Tp
   message.data[5] = control_values.angle_actuator + tpl_parse_constant;
 }
 
-void TTCommControl::sendTplValveControlViaCan(SelectedTpl const selection, const TplControl& control_values) const
+void TTCommControl::sendTplValveControlViaCan(const SelectedTpl selection, const TplControl& control_values) const
 {
   can_frame message;
   prepareTplControlFrame(selection, control_values, message);
