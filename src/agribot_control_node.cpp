@@ -4,9 +4,12 @@
 #include <agribot_msgs/AgribotCaterpillar.h>
 #include <agribot_msgs/AgribotCaterpillarWheelsRotation.h>
 #include <agribot_msgs/ChangeDeltasGeometry.h>
+#include <agribot_msgs/AgribotTool.h>
 #include <hal_ttcontrol_communication/TTCommControl.h>
+#include <hal_ttcontrol_communication/TplControl.h>
 #include <dynamic_reconfigure/server.h>
 #include <hal_agribot_control/TTControlParametersConfig.h>
+#include <agribot_common/CommonFunctions/ros_common_functions.h>
 #include <ros/console.h>
 #include <ros/ros.h>
 #include <std_msgs/Float32.h>
@@ -22,7 +25,6 @@ using std::uint16_t;
 using std::uint32_t;
 using std::uint8_t;
 
-constexpr char used_can[] = "can0";
 constexpr uint WAIT_FOR_TTCONTROL = 100000;
 constexpr uint8_t CARTS_ENCODERS_INIT_TIMEOUT_LIMIT = 10;
 constexpr bool READ_BACKUP_CARTS_ENCODERS_FILE = false;
@@ -55,7 +57,19 @@ enum TTControlParameterFlag : uint32_t
   every_flag_set = 0xFFFFFFFF
 };
 
-TTCommControl ttcontrol_communication_handler(used_can);
+TplControl tpl_control_msg_to_tpl_control_struct(const agribot_msgs::AgribotTool& msg)
+{
+  TplControl control_values;
+  control_values.angle_actuator = static_cast<std::int16_t>(msg.tpl_angle);
+  control_values.height_actuator = static_cast<std::int16_t>(msg.tpl_height);
+  control_values.red_qcf_valve = static_cast<std::int16_t>(msg.red_valve_flow);
+  control_values.green_qcf_valve = static_cast<std::int16_t>(msg.green_valve_flow);
+  control_values.blue_qcf_valve = static_cast<std::int16_t>(msg.blue_valve_flow);
+  control_values.pto_valve = static_cast<std::int16_t>(msg.pto_rpm);
+  return control_values;
+}
+
+TTCommControl ttcontrol_communication_handler;
 
 void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersConfig& config, uint32_t level)
 {
@@ -186,10 +200,22 @@ void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersCo
   }
 }
 
-void frontCallback(const agribot_msgs::AgribotCaterpillar& msg)
+void caterpillarsControlCallback(const agribot_msgs::AgribotCaterpillar& msg)
 {
   ttcontrol_communication_handler.sendVelocities(msg.front_linear, msg.front_angular, msg.back_linear,
                                                  msg.back_angular);
+}
+
+void frontTplControlCallback(const agribot_msgs::AgribotTool& msg)
+{
+  ttcontrol_communication_handler.sendTplValveControlViaCan(SelectedTpl::front,
+                                                            tpl_control_msg_to_tpl_control_struct(msg));
+}
+
+void backTplControlCallback(const agribot_msgs::AgribotTool& msg)
+{
+  ttcontrol_communication_handler.sendTplValveControlViaCan(SelectedTpl::back,
+                                                            tpl_control_msg_to_tpl_control_struct(msg));
 }
 
 bool sendDeltasGeometryCommand(const RobotsCarts selected_cart, const agribot_msgs::ChangeDeltasGeometry::Request& req)
@@ -311,14 +337,29 @@ bool readEncodersDataFile()
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "agribot_control");
+  std::string selected_can;
+  try
+  {
+    selected_can = ros_common_functions::getRosParam<std::string>("/hal_agribot_control/can_bus_name");
+  }
+  catch (const std::string& ex)
+  {
+    ROS_ERROR_STREAM("[HAL_AGRIBOT_CONTROL] " + ex);
+    ros::shutdown();
+  }
+  std::unique_ptr<Can> can_handler = std::make_unique<Can>();
+  can_handler->iInitialize(selected_can.c_str());
+  ttcontrol_communication_handler.initializeCanHandler(std::move(can_handler));
   ros::NodeHandle n;
   ros::Rate loop_rate(10);
   ros::AsyncSpinner spinner(2);  // Use 2 threads
   spinner.start();
 
-  ros::Subscriber sub = n.subscribe("/agribot/control/caterpillar", 1000, frontCallback);
+  ros::Subscriber sub = n.subscribe("/agribot/control/caterpillar", 1, caterpillarsControlCallback);
   ros::Subscriber sub_connection_state =
       n.subscribe("/agribot/ttcontrol/connection_state", 1, ttcontrolConnectionState);
+  ros::Subscriber tpl_front_control_sub = n.subscribe("/agribot/control/tool/front", 1, frontTplControlCallback);
+  ros::Subscriber tpl_back_control_sub = n.subscribe("/agribot/control/tool/back", 1, backTplControlCallback);
   ros::Publisher carts_status_publisher =
       n.advertise<agribot_msgs::AgribotCaterpillar>("/agribot/encoder/caterpillar", 1);
   ros::Publisher track_encoder_sum_publisher =

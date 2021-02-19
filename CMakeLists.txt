@@ -80,3 +80,7 @@ install(DIRECTORY launch
 #############
 ## Testing ##
 #############
+
+## Add gtest based cpp test target and link libraries
+catkin_add_gtest(${PROJECT_NAME}-test test/utest.cpp src/TTCommControl.cpp src/CartsStatus.cpp)
+target_link_libraries(${PROJECT_NAME}-test ${agribot_common_LIBRARIES} gmock gtest)

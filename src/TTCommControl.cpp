@@ -20,6 +20,7 @@ constexpr uint32_t GET_FOURTH_BYTE = 0xFF000000;
 constexpr uint32_t GET_THIRD_BYTE = 0x00FF0000;
 constexpr uint32_t GET_SECOND_BYTE = 0x0000FF00;
 constexpr uint32_t GET_FIRST_BYTE = 0x000000FF;
+constexpr uint8_t TPL_CONTROL_FRAME_SIZE = 6;
 constexpr uint8_t FULL_CAN_FRAME_BYTE_NUMBER = 8;
 constexpr uint8_t TWO_BYTE_CAN_FRAME = 2;
 // protocol data bytes
@@ -67,6 +68,8 @@ constexpr uint8_t SIGN_BYTE_FRAME_POSITION = 0x10;
 constexpr uint8_t TRACK_ENCODER_ID_BYTE_POSITION = 0;
 constexpr uint8_t TRACK_ENCODER_SIGN_BIT_MASK = 0x10;
 constexpr uint8_t TRACK_ENCODER_SUM_LOW_BYTE_POSITION = 1;
+
+constexpr uint8_t tpl_parse_constant = 110;
 
 inline uint8_t TTCommControl::extractFourthByte(const uint32_t four_byte_number) const
 {
@@ -256,17 +259,21 @@ bool TTCommControl::getEncodersConfirmedStatus() const
   return ttcontrol_carts_angle_confirmed_;
 }
 
-TTCommControl::TTCommControl(const char* can_channel)
+TTCommControl::TTCommControl()
 {
   ttcontrol_carts_angle_confirmed_ = false;
   ttcontrol_is_connected_ = false;
-  can_handler_.iInitialize(can_channel);
+}
+
+void TTCommControl::initializeCanHandler(std::unique_ptr<ICan> can_handler)
+{
+  can_handler_ = std::move(can_handler);
 }
 
 void TTCommControl::receiveCanFrames()
 {
   can_frame message;
-  while (can_handler_.bReceiveFrame(&message))
+  while (can_handler_->bReceiveFrame(&message))
   {
     frames_queue_.push(message);
   }
@@ -388,7 +395,7 @@ void TTCommControl::confirmAdvantechReadiness()
   message.data[5] = 0;
   message.data[6] = 0;
   message.data[7] = 0;
-  can_handler_.iSendFrame(&message);
+  can_handler_->iSendFrame(&message);
 }
 
 inline uint8_t TTCommControl::returnDeltasGeometryCommandByte(const uint8_t command) const
@@ -411,7 +418,7 @@ void TTCommControl::sendDeltasGeometryCommand(const uint8_t front_cart_command, 
   message.can_dlc = TWO_BYTE_CAN_FRAME;
   message.data[FRONT_DELTA_GEOMETRY_BYTE] = returnDeltasGeometryCommandByte(front_cart_command);
   message.data[BACK_DELTA_GEOMETRY_BYTE] = returnDeltasGeometryCommandByte(back_cart_command);
-  can_handler_.iSendFrame(&message);
+  can_handler_->iSendFrame(&message);
 }
 
 void TTCommControl::sendCartsEncodersInitialization()
@@ -427,7 +434,7 @@ void TTCommControl::sendCartsEncodersInitialization()
   message.data[5] = extractSecondByte(init_back_cart_encoder_value_);
   message.data[6] = extractFirstByte(init_back_cart_encoder_value_);
   message.data[7] = 0;
-  can_handler_.iSendFrame(&message);
+  can_handler_->iSendFrame(&message);
 }
 
 void TTCommControl::sendVelocities(const float front_linear, const float front_angular, const float back_linear,
@@ -440,7 +447,7 @@ void TTCommControl::sendVelocities(const float front_linear, const float front_a
   prepareVelocitiesFrame(message, front_angular, 2);
   prepareVelocitiesFrame(message, back_linear, 4);
   prepareVelocitiesFrame(message, back_angular, 6);
-  can_handler_.iSendFrame(&message);
+  can_handler_->iSendFrame(&message);
 }
 
 void TTCommControl::sendSignalsParameters(const int ditter_period, const int ditter_amplitude, const int encoder_period)
@@ -459,7 +466,7 @@ void TTCommControl::sendSignalsParameters(const int ditter_period, const int dit
   message.data[ConfigFrameBytePositions::encoder_period_byte + 1] = 0xFF;
   message.data[ConfigFrameBytePositions::encoder_period_byte + 2] = 0xFF;
   message.data[ConfigFrameBytePositions::encoder_period_byte + 3] = 0xFF;
-  can_handler_.iSendFrame(&message);
+  can_handler_->iSendFrame(&message);
 }
 
 void TTCommControl::sendCartsPidParameters(const double kp, const double ki, const double kd, const double acceleration,
@@ -483,7 +490,7 @@ void TTCommControl::sendCartsPidParameters(const double kp, const double ki, con
       extractFirstByte(static_cast<uint32_t>(acceleration * ACCELERATION_RESOLUTION_MULTIPLIER));
   message.data[ConfigFrameBytePositions::acceleration_first_byte + 1] =
       extractSecondByte(static_cast<uint32_t>(acceleration * ACCELERATION_RESOLUTION_MULTIPLIER));
-  can_handler_.iSendFrame(&message);
+  can_handler_->iSendFrame(&message);
 }
 
 void TTCommControl::sendCaterpillarPidParameters(const uint32_t kp, const uint32_t ki, const uint32_t kd,
@@ -501,7 +508,7 @@ void TTCommControl::sendCaterpillarPidParameters(const uint32_t kp, const uint32
   message.data[ConfigFrameBytePositions::kd_caterpillar_first_byte + 1] = extractSecondByte(kd);
   // dont care byte
   message.data[ConfigFrameBytePositions::kd_caterpillar_first_byte + 2] = 0xFF;
-  can_handler_.iSendFrame(&message);
+  can_handler_->iSendFrame(&message);
 }
 
 void TTCommControl::sendCaterpillarBaseSignal(const uint32_t forward_base, const uint32_t backward_base,
@@ -519,7 +526,7 @@ void TTCommControl::sendCaterpillarBaseSignal(const uint32_t forward_base, const
   message.data[ConfigFrameBytePositions::backward_signal_base_first_byte + 2] = 0xFF;
   message.data[ConfigFrameBytePositions::backward_signal_base_first_byte + 3] = 0xFF;
   message.data[ConfigFrameBytePositions::backward_signal_base_first_byte + 4] = 0xFF;
-  can_handler_.iSendFrame(&message);
+  can_handler_->iSendFrame(&message);
 }
 
 const CartsStatus& TTCommControl::getCartsStatus() const
@@ -649,4 +656,32 @@ bool TTCommControl::writeEncodersDataFile()
   }
 
   return true;
+}
+
+void TTCommControl::prepareTplControlFrame(const SelectedTpl selection, const TplControl& control_values,
+                                           can_frame& message) const
+{
+  switch (selection)
+  {
+    case SelectedTpl::front:
+      message.can_id = TransmitCanIds::tpl_control_front;
+      break;
+    case SelectedTpl::back:
+      message.can_id = TransmitCanIds::tpl_control_back;
+      break;
+  }
+  message.can_dlc = TPL_CONTROL_FRAME_SIZE;
+  message.data[0] = control_values.pto_valve + tpl_parse_constant;
+  message.data[1] = control_values.red_qcf_valve + tpl_parse_constant;
+  message.data[2] = control_values.green_qcf_valve + tpl_parse_constant;
+  message.data[3] = control_values.blue_qcf_valve + tpl_parse_constant;
+  message.data[4] = control_values.height_actuator + tpl_parse_constant;
+  message.data[5] = control_values.angle_actuator + tpl_parse_constant;
+}
+
+void TTCommControl::sendTplValveControlViaCan(const SelectedTpl selection, const TplControl& control_values) const
+{
+  can_frame message;
+  prepareTplControlFrame(selection, control_values, message);
+  can_handler_->iSendFrame(&message);
 }

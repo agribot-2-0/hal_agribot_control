@@ -4,15 +4,18 @@
 
 #pragma once
 
+#include <agribot_common/CanBus/ICan.h>
 #include <agribot_common/Can.h>
 #include <agribot_msgs/ChangeDeltasGeometry.h>
 #include <hal_ttcontrol_communication/CartsStatus.h>
+#include <hal_ttcontrol_communication/TplControl.h>
 #include <cstdint>
 #include <cmath>
 #include <iostream>
 #include <fstream>
 #include <queue>
 #include <string>
+#include <memory>
 
 enum ProtocolFrameBytesValues : std::uint8_t
 {
@@ -54,7 +57,9 @@ enum TransmitCanIds : std::uint32_t
   protocol_response_frame = 0x00EF64C8,
   deltas_geometry_command_frame = 0x00FFDCC8,
   velocity_control_frame = 0x00FFD0C8,
-  config_frame = 0x00FFDBC8
+  config_frame = 0x00FFDBC8,
+  tpl_control_front = 0x00FFD1C8,
+  tpl_control_back = 0x00FFD2C8
 };
 
 enum ReceiveCanIds : std::uint32_t
@@ -92,9 +97,15 @@ enum VelocityType
   back_angular = 6
 };
 
+enum class SelectedTpl
+{
+  front,
+  back
+};
+
 class TTCommControl
 {
-  Can can_handler_;
+  std::unique_ptr<ICan> can_handler_;
   std::queue<can_frame> frames_queue_;
   CartsStatus cart_;
   std::uint32_t received_msgs_register_;
@@ -136,9 +147,10 @@ class TTCommControl
   inline std::uint32_t parseBytesToU32Lsb(uint8_t start_byte, const can_frame& frame) const;
   inline std::int32_t checkTrackEncoderSumSignBit(std::uint8_t bit_mask, std::uint8_t byte_to_check) const;
 
-public:
-  explicit TTCommControl(const char* pchCanChannel);
+ public:
+  TTCommControl();
   ~TTCommControl();
+  void initializeCanHandler(std::unique_ptr<ICan> can_handler);
   void update();
   void receiveCanFrames();
   void parseCanFrames();
@@ -167,4 +179,7 @@ public:
   std::int32_t getErrorCode() const;
   void clearReceivedCanBusIdBit(const std::uint32_t mask_to_check);
   bool checkReceivedCanBusIdBit(const std::uint32_t mask_to_check) const;
+  void prepareTplControlFrame(const SelectedTpl selection, const TplControl& control_values,
+                              can_frame& message) const;  // NOLINT(runtime/references)
+  void sendTplValveControlViaCan(const SelectedTpl selection, const TplControl& control_values) const;
 };
