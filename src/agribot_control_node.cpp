@@ -342,9 +342,9 @@ int main(int argc, char** argv)
   {
     selected_can = ros_common_functions::getRosParam<std::string>("/hal_agribot_control/can_bus_name");
   }
-  catch (const std::string& ex)
+  catch (const std::exception& ex)
   {
-    ROS_ERROR_STREAM("[HAL_AGRIBOT_CONTROL] " + ex);
+    ROS_ERROR_STREAM("[HAL_AGRIBOT_CONTROL] " << ex.what());
     ros::shutdown();
   }
   std::unique_ptr<Can> can_handler = std::make_unique<Can>();
