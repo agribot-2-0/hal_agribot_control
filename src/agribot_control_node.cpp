@@ -358,8 +358,8 @@ int main(int argc, char** argv)
   ros::Subscriber sub = n.subscribe("/agribot/control/caterpillar", 1, caterpillarsControlCallback);
   ros::Subscriber sub_connection_state =
       n.subscribe("/agribot/ttcontrol/connection_state", 1, ttcontrolConnectionState);
-  ros::Subscriber tpl_front_control_sub = n.subscribe("/agribot/control/tool/front", 1, frontTplControlCallback);
-  ros::Subscriber tpl_back_control_sub = n.subscribe("/agribot/control/tool/back", 1, backTplControlCallback);
+  ros::Subscriber tpl_front_control_sub = n.subscribe("/agribot/control/tool/front/valves", 1, frontTplControlCallback);
+  ros::Subscriber tpl_back_control_sub = n.subscribe("/agribot/control/tool/back/valves", 1, backTplControlCallback);
   ros::Publisher carts_status_publisher =
       n.advertise<agribot_msgs::AgribotCaterpillar>("/agribot/encoder/caterpillar", 1);
   ros::Publisher track_encoder_sum_publisher =

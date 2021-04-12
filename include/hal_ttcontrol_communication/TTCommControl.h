@@ -4,18 +4,19 @@
 
 #pragma once
 
-#include <agribot_common/CanBus/ICan.h>
 #include <agribot_common/Can.h>
+#include <agribot_common/CanBus/ICan.h>
 #include <agribot_msgs/ChangeDeltasGeometry.h>
 #include <hal_ttcontrol_communication/CartsStatus.h>
 #include <hal_ttcontrol_communication/TplControl.h>
-#include <cstdint>
+
 #include <cmath>
-#include <iostream>
+#include <cstdint>
 #include <fstream>
+#include <iostream>
+#include <memory>
 #include <queue>
 #include <string>
-#include <memory>
 
 enum ProtocolFrameBytesValues : std::uint8_t
 {
@@ -147,7 +148,7 @@ class TTCommControl
   inline std::uint32_t parseBytesToU32Lsb(uint8_t start_byte, const can_frame& frame) const;
   inline std::int32_t checkTrackEncoderSumSignBit(std::uint8_t bit_mask, std::uint8_t byte_to_check) const;
 
- public:
+public:
   TTCommControl();
   ~TTCommControl();
   void initializeCanHandler(std::unique_ptr<ICan> can_handler);
