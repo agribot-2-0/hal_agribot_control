@@ -330,7 +330,8 @@ bool engineStartStopService(std_srvs::SetBool::Request& req,   // NOLINT(runtime
       if (timeout_counter > ENGINE_SERVICE_TIMEOUT_LIMIT)
       {
         res.success = false;
-        res.message = "Could not start the engine, pleas check: ttcontrol can communication, voltage level and fuel level";
+        res.message = "Could not start the engine, pleas check: ttcontrol can communication, voltage level and fuel "
+                      "level";
         return false;
       }
     }

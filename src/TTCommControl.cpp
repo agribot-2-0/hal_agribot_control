@@ -70,10 +70,8 @@ constexpr uint8_t TRACK_ENCODER_SIGN_BIT_MASK = 0x10;
 constexpr uint8_t TRACK_ENCODER_SUM_LOW_BYTE_POSITION = 1;
 
 constexpr uint8_t tpl_parse_constant = 110;
-constexpr uint16_t minimal_engine_rpm_value = 700;
-constexpr uint8_t ENGINE_RPM_LOW_BYTE = 1;
-constexpr uint8_t ENGINE_RPM_HIGH_BYTE = 0;
-
+constexpr uint8_t engine_ready_flag_value = 1;
+constexpr uint8_t engine_ready_byte = 7;
 
 inline uint8_t TTCommControl::extractFourthByte(const uint32_t four_byte_number) const
 {
@@ -167,8 +165,7 @@ uint32_t TTCommControl::decodeEncoderValue(const can_frame& frame) const
 
 void TTCommControl::decodeEngineFeedback(const can_frame& frame)
 {
-  if ((static_cast<uint16_t> (frame.data[ENGINE_RPM_HIGH_BYTE]) +
-       ((static_cast<uint16_t> (frame.data[ENGINE_RPM_LOW_BYTE])) << 8)) >= minimal_engine_rpm_value)
+  if (static_cast<uint16_t>(frame.data[engine_ready_byte]) == engine_ready_flag_value)
   {
     ttcontrol_engine_is_ready_ = true;
   }
