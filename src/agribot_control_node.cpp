@@ -5,6 +5,7 @@
 #include <agribot_msgs/AgribotCaterpillarWheelsRotation.h>
 #include <agribot_msgs/ChangeDeltasGeometry.h>
 #include <agribot_msgs/AgribotTool.h>
+#include <agribot_msgs/StartStopEngine.h>
 #include <hal_ttcontrol_communication/TTCommControl.h>
 #include <hal_ttcontrol_communication/TplControl.h>
 #include <dynamic_reconfigure/server.h>
@@ -12,7 +13,6 @@
 #include <agribot_common/CommonFunctions/ros_common_functions.h>
 #include <ros/console.h>
 #include <ros/ros.h>
-#include <std_srvs/SetBool.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/String.h>
@@ -315,10 +315,10 @@ bool backDeltasGeometryServiceCallback(agribot_msgs::ChangeDeltasGeometry::Reque
   return deltasChangeGeometryServiceExecution(req, res, RobotsCarts::back_cart);
 }
 
-bool engineStartStopService(std_srvs::SetBool::Request& req,   // NOLINT(runtime/references)
-                            std_srvs::SetBool::Response& res)  // NOLINT(runtime/references)
+bool engineStartStopService(agribot_msgs::StartStopEngine::Request& req,   // NOLINT(runtime/references)
+                            agribot_msgs::StartStopEngine::Response& res)  // NOLINT(runtime/references)
 {
-  if (req.data)
+  if (req.engine_command)
   {
     ttcontrol_communication_handler.sendEngineCommand(TTControlEngineCommands::start_engine);
     // wait till the engine is started
@@ -329,14 +329,11 @@ bool engineStartStopService(std_srvs::SetBool::Request& req,   // NOLINT(runtime
       timeout_counter++;
       if (timeout_counter > ENGINE_SERVICE_TIMEOUT_LIMIT)
       {
-        res.success = false;
-        res.message = "Could not start the engine, pleas check: ttcontrol can communication, voltage level and fuel "
-                      "level";
+        res.result = false;
         return false;
       }
     }
-    res.success = true;
-    res.message = "Engine started";
+    res.result = true;
     return true;
   }
   else
@@ -350,13 +347,11 @@ bool engineStartStopService(std_srvs::SetBool::Request& req,   // NOLINT(runtime
       timeout_counter++;
       if (timeout_counter > ENGINE_SERVICE_TIMEOUT_LIMIT)
       {
-        res.success = false;
-        res.message = "Could not stop the engine, pleas check: ttcontrol can communication";
+        res.result = false;
         return false;
       }
     }
-    res.success = true;
-    res.message = "Engine stopped";
+    res.result = true;
     return true;
   }
 }
