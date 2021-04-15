@@ -5,7 +5,6 @@
 #include <agribot_msgs/AgribotCaterpillarWheelsRotation.h>
 #include <agribot_msgs/ChangeDeltasGeometry.h>
 #include <agribot_msgs/AgribotTool.h>
-#include <agribot_msgs/StartStopEngine.h>
 #include <hal_ttcontrol_communication/TTCommControl.h>
 #include <hal_ttcontrol_communication/TplControl.h>
 #include <dynamic_reconfigure/server.h>
@@ -13,6 +12,7 @@
 #include <agribot_common/CommonFunctions/ros_common_functions.h>
 #include <ros/console.h>
 #include <ros/ros.h>
+#include <std_srvs/Trigger.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/String.h>
@@ -315,45 +315,51 @@ bool backDeltasGeometryServiceCallback(agribot_msgs::ChangeDeltasGeometry::Reque
   return deltasChangeGeometryServiceExecution(req, res, RobotsCarts::back_cart);
 }
 
-bool engineStartStopService(agribot_msgs::StartStopEngine::Request& req,   // NOLINT(runtime/references)
-                            agribot_msgs::StartStopEngine::Response& res)  // NOLINT(runtime/references)
+bool engineStartService(std_srvs::Trigger::Request& req,   // NOLINT(runtime/references)
+                        std_srvs::Trigger::Response& res)  // NOLINT(runtime/references)
 {
-  if (req.engine_command)
+  static_cast<void>(req);
+  ttcontrol_communication_handler.sendEngineCommand(TTControlEngineCommands::start_engine);
+  // wait till the engine is started
+  uint8_t timeout_counter = 0;
+  while (!ttcontrol_communication_handler.getEngineStatus())
   {
-    ttcontrol_communication_handler.sendEngineCommand(TTControlEngineCommands::start_engine);
-    // wait till the engine is started
-    uint8_t timeout_counter = 0;
-    while (!ttcontrol_communication_handler.getEngineStatus())
+    ros::Duration(0.1).sleep();
+    timeout_counter++;
+    if (timeout_counter > ENGINE_SERVICE_TIMEOUT_LIMIT)
     {
-      ros::Duration(0.1).sleep();
-      timeout_counter++;
-      if (timeout_counter > ENGINE_SERVICE_TIMEOUT_LIMIT)
-      {
-        res.result = false;
-        return false;
-      }
+      res.success = false;
+      res.message = "Couldnt start engine, pleas check: \n- voltage level";
+      res.message += "\n- fuel level \n- can interface connection";
+      return false;
     }
-    res.result = true;
-    return true;
   }
-  else
+  res.message = "Engine started";
+  res.success = true;
+  return true;
+}
+
+bool engineStopService(std_srvs::Trigger::Request& req,   // NOLINT(runtime/references)
+                       std_srvs::Trigger::Response& res)  // NOLINT(runtime/references)
+{
+  static_cast<void>(req);
+  ttcontrol_communication_handler.sendEngineCommand(TTControlEngineCommands::stop_engine);
+  // wait till the engine is stopped
+  uint8_t timeout_counter = 0;
+  while (ttcontrol_communication_handler.getEngineStatus())
   {
-    ttcontrol_communication_handler.sendEngineCommand(TTControlEngineCommands::stop_engine);
-    // wait till the engine is stopped
-    uint8_t timeout_counter = 0;
-    while (ttcontrol_communication_handler.getEngineStatus())
+    ros::Duration(0.1).sleep();
+    timeout_counter++;
+    if (timeout_counter > ENGINE_SERVICE_TIMEOUT_LIMIT)
     {
-      ros::Duration(0.1).sleep();
-      timeout_counter++;
-      if (timeout_counter > ENGINE_SERVICE_TIMEOUT_LIMIT)
-      {
-        res.result = false;
-        return false;
-      }
+      res.success = false;
+      res.message = "Couldnt stop engine, pleas check: \n- can interface connection";
+      return false;
     }
-    res.result = true;
-    return true;
   }
+  res.success = true;
+  res.message = "Engine stopped";
+  return true;
 }
 
 void ttcontrolConnectionState(const std_msgs::String& msg)
@@ -414,7 +420,8 @@ int main(int argc, char** argv)
       n.advertiseService("/agribot/cart/caterpillar/front/change_deltas_geometry", frontDeltasGeometryServiceCallback);
   ros::ServiceServer service_back =
       n.advertiseService("/agribot/cart/caterpillar/back/change_deltas_geometry", backDeltasGeometryServiceCallback);
-  ros::ServiceServer service_engine_start = n.advertiseService("/agribot/engine_start_stop", engineStartStopService);
+  ros::ServiceServer service_engine_start = n.advertiseService("/agribot/engine_start", engineStartService);
+  ros::ServiceServer service_engine_stop = n.advertiseService("/agribot/engine_stop", engineStopService);
   std_msgs::Float32 front_angle_msg;
   std_msgs::Float32 back_angle_msg;
   agribot_msgs::AgribotCaterpillar agribot_caterpillar_msg;
