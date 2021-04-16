@@ -328,8 +328,10 @@ bool engineStartService(std_srvs::Trigger::Request& req,   // NOLINT(runtime/ref
     timeout_counter++;
     if (timeout_counter > ENGINE_SERVICE_TIMEOUT_LIMIT)
     {
+      // send the msg to stop engine to prevent its sudden start when resolving problems causing the failure
+      ttcontrol_communication_handler.sendEngineCommand(TTControlEngineCommands::stop_engine);
       res.success = false;
-      res.message = "Couldnt start engine, pleas check: \n- voltage level";
+      res.message = "Couldnt start engine, please check: \n- voltage level";
       res.message += "\n- fuel level \n- can interface connection";
       return false;
     }
@@ -353,7 +355,7 @@ bool engineStopService(std_srvs::Trigger::Request& req,   // NOLINT(runtime/refe
     if (timeout_counter > ENGINE_SERVICE_TIMEOUT_LIMIT)
     {
       res.success = false;
-      res.message = "Couldnt stop engine, pleas check: \n- can interface connection";
+      res.message = "Couldnt stop engine, please check: \n- can interface connection";
       return false;
     }
   }
@@ -382,6 +384,7 @@ bool readEncodersDataFile()
   }
   return true;
 }
+
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "agribot_control");
