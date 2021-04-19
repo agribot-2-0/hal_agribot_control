@@ -56,6 +56,9 @@ enum TTControlParameterFlag : uint32_t
   back_left_caterpillar_signals_base = 0x400,
   back_right_caterpillar_pid_params = 0x800,
   back_right_caterpillar_signals_base = 0x1000,
+  override_speed_and_valve_limits = 0x2000,
+  stabilization = 0x4000,
+  oil_and_engine = 0x8000,
   every_flag_set = 0xFFFFFFFF
 };
 
@@ -119,6 +122,18 @@ void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersCo
     ttcontrol_communication_handler.sendCaterpillarBaseSignal(
         config.back_right_caterpillar_signal_base_forward, config.back_right_caterpillar_signal_base_backward,
         TTControlParameterType::back_right_caterpillar_signal_base);
+
+    ros::Duration(0.5).sleep();  // sleep for half a second, to give TTControl time to read and save the parameters
+    ttcontrol_communication_handler.sendOverrideLimits(
+        config.cart_rotation_limit, config.override_velocity_linear, config.override_velocity_angular,
+        config.override_valves_limits, config.deltas_geometry_valves_push_limit_front,
+        config.deltas_geometry_valves_push_limit_back, config.deltas_geometry_valves_pull_front_back);
+    ttcontrol_communication_handler.sendStabilizationParameters(config.stab_pid_kp, config.stab_pid_kd,
+                                                                config.stab_pid_ki, config.stab_pid_max_signal);
+    ttcontrol_communication_handler.sendOilAndEngineParams(config.max_oil_temperature, config.min_oil_temperature,
+                                                           config.histeresis_oil_temperature, config.engine_rpm_max,
+                                                           config.engine_rpm_min);
+        );
   }
   else
   {
@@ -198,6 +213,24 @@ void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersCo
       ttcontrol_communication_handler.sendCaterpillarBaseSignal(
           config.back_right_caterpillar_signal_base_forward, config.back_right_caterpillar_signal_base_backward,
           TTControlParameterType::back_right_caterpillar_signal_base);
+    }
+    if (level & TTControlParameterFlag::override_speed_and_valve_limits)
+    {
+      ttcontrol_communication_handler.sendOverrideLimits(
+          config.cart_rotation_limit, config.override_velocity_linear, config.override_velocity_angular,
+          config.override_valves_limits, config.deltas_geometry_valves_push_limit_front,
+          config.deltas_geometry_valves_push_limit_back, config.deltas_geometry_valves_pull_front_back);
+    }
+    if (level & TTControlParameterFlag::stabilization)
+    {
+      ttcontrol_communication_handler.sendStabilizationParameters(config.stab_pid_kp, config.stab_pid_kd,
+                                                                  config.stab_pid_ki, config.stab_pid_max_signal);
+    }
+    if (level & TTControlParameterFlag::oil_and_engine)
+    {
+          ttcontrol_communication_handler.sendOilAndEngineParams(config.max_oil_temperature, config.min_oil_temperature,
+                                                           config.histeresis_oil_temperature, config.engine_rpm_max,
+                                                           config.engine_rpm_min);
     }
   }
 }

@@ -89,7 +89,10 @@ enum TTControlParameterType : std::uint8_t
   back_left_caterpillar_pid = 9,
   back_left_caterpillar_signal_base = 10,
   back_right_caterpillar_pid = 11,
-  back_right_caterpillar_signal_base = 12
+  back_right_caterpillar_signal_base = 12,
+  override_speed_and_valve_limits = 13,
+  stabilization = 14,
+  oil_and_engine = 15
 };
 
 enum VelocityType
@@ -186,6 +189,16 @@ public:
                                     const std::uint8_t frame_type);
   void sendCaterpillarBaseSignal(const std::uint32_t forward_base, const std::uint32_t backward_base,
                                  const std::uint8_t frame_type);
+  void sendOverrideLimits(const std::uint8_t cart_rotation_limit, const double override_velocity_linear,
+                          const double override_velocity_angular, const std::uint8_t override_valves_limits,
+                          const std::uint8_t deltas_geometry_valves_push_limit_front,
+                          const std::uint8_t deltas_geometry_valves_push_limit_back,
+                          const std::uint8_t deltas_geometry_valves_pull_front_back);
+  void sendStabilizationParameters(const double stab_kp, const double stab_kd, const double stab_ki,
+                                   const std::uint8_t stab_max_signal);
+  void sendOilAndEngineParams(const std::uint8_t max_oil_temperature, const std::uint8_t min_oil_temperature,
+                              const std::uint8_t histeresis_oil_temperature, const std::uint16_t rpm_max,
+                              const std::uint16_t rpm_min);
   const CartsStatus& getCartsStatus() const;
   float getFrontCartAngle() const;
   float getBackCartAngle() const;
