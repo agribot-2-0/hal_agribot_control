@@ -410,7 +410,7 @@ void TTCommControl::sendEngineCommand(const TTControlEngineCommands command)
   can_frame message;
   message.can_id = TransmitCanIds::protocol_response_frame;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
-  message.data[0] = 0x40;
+  message.data[0] = ProtocolFrameBytesValues::ttc_start_stop_engine;
   message.data[1] = command;  // bytes reserved for possible other engine commands
   message.data[2] = 0;
   message.data[3] = 0;

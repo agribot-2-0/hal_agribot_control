@@ -22,7 +22,8 @@ enum ProtocolFrameBytesValues : std::uint8_t
 {
   ttc_ok = 0x01,
   ttc_automatic_mode_request = 0x20,
-  ttc_carts_encoders_initialization = 0x30
+  ttc_carts_encoders_initialization = 0x30,
+  ttc_start_stop_engine = 0x40
 };
 
 enum ReceivedFramesRegisterMask : std::uint32_t
@@ -57,7 +58,6 @@ enum TransmitCanIds : std::uint32_t
 {
   protocol_response_frame = 0x00EF64C8,
   deltas_geometry_command_frame = 0x00FFDCC8,
-  engine_command_frame = 0x00FFD4C8,
   velocity_control_frame = 0x00FFD0C8,
   config_frame = 0x00FFDBC8,
   tpl_control_front = 0x00FFD1C8,
