@@ -12,6 +12,7 @@
 #include <agribot_common/CommonFunctions/ros_common_functions.h>
 #include <ros/console.h>
 #include <ros/ros.h>
+#include <std_srvs/Trigger.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/String.h>
@@ -27,6 +28,7 @@ using std::uint8_t;
 
 constexpr uint WAIT_FOR_TTCONTROL = 100000;
 constexpr uint8_t CARTS_ENCODERS_INIT_TIMEOUT_LIMIT = 10;
+constexpr uint8_t ENGINE_SERVICE_TIMEOUT_LIMIT = 60;
 constexpr bool READ_BACKUP_CARTS_ENCODERS_FILE = false;
 constexpr bool READ_REGULAR_CARTS_ENCODERS_FILE = true;
 constexpr std::string_view TTCONTROL_CONNECTION_MSG = "connected";
@@ -313,6 +315,55 @@ bool backDeltasGeometryServiceCallback(agribot_msgs::ChangeDeltasGeometry::Reque
   return deltasChangeGeometryServiceExecution(req, res, RobotsCarts::back_cart);
 }
 
+bool engineStartService(std_srvs::Trigger::Request& req,   // NOLINT(runtime/references)
+                        std_srvs::Trigger::Response& res)  // NOLINT(runtime/references)
+{
+  static_cast<void>(req);
+  ttcontrol_communication_handler.sendEngineCommand(TTControlEngineCommands::start_engine);
+  // wait till the engine is started
+  uint8_t timeout_counter = 0;
+  while (!ttcontrol_communication_handler.getEngineStatus())
+  {
+    ros::Duration(0.1).sleep();
+    timeout_counter++;
+    if (timeout_counter > ENGINE_SERVICE_TIMEOUT_LIMIT)
+    {
+      // send the msg to stop engine to prevent its sudden start when resolving problems causing the failure
+      ttcontrol_communication_handler.sendEngineCommand(TTControlEngineCommands::stop_engine);
+      res.success = false;
+      res.message = "Couldnt start engine, please check: \n- voltage level";
+      res.message += "\n- fuel level \n- can interface connection";
+      return false;
+    }
+  }
+  res.message = "Engine started";
+  res.success = true;
+  return true;
+}
+
+bool engineStopService(std_srvs::Trigger::Request& req,   // NOLINT(runtime/references)
+                       std_srvs::Trigger::Response& res)  // NOLINT(runtime/references)
+{
+  static_cast<void>(req);
+  ttcontrol_communication_handler.sendEngineCommand(TTControlEngineCommands::stop_engine);
+  // wait till the engine is stopped
+  uint8_t timeout_counter = 0;
+  while (ttcontrol_communication_handler.getEngineStatus())
+  {
+    ros::Duration(0.1).sleep();
+    timeout_counter++;
+    if (timeout_counter > ENGINE_SERVICE_TIMEOUT_LIMIT)
+    {
+      res.success = false;
+      res.message = "Couldnt stop engine, please check: \n- can interface connection";
+      return false;
+    }
+  }
+  res.success = true;
+  res.message = "Engine stopped";
+  return true;
+}
+
 void ttcontrolConnectionState(const std_msgs::String& msg)
 {
   if (msg.data == TTCONTROL_CONNECTION_MSG)
@@ -372,6 +423,8 @@ int main(int argc, char** argv)
       n.advertiseService("/agribot/cart/caterpillar/front/change_deltas_geometry", frontDeltasGeometryServiceCallback);
   ros::ServiceServer service_back =
       n.advertiseService("/agribot/cart/caterpillar/back/change_deltas_geometry", backDeltasGeometryServiceCallback);
+  ros::ServiceServer service_engine_start = n.advertiseService("/agribot/engine_start", engineStartService);
+  ros::ServiceServer service_engine_stop = n.advertiseService("/agribot/engine_stop", engineStopService);
   std_msgs::Float32 front_angle_msg;
   std_msgs::Float32 back_angle_msg;
   agribot_msgs::AgribotCaterpillar agribot_caterpillar_msg;
