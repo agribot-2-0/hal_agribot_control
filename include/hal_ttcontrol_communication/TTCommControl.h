@@ -22,7 +22,8 @@ enum ProtocolFrameBytesValues : std::uint8_t
 {
   ttc_ok = 0x01,
   ttc_automatic_mode_request = 0x20,
-  ttc_carts_encoders_initialization = 0x30
+  ttc_carts_encoders_initialization = 0x30,
+  ttc_start_stop_engine = 0x40
 };
 
 enum ReceivedFramesRegisterMask : std::uint32_t
@@ -69,6 +70,7 @@ enum ReceiveCanIds : std::uint32_t
   back_angle_frame = 0xAA21,
   velocity_frame = 0x00FFD064,
   deltas_geometry_feedback_frame = 0x00FFDC64,
+  engine_feedback_frame = 0x00FFD664,
   protocol_frame = 0x00EFC864,
   track_encoder_sum_frame = 0x00FFD364
 };
@@ -96,6 +98,12 @@ enum VelocityType
   front_angular = 2,
   back_linear = 4,
   back_angular = 6
+};
+
+enum TTControlEngineCommands : std::uint8_t
+{
+  stop_engine = 0,
+  start_engine = 1
 };
 
 enum class SelectedTpl
@@ -126,6 +134,7 @@ class TTCommControl
   std::ofstream encoder_data_file_output_;
   bool ttcontrol_is_connected_;
   bool ttcontrol_carts_angle_confirmed_;
+  bool ttcontrol_engine_is_ready_;
   void prepareVelocitiesFrame(can_frame& frame, const float velocity,  // NOLINT(runtime/references)
                               const std::uint8_t start_byte) const;
   float decodeVelocitiy(const std::uint8_t start_byte, const can_frame& frame) const;
@@ -133,6 +142,7 @@ class TTCommControl
   std::uint32_t decodeEncoderValue(const can_frame& frame) const;
   void decodeCartsGeometryState(const can_frame& frame);
   void decodeTrackEncoderSumValue(const can_frame& frame);
+  void decodeEngineFeedback(const can_frame& frame);
   void setVelocity(const VelocityType velocity_specification, const can_frame& frame);
   inline bool checkIfCanBusIdsMatch(const std::uint32_t id_to_check, const std::uint32_t msg_id) const;
   inline void setReceivedCanBusIdsBitMask(const std::uint32_t mask_to_set);
@@ -158,6 +168,7 @@ public:
   void setTtcontrolConnectionStatus(const bool& connected);
   bool getTtcontrolConnectionStatus() const;
   bool getEncodersConfirmedStatus() const;
+  bool getEngineStatus() const;
   void confirmAdvantechReadiness();
   void setPathToCartsEncodersDataFile(const std::string& path_to_file);
   bool readCartsEncodersDataFile(const bool backup_file);
@@ -165,6 +176,7 @@ public:
   bool writeEncodersDataFile();
   void sendDeltasGeometryCommand(const std::uint8_t front_cart_command, const std::uint8_t back_cart_command);
   void sendCartsEncodersInitialization();
+  void sendEngineCommand(const TTControlEngineCommands command);
   void sendVelocities(const float front_linear, const float front_angular, const float back_linear,
                       const float back_angular);
   void sendSignalsParameters(const int ditter_period, const int ditter_amplitude, const int encoder_period);

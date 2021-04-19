@@ -70,6 +70,8 @@ constexpr uint8_t TRACK_ENCODER_SIGN_BIT_MASK = 0x10;
 constexpr uint8_t TRACK_ENCODER_SUM_LOW_BYTE_POSITION = 1;
 
 constexpr uint8_t tpl_parse_constant = 110;
+constexpr uint8_t engine_ready_flag_value = 1;
+constexpr uint8_t engine_ready_byte = 7;
 
 inline uint8_t TTCommControl::extractFourthByte(const uint32_t four_byte_number) const
 {
@@ -159,6 +161,18 @@ uint32_t TTCommControl::decodeEncoderValue(const can_frame& frame) const
 {
   return ((static_cast<uint32_t>(frame.data[CARTS_ENCODER_HIGH_BYTE_POSITION]) << 8) |
           (static_cast<uint32_t>(frame.data[CARTS_ENCODER_LOW_BYTE_POSITION])));
+}
+
+void TTCommControl::decodeEngineFeedback(const can_frame& frame)
+{
+  if (static_cast<uint16_t>(frame.data[engine_ready_byte]) == engine_ready_flag_value)
+  {
+    ttcontrol_engine_is_ready_ = true;
+  }
+  else
+  {
+    ttcontrol_engine_is_ready_ = false;
+  }
 }
 
 inline uint8_t TTCommControl::getLowerHalfOfByte(const uint8_t byte) const
@@ -252,6 +266,11 @@ void TTCommControl::setTtcontrolConnectionStatus(const bool& connected)
 bool TTCommControl::getTtcontrolConnectionStatus() const
 {
   return ttcontrol_is_connected_;
+}
+
+bool TTCommControl::getEngineStatus() const
+{
+  return ttcontrol_engine_is_ready_;
 }
 
 bool TTCommControl::getEncodersConfirmedStatus() const
@@ -355,6 +374,10 @@ void TTCommControl::parseCanFrames()
       decodeCartsGeometryState(message);
       setReceivedCanBusIdsBitMask(ReceivedFramesRegisterMask::geometry_feedback);
     }
+    if (checkIfCanBusIdsMatch(ReceiveCanIds::engine_feedback_frame, message.can_id))
+    {
+      decodeEngineFeedback(message);
+    }
     if (checkIfCanBusIdsMatch(ReceiveCanIds::protocol_frame, message.can_id))
     {
       // if TTControl confirms angle receiving
@@ -380,6 +403,22 @@ void TTCommControl::parseCanFrames()
     }
     frames_queue_.pop();
   }
+}
+
+void TTCommControl::sendEngineCommand(const TTControlEngineCommands command)
+{
+  can_frame message;
+  message.can_id = TransmitCanIds::protocol_response_frame;
+  message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
+  message.data[0] = ProtocolFrameBytesValues::ttc_start_stop_engine;
+  message.data[1] = command;  // bytes reserved for possible other engine commands
+  message.data[2] = 0;
+  message.data[3] = 0;
+  message.data[4] = 0;
+  message.data[5] = 0;
+  message.data[6] = 0;
+  message.data[7] = 0;
+  can_handler_->iSendFrame(&message);
 }
 
 void TTCommControl::confirmAdvantechReadiness()
