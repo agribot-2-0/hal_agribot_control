@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2021 Agribot. All rights reserved.
+ */
+
 #include <hal_ttcontrol_communication/AgribotControlRosWrapper.h>
 
 using std::int16_t;
@@ -5,6 +9,7 @@ using std::int32_t;
 using std::int8_t;
 using std::uint16_t;
 using std::uint32_t;
+using std::uint64_t;
 using std::uint8_t;
 
 void AgribotControlRosWrapper::registerSubscribers()
@@ -65,7 +70,6 @@ AgribotControlRosWrapper::AgribotControlRosWrapper(int argc, char** argv)
   ttcontrol_communication_handler_->setPathToCartsEncodersDataFile(path_to_carts_encoders_file_);
   if (!readEncodersDataFile())
   {
-    std::string excp_msg;
     throw std::invalid_argument("Failed to read carts angle data file content ! Robots carts encoders values are not "
                                 "inited! \nAttempted path: " +
                                 path_to_carts_encoders_file_);
@@ -208,150 +212,157 @@ void AgribotControlRosWrapper::callbackDynamicReconfigure(const hal_agribot_cont
   // in turns
   if (level == TTControlParameterFlag::every_flag_set)
   {
-    ttcontrol_communication_handler_->sendSignalsParameters(config.ditter_period_int, config.ditter_amplitude_int,
-                                                            config.encoder_period_int);
-    ttcontrol_communication_handler_->sendCartsPidParameters(config.front_kp_t_double, config.front_ki_t_double,
-                                                             config.front_kd_t_double, config.front_acc_t_double,
-                                                             TTControlParameterType::front_pid_t);
-    ttcontrol_communication_handler_->sendCartsPidParameters(config.front_kp_r_double, config.front_ki_r_double,
-                                                             config.front_kd_r_double, config.front_acc_r_double,
-                                                             TTControlParameterType::front_pid_r);
-    ttcontrol_communication_handler_->sendCartsPidParameters(config.back_kp_t_double, config.back_ki_t_double,
-                                                             config.back_kd_t_double, config.back_acc_t_double,
-                                                             TTControlParameterType::back_pid_t);
-    ttcontrol_communication_handler_->sendCartsPidParameters(config.back_kp_r_double, config.back_ki_r_double,
-                                                             config.back_kd_r_double, config.back_acc_r_double,
-                                                             TTControlParameterType::back_pid_r);
-    ttcontrol_communication_handler_->sendCaterpillarPidParameters(
-        config.front_left_caterpillar_kp, config.front_left_caterpillar_ki, config.front_left_caterpillar_kd,
-        TTControlParameterType::front_left_caterpillar_pid);
-
-    ros::Duration(0.5).sleep();  // sleep for half a second, to give TTControl time to read and save the parameters
-    ttcontrol_communication_handler_->sendCaterpillarBaseSignal(
-        config.front_left_caterpillar_signal_base_forward, config.front_left_caterpillar_signal_base_backward,
-        TTControlParameterType::front_left_caterpillar_signal_base);
-    ttcontrol_communication_handler_->sendCaterpillarPidParameters(
-        config.front_right_caterpillar_kp, config.front_right_caterpillar_ki, config.front_right_caterpillar_kd,
-        TTControlParameterType::front_right_caterpillar_pid);
-    ttcontrol_communication_handler_->sendCaterpillarBaseSignal(
-        config.front_right_caterpillar_signal_base_forward, config.front_right_caterpillar_signal_base_backward,
-        TTControlParameterType::front_right_caterpillar_signal_base);
-    ttcontrol_communication_handler_->sendCaterpillarPidParameters(
-        config.back_left_caterpillar_kp, config.back_left_caterpillar_ki, config.back_left_caterpillar_kd,
-        TTControlParameterType::back_left_caterpillar_pid);
-    ttcontrol_communication_handler_->sendCaterpillarBaseSignal(
-        config.back_left_caterpillar_signal_base_forward, config.back_left_caterpillar_signal_base_backward,
-        TTControlParameterType::back_left_caterpillar_signal_base);
-    ttcontrol_communication_handler_->sendCaterpillarPidParameters(
-        config.back_right_caterpillar_kp, config.back_right_caterpillar_ki, config.back_right_caterpillar_kd,
-        TTControlParameterType::back_right_caterpillar_pid);
-    ttcontrol_communication_handler_->sendCaterpillarBaseSignal(
-        config.back_right_caterpillar_signal_base_forward, config.back_right_caterpillar_signal_base_backward,
-        TTControlParameterType::back_right_caterpillar_signal_base);
-
-    ros::Duration(0.5).sleep();  // sleep for half a second, to give TTControl time to read and save the parameters
-    ttcontrol_communication_handler_->sendOverrideLimits(parseConfigToOverrideParameters(config));
-    ttcontrol_communication_handler_->sendStabilizationParameters(config.stab_pid_kp, config.stab_pid_kd,
-                                                                  config.stab_pid_ki, config.stab_pid_max_signal);
-    ttcontrol_communication_handler_->sendOilAndEngineParams(config.max_oil_temperature, config.min_oil_temperature,
-                                                             config.histeresis_oil_temperature, config.engine_rpm_max,
-                                                             config.engine_rpm_min);
+    sendAllParameterGroups(config);
   }
   else
   {
-    if (level & TTControlParameterFlag::signal_params)
+    for (uint64_t bit_flag_iterator = TTControlParameterFlag::lowest_flag_value;
+         bit_flag_iterator < TTControlParameterFlag::highest_flag_value; bit_flag_iterator = bit_flag_iterator << 1)
     {
+      if (level & bit_flag_iterator)
+      {
+        sendParameterGroup(bit_flag_iterator, config);
+      }
+    }
+  }
+}
+
+void AgribotControlRosWrapper::sendParameterGroup(const uint32_t parameter_group,
+                                                  const hal_agribot_control::TTControlParametersConfig& config)
+{
+  switch (parameter_group)
+  {
+    case TTControlParameterFlag::signal_params:
       ttcontrol_communication_handler_->sendSignalsParameters(config.ditter_period_int, config.ditter_amplitude_int,
                                                               config.encoder_period_int);
-    }
-    if (level & TTControlParameterFlag::front_pid_t_params)
-    {
+      break;
+    case TTControlParameterFlag::front_pid_t_params:
       ttcontrol_communication_handler_->sendCartsPidParameters(config.front_kp_t_double, config.front_ki_t_double,
                                                                config.front_kd_t_double, config.front_acc_t_double,
                                                                TTControlParameterType::front_pid_t);
-    }
-    if (level & TTControlParameterFlag::front_pid_r_params)
-    {
+      break;
+    case TTControlParameterFlag::front_pid_r_params:
       ttcontrol_communication_handler_->sendCartsPidParameters(config.front_kp_r_double, config.front_ki_r_double,
                                                                config.front_kd_r_double, config.front_acc_r_double,
                                                                TTControlParameterType::front_pid_r);
-    }
-    if (level & TTControlParameterFlag::back_pid_t_params)
-    {
+      break;
+    case TTControlParameterFlag::back_pid_t_params:
       ttcontrol_communication_handler_->sendCartsPidParameters(config.back_kp_t_double, config.back_ki_t_double,
                                                                config.back_kd_t_double, config.back_acc_t_double,
                                                                TTControlParameterType::back_pid_t);
-    }
-    if (level & TTControlParameterFlag::back_pid_r_params)
-    {
+      break;
+    case TTControlParameterFlag::back_pid_r_params:
       ttcontrol_communication_handler_->sendCartsPidParameters(config.back_kp_r_double, config.back_ki_r_double,
                                                                config.back_kd_r_double, config.back_acc_r_double,
                                                                TTControlParameterType::back_pid_r);
-    }
-    if (level & TTControlParameterFlag::front_left_caterpillar_pid_params)
-    {
+      break;
+    case TTControlParameterFlag::front_left_caterpillar_pid_params:
       ttcontrol_communication_handler_->sendCaterpillarPidParameters(
           config.front_left_caterpillar_kp, config.front_left_caterpillar_ki, config.front_left_caterpillar_kd,
           TTControlParameterType::front_left_caterpillar_pid);
-    }
-    if (level & TTControlParameterFlag::front_left_caterpillar_signals_base)
-    {
+      break;
+    case TTControlParameterFlag::front_left_caterpillar_signals_base:
       ttcontrol_communication_handler_->sendCaterpillarBaseSignal(
           config.front_left_caterpillar_signal_base_forward, config.front_left_caterpillar_signal_base_backward,
           TTControlParameterType::front_left_caterpillar_signal_base);
-    }
-    if (level & TTControlParameterFlag::front_right_caterpillar_pid_params)
-    {
+      break;
+    case TTControlParameterFlag::front_right_caterpillar_pid_params:
       ttcontrol_communication_handler_->sendCaterpillarPidParameters(
           config.front_right_caterpillar_kp, config.front_right_caterpillar_ki, config.front_right_caterpillar_kd,
           TTControlParameterType::front_right_caterpillar_pid);
-    }
-    if (level & TTControlParameterFlag::front_right_caterpillar_signals_base)
-    {
+      break;
+    case TTControlParameterFlag::front_right_caterpillar_signals_base:
       ttcontrol_communication_handler_->sendCaterpillarBaseSignal(
           config.front_right_caterpillar_signal_base_forward, config.front_right_caterpillar_signal_base_backward,
           TTControlParameterType::front_right_caterpillar_signal_base);
-    }
-    if (level & TTControlParameterFlag::back_left_caterpillar_pid_params)
-    {
+      break;
+    case TTControlParameterFlag::back_left_caterpillar_pid_params:
       ttcontrol_communication_handler_->sendCaterpillarPidParameters(
           config.back_left_caterpillar_kp, config.back_left_caterpillar_ki, config.back_left_caterpillar_kd,
           TTControlParameterType::back_left_caterpillar_pid);
-    }
-    if (level & TTControlParameterFlag::back_left_caterpillar_signals_base)
-    {
+      break;
+    case TTControlParameterFlag::back_left_caterpillar_signals_base:
       ttcontrol_communication_handler_->sendCaterpillarBaseSignal(
           config.back_left_caterpillar_signal_base_forward, config.back_left_caterpillar_signal_base_backward,
           TTControlParameterType::back_left_caterpillar_signal_base);
-    }
-    if (level & TTControlParameterFlag::back_right_caterpillar_pid_params)
-    {
+      break;
+    case TTControlParameterFlag::back_right_caterpillar_pid_params:
       ttcontrol_communication_handler_->sendCaterpillarPidParameters(
           config.back_right_caterpillar_kp, config.back_right_caterpillar_ki, config.back_right_caterpillar_kd,
           TTControlParameterType::back_right_caterpillar_pid);
-    }
-    if (level & TTControlParameterFlag::back_right_caterpillar_signals_base)
-    {
+      break;
+    case TTControlParameterFlag::back_right_caterpillar_signals_base:
       ttcontrol_communication_handler_->sendCaterpillarBaseSignal(
           config.back_right_caterpillar_signal_base_forward, config.back_right_caterpillar_signal_base_backward,
           TTControlParameterType::back_right_caterpillar_signal_base);
-    }
-    if (level & TTControlParameterFlag::override_speed_and_valve_limits_params)
-    {
+      break;
+    case TTControlParameterFlag::override_speed_and_valve_limits_params:
       ttcontrol_communication_handler_->sendOverrideLimits(parseConfigToOverrideParameters(config));
-    }
-    if (level & TTControlParameterFlag::stabilization_params)
-    {
+      break;
+    case TTControlParameterFlag::stabilization_params:
       ttcontrol_communication_handler_->sendStabilizationParameters(config.stab_pid_kp, config.stab_pid_kd,
                                                                     config.stab_pid_ki, config.stab_pid_max_signal);
-    }
-    if (level & TTControlParameterFlag::oil_and_engine_params)
-    {
+      break;
+    case TTControlParameterFlag::oil_and_engine_params:
       ttcontrol_communication_handler_->sendOilAndEngineParams(config.max_oil_temperature, config.min_oil_temperature,
                                                                config.histeresis_oil_temperature, config.engine_rpm_max,
                                                                config.engine_rpm_min);
-    }
+      break;
+    default:
+      break;
   }
+}
+
+void AgribotControlRosWrapper::sendAllParameterGroups(const hal_agribot_control::TTControlParametersConfig& config)
+{
+  ttcontrol_communication_handler_->sendSignalsParameters(config.ditter_period_int, config.ditter_amplitude_int,
+                                                          config.encoder_period_int);
+  ttcontrol_communication_handler_->sendCartsPidParameters(config.front_kp_t_double, config.front_ki_t_double,
+                                                           config.front_kd_t_double, config.front_acc_t_double,
+                                                           TTControlParameterType::front_pid_t);
+  ttcontrol_communication_handler_->sendCartsPidParameters(config.front_kp_r_double, config.front_ki_r_double,
+                                                           config.front_kd_r_double, config.front_acc_r_double,
+                                                           TTControlParameterType::front_pid_r);
+  ttcontrol_communication_handler_->sendCartsPidParameters(config.back_kp_t_double, config.back_ki_t_double,
+                                                           config.back_kd_t_double, config.back_acc_t_double,
+                                                           TTControlParameterType::back_pid_t);
+  ttcontrol_communication_handler_->sendCartsPidParameters(config.back_kp_r_double, config.back_ki_r_double,
+                                                           config.back_kd_r_double, config.back_acc_r_double,
+                                                           TTControlParameterType::back_pid_r);
+  ttcontrol_communication_handler_->sendCaterpillarPidParameters(
+      config.front_left_caterpillar_kp, config.front_left_caterpillar_ki, config.front_left_caterpillar_kd,
+      TTControlParameterType::front_left_caterpillar_pid);
+
+  ros::Duration(0.5).sleep();  // sleep for half a second, to give TTControl time to read and save the parameters
+  ttcontrol_communication_handler_->sendCaterpillarBaseSignal(
+      config.front_left_caterpillar_signal_base_forward, config.front_left_caterpillar_signal_base_backward,
+      TTControlParameterType::front_left_caterpillar_signal_base);
+  ttcontrol_communication_handler_->sendCaterpillarPidParameters(
+      config.front_right_caterpillar_kp, config.front_right_caterpillar_ki, config.front_right_caterpillar_kd,
+      TTControlParameterType::front_right_caterpillar_pid);
+  ttcontrol_communication_handler_->sendCaterpillarBaseSignal(
+      config.front_right_caterpillar_signal_base_forward, config.front_right_caterpillar_signal_base_backward,
+      TTControlParameterType::front_right_caterpillar_signal_base);
+  ttcontrol_communication_handler_->sendCaterpillarPidParameters(
+      config.back_left_caterpillar_kp, config.back_left_caterpillar_ki, config.back_left_caterpillar_kd,
+      TTControlParameterType::back_left_caterpillar_pid);
+  ttcontrol_communication_handler_->sendCaterpillarBaseSignal(
+      config.back_left_caterpillar_signal_base_forward, config.back_left_caterpillar_signal_base_backward,
+      TTControlParameterType::back_left_caterpillar_signal_base);
+  ttcontrol_communication_handler_->sendCaterpillarPidParameters(
+      config.back_right_caterpillar_kp, config.back_right_caterpillar_ki, config.back_right_caterpillar_kd,
+      TTControlParameterType::back_right_caterpillar_pid);
+  ttcontrol_communication_handler_->sendCaterpillarBaseSignal(
+      config.back_right_caterpillar_signal_base_forward, config.back_right_caterpillar_signal_base_backward,
+      TTControlParameterType::back_right_caterpillar_signal_base);
+
+  ros::Duration(0.5).sleep();  // sleep for half a second, to give TTControl time to read and save the parameters
+  ttcontrol_communication_handler_->sendOverrideLimits(parseConfigToOverrideParameters(config));
+  ttcontrol_communication_handler_->sendStabilizationParameters(config.stab_pid_kp, config.stab_pid_kd,
+                                                                config.stab_pid_ki, config.stab_pid_max_signal);
+  ttcontrol_communication_handler_->sendOilAndEngineParams(config.max_oil_temperature, config.min_oil_temperature,
+                                                           config.histeresis_oil_temperature, config.engine_rpm_max,
+                                                           config.engine_rpm_min);
 }
 
 void AgribotControlRosWrapper::caterpillarsControlCallback(const agribot_msgs::AgribotCaterpillar& msg)

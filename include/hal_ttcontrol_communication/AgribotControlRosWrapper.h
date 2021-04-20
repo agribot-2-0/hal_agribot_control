@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2021 Agribot. All rights reserved.
+ */
+
 #pragma once
 #include <agribot_msgs/AgribotCaterpillar.h>
 #include <agribot_msgs/AgribotCaterpillarWheelsRotation.h>
@@ -16,24 +20,27 @@
 #include <std_msgs/String.h>
 #include <string_view>
 #include <cstdint>
+#include <memory>
+#include <string>
 
 constexpr uint WAIT_FOR_TTCONTROL = 100000;
-constexpr uint8_t CARTS_ENCODERS_INIT_TIMEOUT_LIMIT = 10;
-constexpr uint8_t ENGINE_SERVICE_TIMEOUT_LIMIT = 60;
+constexpr std::uint8_t CARTS_ENCODERS_INIT_TIMEOUT_LIMIT = 10;
+constexpr std::uint8_t ENGINE_SERVICE_TIMEOUT_LIMIT = 60;
 constexpr bool READ_BACKUP_CARTS_ENCODERS_FILE = false;
 constexpr bool READ_REGULAR_CARTS_ENCODERS_FILE = true;
 constexpr std::string_view TTCONTROL_CONNECTION_MSG = "connected";
 constexpr bool TTCONTROL_CONNECTED = true;
 constexpr bool TTCONTROL_DISCONNECTED = false;
 
-enum RobotsCarts : uint8_t
+enum RobotsCarts : std::uint8_t
 {
   front_cart = 1,
   back_cart = 0
 };
 
-enum TTControlParameterFlag : uint32_t
+enum TTControlParameterFlag : std::uint32_t
 {
+  lowest_flag_value = 0x01,
   signal_params = 0x01,
   front_pid_t_params = 0x02,
   front_pid_r_params = 0x04,
@@ -50,6 +57,7 @@ enum TTControlParameterFlag : uint32_t
   override_speed_and_valve_limits_params = 0x2000,
   stabilization_params = 0x4000,
   oil_and_engine_params = 0x8000,
+  highest_flag_value = 0x80000000,
   every_flag_set = 0xFFFFFFFF
 };
 
@@ -103,7 +111,10 @@ class AgribotControlRosWrapper
   void backTplControlCallback(const agribot_msgs::AgribotTool& msg);
   void frontTplControlCallback(const agribot_msgs::AgribotTool& msg);
   void caterpillarsControlCallback(const agribot_msgs::AgribotCaterpillar& msg);
-  void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersConfig& config, uint32_t level);
+  void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersConfig& config, std::uint32_t level);
+  void sendParameterGroup(const std::uint32_t parameter_group,
+                          const hal_agribot_control::TTControlParametersConfig& config);
+  void sendAllParameterGroups(const hal_agribot_control::TTControlParametersConfig& config);
   TtcontrolOverrideParameters&&
   parseConfigToOverrideParameters(const hal_agribot_control::TTControlParametersConfig& config);
   TplControl tpl_control_msg_to_tpl_control_struct(const agribot_msgs::AgribotTool& msg);
