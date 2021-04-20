@@ -13,6 +13,7 @@ add_compile_options(-std=c++17 -Wall -Wextra -pedantic)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  std_srvs
   agribot_msgs
   agribot_common
   dynamic_reconfigure

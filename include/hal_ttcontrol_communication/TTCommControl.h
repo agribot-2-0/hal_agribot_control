@@ -32,7 +32,8 @@ struct TtcontrolOverrideParameters
 enum ProtocolFrameBytesValues : std::uint8_t {
   ttc_ok = 0x01,
   ttc_automatic_mode_request = 0x20,
-  ttc_carts_encoders_initialization = 0x30
+  ttc_carts_encoders_initialization = 0x30,
+  ttc_start_stop_engine = 0x40
 };
 
 enum ReceivedFramesRegisterMask : std::uint32_t
