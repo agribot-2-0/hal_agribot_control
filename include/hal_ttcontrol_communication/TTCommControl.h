@@ -18,8 +18,18 @@
 #include <queue>
 #include <string>
 
-enum ProtocolFrameBytesValues : std::uint8_t
+struct TtcontrolOverrideParameters
 {
+  std::uint8_t cart_rotation_limit;
+  double override_velocity_linear;
+  double override_velocity_angular;
+  std::uint8_t override_valves_limits;
+  std::uint8_t deltas_geometry_valves_push_limit_front;
+  std::uint8_t deltas_geometry_valves_push_limit_back;
+  std::uint8_t deltas_geometry_valves_pull_front_back;
+};
+
+enum ProtocolFrameBytesValues : std::uint8_t {
   ttc_ok = 0x01,
   ttc_automatic_mode_request = 0x20,
   ttc_carts_encoders_initialization = 0x30
@@ -50,7 +60,23 @@ enum ConfigFrameBytePositions : std::uint8_t
   kd_caterpillar_first_byte = 5,
   forward_signal_base_first_byte = 1,
   backward_signal_base_first_byte = 3,
-  acceleration_first_byte = 6
+  acceleration_first_byte = 6,
+  cart_rotation_limit_byte = 1,
+  override_linear_velocity_byte = 2,
+  override_angular_velocity_byte = 3,
+  override_valves_limits_byte = 4,
+  deltas_geometry_valves_push_limit_front_byte = 5,
+  deltas_geometry_valves_push_limit_back_byte = 6,
+  deltas_geometry_valves_pull_front_back_byte = 7,
+  stabilization_kp_byte = 1,
+  stabilization_kd_byte = 2,
+  stabilization_ki_byte = 3,
+  stabilization_maximum_signal_byte = 4,
+  max_oil_temperature_byte = 1,
+  min_oil_temperature_byte = 2,
+  histeresis_oil_temperature_byte = 3,
+  rpm_max_byte = 4,
+  rpm_min_byte = 5,
 };
 
 enum TransmitCanIds : std::uint32_t
@@ -189,11 +215,7 @@ public:
                                     const std::uint8_t frame_type);
   void sendCaterpillarBaseSignal(const std::uint32_t forward_base, const std::uint32_t backward_base,
                                  const std::uint8_t frame_type);
-  void sendOverrideLimits(const std::uint8_t cart_rotation_limit, const double override_velocity_linear,
-                          const double override_velocity_angular, const std::uint8_t override_valves_limits,
-                          const std::uint8_t deltas_geometry_valves_push_limit_front,
-                          const std::uint8_t deltas_geometry_valves_push_limit_back,
-                          const std::uint8_t deltas_geometry_valves_pull_front_back);
+  void sendOverrideLimits(const TtcontrolOverrideParameters& params);
   void sendStabilizationParameters(const double stab_kp, const double stab_kd, const double stab_ki,
                                    const std::uint8_t stab_max_signal);
   void sendOilAndEngineParams(const std::uint8_t max_oil_temperature, const std::uint8_t min_oil_temperature,

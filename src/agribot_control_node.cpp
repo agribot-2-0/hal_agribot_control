@@ -35,6 +35,8 @@ constexpr std::string_view TTCONTROL_CONNECTION_MSG = "connected";
 constexpr bool TTCONTROL_CONNECTED = true;
 constexpr bool TTCONTROL_DISCONNECTED = false;
 
+TTCommControl ttcontrol_communication_handler;
+
 enum RobotsCarts : uint8_t
 {
   front_cart = 1,
@@ -56,9 +58,9 @@ enum TTControlParameterFlag : uint32_t
   back_left_caterpillar_signals_base = 0x400,
   back_right_caterpillar_pid_params = 0x800,
   back_right_caterpillar_signals_base = 0x1000,
-  override_speed_and_valve_limits = 0x2000,
-  stabilization = 0x4000,
-  oil_and_engine = 0x8000,
+  override_speed_and_valve_limits_params = 0x2000,
+  stabilization_params = 0x4000,
+  oil_and_engine_params = 0x8000,
   every_flag_set = 0xFFFFFFFF
 };
 
@@ -74,7 +76,19 @@ TplControl tpl_control_msg_to_tpl_control_struct(const agribot_msgs::AgribotTool
   return control_values;
 }
 
-TTCommControl ttcontrol_communication_handler;
+TtcontrolOverrideParameters&&
+parseConfigToOverrideParameters(const hal_agribot_control::TTControlParametersConfig& config)
+{
+  TtcontrolOverrideParameters override_params_data;
+  override_params_data.cart_rotation_limit = config.cart_rotation_limit;
+  override_params_data.override_velocity_linear = config.override_velocity_linear;
+  override_params_data.override_velocity_angular = config.override_velocity_angular;
+  override_params_data.override_valves_limits = config.override_valves_limits;
+  override_params_data.deltas_geometry_valves_push_limit_front = config.deltas_geometry_valves_push_limit_front;
+  override_params_data.deltas_geometry_valves_push_limit_back = config.deltas_geometry_valves_push_limit_back;
+  override_params_data.deltas_geometry_valves_pull_front_back = config.deltas_geometry_valves_pull_front_back;
+  return std::move(override_params_data);
+}
 
 void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersConfig& config, uint32_t level)
 {
@@ -124,16 +138,12 @@ void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersCo
         TTControlParameterType::back_right_caterpillar_signal_base);
 
     ros::Duration(0.5).sleep();  // sleep for half a second, to give TTControl time to read and save the parameters
-    ttcontrol_communication_handler.sendOverrideLimits(
-        config.cart_rotation_limit, config.override_velocity_linear, config.override_velocity_angular,
-        config.override_valves_limits, config.deltas_geometry_valves_push_limit_front,
-        config.deltas_geometry_valves_push_limit_back, config.deltas_geometry_valves_pull_front_back);
+    ttcontrol_communication_handler.sendOverrideLimits(parseConfigToOverrideParameters(config));
     ttcontrol_communication_handler.sendStabilizationParameters(config.stab_pid_kp, config.stab_pid_kd,
                                                                 config.stab_pid_ki, config.stab_pid_max_signal);
     ttcontrol_communication_handler.sendOilAndEngineParams(config.max_oil_temperature, config.min_oil_temperature,
                                                            config.histeresis_oil_temperature, config.engine_rpm_max,
                                                            config.engine_rpm_min);
-        );
   }
   else
   {
@@ -214,23 +224,20 @@ void callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersCo
           config.back_right_caterpillar_signal_base_forward, config.back_right_caterpillar_signal_base_backward,
           TTControlParameterType::back_right_caterpillar_signal_base);
     }
-    if (level & TTControlParameterFlag::override_speed_and_valve_limits)
+    if (level & TTControlParameterFlag::override_speed_and_valve_limits_params)
     {
-      ttcontrol_communication_handler.sendOverrideLimits(
-          config.cart_rotation_limit, config.override_velocity_linear, config.override_velocity_angular,
-          config.override_valves_limits, config.deltas_geometry_valves_push_limit_front,
-          config.deltas_geometry_valves_push_limit_back, config.deltas_geometry_valves_pull_front_back);
+      ttcontrol_communication_handler.sendOverrideLimits(parseConfigToOverrideParameters(config));
     }
-    if (level & TTControlParameterFlag::stabilization)
+    if (level & TTControlParameterFlag::stabilization_params)
     {
       ttcontrol_communication_handler.sendStabilizationParameters(config.stab_pid_kp, config.stab_pid_kd,
                                                                   config.stab_pid_ki, config.stab_pid_max_signal);
     }
-    if (level & TTControlParameterFlag::oil_and_engine)
+    if (level & TTControlParameterFlag::oil_and_engine_params)
     {
-          ttcontrol_communication_handler.sendOilAndEngineParams(config.max_oil_temperature, config.min_oil_temperature,
-                                                           config.histeresis_oil_temperature, config.engine_rpm_max,
-                                                           config.engine_rpm_min);
+      ttcontrol_communication_handler.sendOilAndEngineParams(config.max_oil_temperature, config.min_oil_temperature,
+                                                             config.histeresis_oil_temperature, config.engine_rpm_max,
+                                                             config.engine_rpm_min);
     }
   }
 }

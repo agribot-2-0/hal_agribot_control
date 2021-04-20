@@ -568,6 +568,64 @@ void TTCommControl::sendCaterpillarBaseSignal(const uint32_t forward_base, const
   can_handler_->iSendFrame(&message);
 }
 
+void TTCommControl::sendOverrideLimits(const TtcontrolOverrideParameters& params)
+{
+  can_frame message;
+  message.can_id = TransmitCanIds::config_frame;
+  message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
+  message.data[ConfigFrameBytePositions::config_frame_type_byte] =
+      TTControlParameterType::override_speed_and_valve_limits;
+  message.data[ConfigFrameBytePositions::cart_rotation_limit_byte] = params.cart_rotation_limit;
+  message.data[ConfigFrameBytePositions::override_linear_velocity_byte] =
+      static_cast<uint8_t>(params.override_velocity_linear * 100);
+  message.data[ConfigFrameBytePositions::override_angular_velocity_byte] =
+      static_cast<uint8_t>(params.override_velocity_angular * 100);
+  message.data[ConfigFrameBytePositions::override_valves_limits_byte] = params.override_valves_limits;
+  message.data[ConfigFrameBytePositions::deltas_geometry_valves_push_limit_front_byte] =
+      params.deltas_geometry_valves_push_limit_front;
+  message.data[ConfigFrameBytePositions::deltas_geometry_valves_push_limit_back_byte] =
+      params.deltas_geometry_valves_push_limit_back;
+  message.data[ConfigFrameBytePositions::deltas_geometry_valves_pull_front_back_byte] =
+      params.deltas_geometry_valves_pull_front_back;
+  can_handler_->iSendFrame(&message);
+}
+
+void TTCommControl::sendStabilizationParameters(const double stab_kp, const double stab_kd, const double stab_ki,
+                                                const std::uint8_t stab_max_signal)
+{
+  can_frame message;
+  message.can_id = TransmitCanIds::config_frame;
+  message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
+  message.data[ConfigFrameBytePositions::config_frame_type_byte] = TTControlParameterType::stabilization;
+  message.data[ConfigFrameBytePositions::stabilization_kp_byte] = static_cast<uint8_t>(stab_kp * 10);
+  message.data[ConfigFrameBytePositions::stabilization_kd_byte] = static_cast<uint8_t>(stab_kd * 10);
+  message.data[ConfigFrameBytePositions::stabilization_ki_byte] = static_cast<uint8_t>(stab_ki * 10);
+  message.data[ConfigFrameBytePositions::stabilization_maximum_signal_byte] = stab_max_signal;
+  message.data[ConfigFrameBytePositions::stabilization_maximum_signal_byte + 1] = 0;
+  message.data[ConfigFrameBytePositions::stabilization_maximum_signal_byte + 2] = 0;
+  message.data[ConfigFrameBytePositions::stabilization_maximum_signal_byte + 3] = 0;
+  can_handler_->iSendFrame(&message);
+}
+
+void TTCommControl::sendOilAndEngineParams(const std::uint8_t max_oil_temperature,
+                                           const std::uint8_t min_oil_temperature,
+                                           const std::uint8_t histeresis_oil_temperature, const std::uint16_t rpm_max,
+                                           const std::uint16_t rpm_min)
+{
+  can_frame message;
+  message.can_id = TransmitCanIds::config_frame;
+  message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
+  message.data[ConfigFrameBytePositions::config_frame_type_byte] = TTControlParameterType::oil_and_engine;
+  message.data[ConfigFrameBytePositions::max_oil_temperature_byte] = max_oil_temperature;
+  message.data[ConfigFrameBytePositions::min_oil_temperature_byte] = min_oil_temperature;
+  message.data[ConfigFrameBytePositions::histeresis_oil_temperature_byte] = histeresis_oil_temperature;
+  message.data[ConfigFrameBytePositions::rpm_max_byte] = rpm_max;
+  message.data[ConfigFrameBytePositions::rpm_min_byte] = rpm_min;
+  message.data[ConfigFrameBytePositions::rpm_min_byte + 1] = 0;
+  message.data[ConfigFrameBytePositions::rpm_min_byte + 2] = 0;
+  can_handler_->iSendFrame(&message);
+}
+
 const CartsStatus& TTCommControl::getCartsStatus() const
 {
   return cart_;
