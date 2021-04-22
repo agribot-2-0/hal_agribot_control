@@ -61,8 +61,23 @@ enum TTControlParameterFlag : std::uint32_t
   every_flag_set = 0xFFFFFFFF
 };
 
+class Rosinit
+{
+    int is_inited = 0;
+public:
+    Rosinit(int argc, char **argv, const char *node_name)
+    {
+        if(!is_inited){
+
+        ros::init(argc,argv,node_name);
+        is_inited=1;
+        }
+    }
+};
+
 class AgribotControlRosWrapper
 {
+  Rosinit init;
   std::unique_ptr<ros::NodeHandle> nh_;
   std::unique_ptr<TTCommControl> ttcontrol_communication_handler_;
   std_msgs::Float32 front_angle_msg_;
@@ -115,14 +130,39 @@ class AgribotControlRosWrapper
   void sendParameterGroup(const std::uint32_t parameter_group,
                           const hal_agribot_control::TTControlParametersConfig& config);
   void sendAllParameterGroups(const hal_agribot_control::TTControlParametersConfig& config);
-  TtcontrolOverrideParameters&&
-  parseConfigToOverrideParameters(const hal_agribot_control::TTControlParametersConfig& config);
+  TtcontrolOverrideParameters parseConfigToOverrideParameters(const hal_agribot_control::TTControlParametersConfig& config);
   TplControl tpl_control_msg_to_tpl_control_struct(const agribot_msgs::AgribotTool& msg);
   void registerSubscribers();
   void registerPublishers();
   void registerServices();
 
 public:
-  AgribotControlRosWrapper(int argc, char** argv);
+  AgribotControlRosWrapper(int argc, char **argv, const char *node_name):init(argc, argv, node_name)
+  {
+  // ros::init(argc, argv, "agribot_control");
+  // can initialization
+  nh_ = std::make_unique<ros::NodeHandle>();
+  ttcontrol_communication_handler_ = (std::make_unique<TTCommControl>());
+  std::string selected_can;
+  selected_can = ros_common_functions::getRosParam<std::string>("/hal_agribot_control/can_bus_name");
+  std::unique_ptr<Can> can_handler = std::make_unique<Can>();
+  can_handler->iInitialize(selected_can.c_str());
+  ttcontrol_communication_handler_->initializeCanHandler(std::move(can_handler));
+  // register to ros topics and services
+  registerSubscribers();
+  registerPublishers();
+  registerServices();
+  // encoder initialization reading
+  nh_->getParam("path_to_encoder_file", path_to_carts_encoders_file_);
+  ttcontrol_communication_handler_->setPathToCartsEncodersDataFile(path_to_carts_encoders_file_);
+  if (!readEncodersDataFile())
+  {
+    throw std::invalid_argument("Failed to read carts angle data file content ! Robots carts encoders values are not "
+                                "inited! \nAttempted path: " +
+                                path_to_carts_encoders_file_);
+  }
+  ttcontrol_communication_handler_->sendCartsEncodersInitialization();
+  }
+
   void execute();
 };

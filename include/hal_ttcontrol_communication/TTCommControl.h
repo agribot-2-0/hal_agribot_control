@@ -77,7 +77,7 @@ enum ConfigFrameBytePositions : std::uint8_t
   min_oil_temperature_byte = 2,
   histeresis_oil_temperature_byte = 3,
   rpm_max_byte = 4,
-  rpm_min_byte = 5,
+  rpm_min_byte = 6,
 };
 
 enum TransmitCanIds : std::uint32_t
@@ -216,7 +216,7 @@ public:
                                     const std::uint8_t frame_type);
   void sendCaterpillarBaseSignal(const std::uint32_t forward_base, const std::uint32_t backward_base,
                                  const std::uint8_t frame_type);
-  void sendOverrideLimits(const TtcontrolOverrideParameters& params);
+  void sendOverrideLimits(const TtcontrolOverrideParameters params);
   void sendStabilizationParameters(const double stab_kp, const double stab_kd, const double stab_ki,
                                    const std::uint8_t stab_max_signal);
   void sendOilAndEngineParams(const std::uint8_t max_oil_temperature, const std::uint8_t min_oil_temperature,

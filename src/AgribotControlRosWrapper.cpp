@@ -14,67 +14,41 @@ using std::uint8_t;
 
 void AgribotControlRosWrapper::registerSubscribers()
 {
-  ros::Subscriber sub_caterpillar_ =
+  sub_caterpillar_ =
       nh_->subscribe("/agribot/control/caterpillar", 1, &AgribotControlRosWrapper::caterpillarsControlCallback, this);
-  ros::Subscriber sub_connection_state_ = nh_->subscribe("/agribot/ttcontrol/connection_state", 1,
+  sub_connection_state_ = nh_->subscribe("/agribot/ttcontrol/connection_state", 1,
                                                          &AgribotControlRosWrapper::ttcontrolConnectionState, this);
-  ros::Subscriber tpl_front_control_sub_ =
+  tpl_front_control_sub_ =
       nh_->subscribe("/agribot/control/tool/front/valves", 1, &AgribotControlRosWrapper::frontTplControlCallback, this);
-  ros::Subscriber tpl_back_control_sub_ =
+  tpl_back_control_sub_ =
       nh_->subscribe("/agribot/control/tool/back/valves", 1, &AgribotControlRosWrapper::backTplControlCallback, this);
 }
 
 void AgribotControlRosWrapper::registerPublishers()
 {
-  ros::Publisher carts_status_publisher_ =
+  carts_status_publisher_ =
       nh_->advertise<agribot_msgs::AgribotCaterpillar>("/agribot/encoder/caterpillar", 1);
-  ros::Publisher track_encoder_sum_publisher_ =  //
+   track_encoder_sum_publisher_ =
       nh_->advertise<agribot_msgs::AgribotCaterpillarWheelsRotation>("/agribot/encoder/caterpillar/rotations/impulses",
                                                                      1);
-  ros::Publisher front_cart_angle_publisher_ = nh_->advertise<std_msgs::Float32>("/agribot/encoder/cart/front", 1);
-  ros::Publisher back_cart_angle_publisher_ = nh_->advertise<std_msgs::Float32>("/agribot/encoder/cart/back", 1);
+  front_cart_angle_publisher_ = nh_->advertise<std_msgs::Float32>("/agribot/encoder/cart/front", 1);
+  back_cart_angle_publisher_ = nh_->advertise<std_msgs::Float32>("/agribot/encoder/cart/back", 1);
 }
 
 void AgribotControlRosWrapper::registerServices()
 {
-  ros::ServiceServer service_front_ =
+   service_front_ =
       nh_->advertiseService("/agribot/cart/caterpillar/front/change_deltas_geometry",
                             &AgribotControlRosWrapper::frontDeltasGeometryServiceCallback, this);
-  ros::ServiceServer service_back_ =
+   service_back_ =
       nh_->advertiseService("/agribot/cart/caterpillar/back/change_deltas_geometry",
                             &AgribotControlRosWrapper::backDeltasGeometryServiceCallback, this);
-  ros::ServiceServer service_engine_start_ =
+   service_engine_start_ =
       nh_->advertiseService("/agribot/engine_start", &AgribotControlRosWrapper::engineStartService, this);
-  ros::ServiceServer service_engine_stop_ =
+   service_engine_stop_ =
       nh_->advertiseService("/agribot/engine_stop", &AgribotControlRosWrapper::engineStopService, this);
   callback_function_object_ = boost::bind(&AgribotControlRosWrapper::callbackDynamicReconfigure, this, _1, _2);
   parameter_server_.setCallback(callback_function_object_);
-}
-
-AgribotControlRosWrapper::AgribotControlRosWrapper(int argc, char** argv)
-  : nh_(std::make_unique<ros::NodeHandle>()), ttcontrol_communication_handler_(std::make_unique<TTCommControl>())
-{
-  ros::init(argc, argv, "agribot_control");
-  // can initialization
-  std::string selected_can;
-  selected_can = ros_common_functions::getRosParam<std::string>("/hal_agribot_control/can_bus_name");
-  std::unique_ptr<Can> can_handler = std::make_unique<Can>();
-  can_handler->iInitialize(selected_can.c_str());
-  ttcontrol_communication_handler_->initializeCanHandler(std::move(can_handler));
-  // register to ros topics and services
-  registerSubscribers();
-  registerPublishers();
-  registerServices();
-  // encoder initialization reading
-  nh_->getParam("path_to_encoder_file", path_to_carts_encoders_file_);
-  ttcontrol_communication_handler_->setPathToCartsEncodersDataFile(path_to_carts_encoders_file_);
-  if (!readEncodersDataFile())
-  {
-    throw std::invalid_argument("Failed to read carts angle data file content ! Robots carts encoders values are not "
-                                "inited! \nAttempted path: " +
-                                path_to_carts_encoders_file_);
-  }
-  ttcontrol_communication_handler_->sendCartsEncodersInitialization();
 }
 
 void AgribotControlRosWrapper::execute()
@@ -191,7 +165,7 @@ TplControl AgribotControlRosWrapper::tpl_control_msg_to_tpl_control_struct(const
   return control_values;
 }
 
-TtcontrolOverrideParameters&&
+TtcontrolOverrideParameters
 AgribotControlRosWrapper::parseConfigToOverrideParameters(const hal_agribot_control::TTControlParametersConfig& config)
 {
   TtcontrolOverrideParameters override_params_data;
@@ -202,7 +176,7 @@ AgribotControlRosWrapper::parseConfigToOverrideParameters(const hal_agribot_cont
   override_params_data.deltas_geometry_valves_push_limit_front = config.deltas_geometry_valves_push_limit_front;
   override_params_data.deltas_geometry_valves_push_limit_back = config.deltas_geometry_valves_push_limit_back;
   override_params_data.deltas_geometry_valves_pull_front_back = config.deltas_geometry_valves_pull_front_back;
-  return std::move(override_params_data);
+  return override_params_data;
 }
 
 void AgribotControlRosWrapper::callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersConfig& config,
@@ -357,7 +331,7 @@ void AgribotControlRosWrapper::sendAllParameterGroups(const hal_agribot_control:
       TTControlParameterType::back_right_caterpillar_signal_base);
 
   ros::Duration(0.5).sleep();  // sleep for half a second, to give TTControl time to read and save the parameters
-  ttcontrol_communication_handler_->sendOverrideLimits(parseConfigToOverrideParameters(config));
+  ttcontrol_communication_handler_->sendOverrideLimits(std::move(parseConfigToOverrideParameters(config)));
   ttcontrol_communication_handler_->sendStabilizationParameters(config.stab_pid_kp, config.stab_pid_kd,
                                                                 config.stab_pid_ki, config.stab_pid_max_signal);
   ttcontrol_communication_handler_->sendOilAndEngineParams(config.max_oil_temperature, config.min_oil_temperature,

@@ -9,7 +9,7 @@ int main(int argc, char** argv)
 {
   try
   {
-    AgribotControlRosWrapper agribot_control_wrapper(argc, argv);
+    AgribotControlRosWrapper agribot_control_wrapper(argc, argv, "agribot_control");
     agribot_control_wrapper.execute();
   }
   catch (const std::exception& ex)
