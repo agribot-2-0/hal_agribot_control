@@ -17,7 +17,7 @@ void AgribotControlRosWrapper::registerSubscribers()
   sub_caterpillar_ =
       nh_->subscribe("/agribot/control/caterpillar", 1, &AgribotControlRosWrapper::caterpillarsControlCallback, this);
   sub_connection_state_ = nh_->subscribe("/agribot/ttcontrol/connection_state", 1,
-                                                         &AgribotControlRosWrapper::ttcontrolConnectionState, this);
+                                         &AgribotControlRosWrapper::ttcontrolConnectionState, this);
   tpl_front_control_sub_ =
       nh_->subscribe("/agribot/control/tool/front/valves", 1, &AgribotControlRosWrapper::frontTplControlCallback, this);
   tpl_back_control_sub_ =
@@ -26,29 +26,54 @@ void AgribotControlRosWrapper::registerSubscribers()
 
 void AgribotControlRosWrapper::registerPublishers()
 {
-  carts_status_publisher_ =
-      nh_->advertise<agribot_msgs::AgribotCaterpillar>("/agribot/encoder/caterpillar", 1);
-   track_encoder_sum_publisher_ =
-      nh_->advertise<agribot_msgs::AgribotCaterpillarWheelsRotation>("/agribot/encoder/caterpillar/rotations/impulses",
-                                                                     1);
+  carts_status_publisher_ = nh_->advertise<agribot_msgs::AgribotCaterpillar>("/agribot/encoder/caterpillar", 1);
+  track_encoder_sum_publisher_ = nh_->advertise<agribot_msgs::AgribotCaterpillarWheelsRotation>("/agribot/encoder/"
+                                                                                                "caterpillar/rotations/"
+                                                                                                "impulses",
+                                                                                                1);
   front_cart_angle_publisher_ = nh_->advertise<std_msgs::Float32>("/agribot/encoder/cart/front", 1);
   back_cart_angle_publisher_ = nh_->advertise<std_msgs::Float32>("/agribot/encoder/cart/back", 1);
 }
 
 void AgribotControlRosWrapper::registerServices()
 {
-   service_front_ =
-      nh_->advertiseService("/agribot/cart/caterpillar/front/change_deltas_geometry",
-                            &AgribotControlRosWrapper::frontDeltasGeometryServiceCallback, this);
-   service_back_ =
-      nh_->advertiseService("/agribot/cart/caterpillar/back/change_deltas_geometry",
-                            &AgribotControlRosWrapper::backDeltasGeometryServiceCallback, this);
-   service_engine_start_ =
+  service_front_ = nh_->advertiseService("/agribot/cart/caterpillar/front/change_deltas_geometry",
+                                         &AgribotControlRosWrapper::frontDeltasGeometryServiceCallback, this);
+  service_back_ = nh_->advertiseService("/agribot/cart/caterpillar/back/change_deltas_geometry",
+                                        &AgribotControlRosWrapper::backDeltasGeometryServiceCallback, this);
+  service_engine_start_ =
       nh_->advertiseService("/agribot/engine_start", &AgribotControlRosWrapper::engineStartService, this);
-   service_engine_stop_ =
+  service_engine_stop_ =
       nh_->advertiseService("/agribot/engine_stop", &AgribotControlRosWrapper::engineStopService, this);
   callback_function_object_ = boost::bind(&AgribotControlRosWrapper::callbackDynamicReconfigure, this, _1, _2);
   parameter_server_.setCallback(callback_function_object_);
+}
+
+AgribotControlRosWrapper::AgribotControlRosWrapper(int argc, char** argv, const char* node_name)
+  : init(argc, argv, node_name)
+{
+  nh_ = std::make_unique<ros::NodeHandle>();
+  ttcontrol_communication_handler_ = std::make_unique<TTCommControl>();
+  // can initialization
+  std::string selected_can;
+  selected_can = ros_common_functions::getRosParam<std::string>("/hal_agribot_control/can_bus_name");
+  std::unique_ptr<Can> can_handler = std::make_unique<Can>();
+  can_handler->iInitialize(selected_can.c_str());
+  ttcontrol_communication_handler_->initializeCanHandler(std::move(can_handler));
+  // register to ros topics and services
+  registerSubscribers();
+  registerPublishers();
+  registerServices();
+  // encoder initialization reading
+  nh_->getParam("path_to_encoder_file", path_to_carts_encoders_file_);
+  ttcontrol_communication_handler_->setPathToCartsEncodersDataFile(path_to_carts_encoders_file_);
+  if (!readEncodersDataFile())
+  {
+    throw std::invalid_argument("Failed to read carts angle data file content ! Robots carts encoders values are not "
+                                "inited! \nAttempted path: " +
+                                path_to_carts_encoders_file_);
+  }
+  ttcontrol_communication_handler_->sendCartsEncodersInitialization();
 }
 
 void AgribotControlRosWrapper::execute()

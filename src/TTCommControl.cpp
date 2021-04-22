@@ -576,23 +576,17 @@ void TTCommControl::sendOverrideLimits(const TtcontrolOverrideParameters params)
   message.data[ConfigFrameBytePositions::config_frame_type_byte] =
       TTControlParameterType::override_speed_and_valve_limits;
   message.data[ConfigFrameBytePositions::cart_rotation_limit_byte] = params.cart_rotation_limit;
-  std::cout<<"\n Linear: " <<params.override_velocity_linear;
   message.data[ConfigFrameBytePositions::override_linear_velocity_byte] =
       static_cast<uint8_t>(params.override_velocity_linear * 100);
-  std::cout<<"\n Angular: " <<params.override_velocity_angular;
   message.data[ConfigFrameBytePositions::override_angular_velocity_byte] =
       static_cast<uint8_t>(params.override_velocity_angular * 100);
-   std::cout<<"\n Valves: " <<(uint)params.override_valves_limits;
   message.data[ConfigFrameBytePositions::override_valves_limits_byte] = params.override_valves_limits;
   message.data[ConfigFrameBytePositions::deltas_geometry_valves_push_limit_front_byte] =
       params.deltas_geometry_valves_push_limit_front;
-      std::cout<<"\n Front: " <<(uint)params.deltas_geometry_valves_push_limit_front;
   message.data[ConfigFrameBytePositions::deltas_geometry_valves_push_limit_back_byte] =
       params.deltas_geometry_valves_push_limit_back;
-    std::cout<<"\n Back: " <<(uint)params.deltas_geometry_valves_push_limit_back;
   message.data[ConfigFrameBytePositions::deltas_geometry_valves_pull_front_back_byte] =
       params.deltas_geometry_valves_pull_front_back;
-      std::cout<<"\n Pull: " <<(uint)params.deltas_geometry_valves_pull_front_back;
   can_handler_->iSendFrame(&message);
 }
 
