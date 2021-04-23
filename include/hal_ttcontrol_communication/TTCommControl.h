@@ -29,7 +29,8 @@ struct TtcontrolOverrideParameters
   std::uint8_t deltas_geometry_valves_pull_front_back;
 };
 
-enum ProtocolFrameBytesValues : std::uint8_t {
+enum ProtocolFrameBytesValues : std::uint8_t
+{
   ttc_ok = 0x01,
   ttc_automatic_mode_request = 0x20,
   ttc_carts_encoders_initialization = 0x30,
@@ -47,37 +48,60 @@ enum ReceivedFramesRegisterMask : std::uint32_t
   track_encoder_sum = 0x80
 };
 
-enum ConfigFrameBytePositions : std::uint8_t
+enum SignalsParametersBytePosition : std::uint8_t
 {
-  config_frame_type_byte = 0,
   ditter_period_byte = 1,
   ditter_amplitude_first_byte = 2,
-  encoder_period_byte = 4,
+  encoder_period_byte = 4
+};
+
+enum CaterpillarPidParametersBytePosition : std::uint8_t
+{
+  kp_caterpillar_first_byte = 1,
+  ki_caterpillar_first_byte = 3,
+  kd_caterpillar_first_byte = 5
+};
+
+enum CartsPidParametersBytePositions : std::uint8_t
+{
   kp_first_byte = 1,
   ki_first_byte = 3,
   kd_first_byte = 5,
-  kp_caterpillar_first_byte = 1,
-  ki_caterpillar_first_byte = 3,
-  kd_caterpillar_first_byte = 5,
+  acceleration_first_byte = 6
+};
+
+enum SignalBaseBytePositions : std::uint8_t
+{
   forward_signal_base_first_byte = 1,
-  backward_signal_base_first_byte = 3,
-  acceleration_first_byte = 6,
+  backward_signal_base_first_byte = 3
+};
+
+enum OverrideAndValvesLimitsBytePositions : std::uint8_t
+{
   cart_rotation_limit_byte = 1,
   override_linear_velocity_byte = 2,
   override_angular_velocity_byte = 3,
   override_valves_limits_byte = 4,
   deltas_geometry_valves_push_limit_front_byte = 5,
   deltas_geometry_valves_push_limit_back_byte = 6,
-  deltas_geometry_valves_pull_front_back_byte = 7,
+  deltas_geometry_valves_pull_front_back_byte = 7
+};
+
+enum StabilizationBytePositions : std::uint8_t
+{
   stabilization_kp_byte = 1,
   stabilization_kd_byte = 2,
   stabilization_ki_byte = 3,
-  stabilization_maximum_signal_byte = 4,
+  stabilization_maximum_signal_byte = 4
+};
+
+enum OilAndEngineBytePositions : std::uint8_t
+{
   max_oil_temperature_byte = 1,
   min_oil_temperature_byte = 2,
   histeresis_oil_temperature_byte = 3,
   rpm_max_byte = 4,
-  rpm_min_byte = 6,
+  rpm_min_byte = 6
 };
 
 enum TransmitCanIds : std::uint32_t
@@ -192,6 +216,7 @@ public:
   TTCommControl();
   ~TTCommControl();
   void initializeCanHandler(std::unique_ptr<ICan> can_handler);
+  void initializeCanHandler(std::string selected_can);
   void update();
   void receiveCanFrames();
   void parseCanFrames();
@@ -216,7 +241,7 @@ public:
                                     const std::uint8_t frame_type);
   void sendCaterpillarBaseSignal(const std::uint32_t forward_base, const std::uint32_t backward_base,
                                  const std::uint8_t frame_type);
-  void sendOverrideLimits(const TtcontrolOverrideParameters params);
+  void sendOverrideLimits(const TtcontrolOverrideParameters& params);
   void sendStabilizationParameters(const double stab_kp, const double stab_kd, const double stab_ki,
                                    const std::uint8_t stab_max_signal);
   void sendOilAndEngineParams(const std::uint8_t max_oil_temperature, const std::uint8_t min_oil_temperature,

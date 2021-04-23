@@ -23,6 +23,8 @@ constexpr uint32_t GET_FIRST_BYTE = 0x000000FF;
 constexpr uint8_t TPL_CONTROL_FRAME_SIZE = 6;
 constexpr uint8_t FULL_CAN_FRAME_BYTE_NUMBER = 8;
 constexpr uint8_t TWO_BYTE_CAN_FRAME = 2;
+// config type byte position for config parameter frames
+constexpr uint8_t config_frame_type_byte = 0;
 // protocol data bytes
 constexpr uint8_t PROTOCOL_PURPOSE_BYTE = 0;
 constexpr uint8_t PROTOCOL_DETAIL_BYTE = 1;
@@ -62,6 +64,8 @@ constexpr uint32_t DELIMITER_ENDING_LENGTH = 2;
 // constants for TTControls config frame
 constexpr std::uint32_t K_RESOLUTION_MULTIPLIER = 10000;
 constexpr std::uint32_t KD_RESOLUTION_MULTIPLIER = 100;
+constexpr std::uint32_t OVERRIDE_VELOCITY_MULTIPLIER = 100;
+constexpr std::uint32_t STABILIZATION_PID_PARAMETER_MULTIPLIER = 10;
 constexpr std::uint32_t ACCELERATION_RESOLUTION_MULTIPLIER = 1000;
 // byte position of the encoder sum value
 constexpr uint8_t SIGN_BYTE_FRAME_POSITION = 0x10;
@@ -289,6 +293,13 @@ void TTCommControl::initializeCanHandler(std::unique_ptr<ICan> can_handler)
   can_handler_ = std::move(can_handler);
 }
 
+void TTCommControl::initializeCanHandler(std::string selected_can)
+{
+  std::unique_ptr<Can> can_handler = std::make_unique<Can>();
+  can_handler->iInitialize(selected_can.c_str());
+  can_handler_ = std::move(can_handler);
+}
+
 void TTCommControl::receiveCanFrames()
 {
   can_frame message;
@@ -494,17 +505,19 @@ void TTCommControl::sendSignalsParameters(const int ditter_period, const int dit
   can_frame message;
   message.can_id = TransmitCanIds::config_frame;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
-  message.data[ConfigFrameBytePositions::config_frame_type_byte] = TTControlParameterType::signals;
-  message.data[ConfigFrameBytePositions::ditter_period_byte] = extractFirstByte(static_cast<uint32_t>(ditter_period));
-  message.data[ConfigFrameBytePositions::ditter_amplitude_first_byte] =
+  message.data[config_frame_type_byte] = TTControlParameterType::signals;
+  message.data[SignalsParametersBytePosition::ditter_period_byte] =
+      extractFirstByte(static_cast<uint32_t>(ditter_period));
+  message.data[SignalsParametersBytePosition::ditter_amplitude_first_byte] =
       extractFirstByte(static_cast<uint32_t>(ditter_amplitude));
-  message.data[ConfigFrameBytePositions::ditter_amplitude_first_byte + 1] =
+  message.data[SignalsParametersBytePosition::ditter_amplitude_first_byte + 1] =
       extractSecondByte(static_cast<uint32_t>(ditter_amplitude));
-  message.data[ConfigFrameBytePositions::encoder_period_byte] = extractFirstByte(static_cast<uint32_t>(encoder_period));
+  message.data[SignalsParametersBytePosition::encoder_period_byte] =
+      extractFirstByte(static_cast<uint32_t>(encoder_period));
   // dont-care bytes
-  message.data[ConfigFrameBytePositions::encoder_period_byte + 1] = 0xFF;
-  message.data[ConfigFrameBytePositions::encoder_period_byte + 2] = 0xFF;
-  message.data[ConfigFrameBytePositions::encoder_period_byte + 3] = 0xFF;
+  message.data[SignalsParametersBytePosition::encoder_period_byte + 1] = 0xFF;
+  message.data[SignalsParametersBytePosition::encoder_period_byte + 2] = 0xFF;
+  message.data[SignalsParametersBytePosition::encoder_period_byte + 3] = 0xFF;
   can_handler_->iSendFrame(&message);
 }
 
@@ -514,20 +527,20 @@ void TTCommControl::sendCartsPidParameters(const double kp, const double ki, con
   can_frame message;
   message.can_id = TransmitCanIds::config_frame;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
-  message.data[ConfigFrameBytePositions::config_frame_type_byte] = frame_type;
-  message.data[ConfigFrameBytePositions::kp_first_byte] =
+  message.data[config_frame_type_byte] = frame_type;
+  message.data[CartsPidParametersBytePositions::kp_first_byte] =
       extractFirstByte(static_cast<uint32_t>(kp * K_RESOLUTION_MULTIPLIER));
-  message.data[ConfigFrameBytePositions::kp_first_byte + 1] =
+  message.data[CartsPidParametersBytePositions::kp_first_byte + 1] =
       extractSecondByte(static_cast<uint32_t>(kp * K_RESOLUTION_MULTIPLIER));
-  message.data[ConfigFrameBytePositions::ki_first_byte] =
+  message.data[CartsPidParametersBytePositions::ki_first_byte] =
       extractFirstByte(static_cast<uint32_t>(ki * K_RESOLUTION_MULTIPLIER));
-  message.data[ConfigFrameBytePositions::ki_first_byte + 1] =
+  message.data[CartsPidParametersBytePositions::ki_first_byte + 1] =
       extractSecondByte(static_cast<uint32_t>(ki * K_RESOLUTION_MULTIPLIER));
-  message.data[ConfigFrameBytePositions::kd_first_byte] =
+  message.data[CartsPidParametersBytePositions::kd_first_byte] =
       extractFirstByte(static_cast<uint32_t>(kd * KD_RESOLUTION_MULTIPLIER));
-  message.data[ConfigFrameBytePositions::acceleration_first_byte] =
+  message.data[CartsPidParametersBytePositions::acceleration_first_byte] =
       extractFirstByte(static_cast<uint32_t>(acceleration * ACCELERATION_RESOLUTION_MULTIPLIER));
-  message.data[ConfigFrameBytePositions::acceleration_first_byte + 1] =
+  message.data[CartsPidParametersBytePositions::acceleration_first_byte + 1] =
       extractSecondByte(static_cast<uint32_t>(acceleration * ACCELERATION_RESOLUTION_MULTIPLIER));
   can_handler_->iSendFrame(&message);
 }
@@ -538,15 +551,15 @@ void TTCommControl::sendCaterpillarPidParameters(const uint32_t kp, const uint32
   can_frame message;
   message.can_id = TransmitCanIds::config_frame;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
-  message.data[ConfigFrameBytePositions::config_frame_type_byte] = frame_type;
-  message.data[ConfigFrameBytePositions::kp_caterpillar_first_byte] = extractFirstByte(kp);
-  message.data[ConfigFrameBytePositions::kp_caterpillar_first_byte + 1] = extractSecondByte(kp);
-  message.data[ConfigFrameBytePositions::ki_caterpillar_first_byte] = extractFirstByte(ki);
-  message.data[ConfigFrameBytePositions::ki_caterpillar_first_byte + 1] = extractSecondByte(ki);
-  message.data[ConfigFrameBytePositions::kd_caterpillar_first_byte] = extractFirstByte(kd);
-  message.data[ConfigFrameBytePositions::kd_caterpillar_first_byte + 1] = extractSecondByte(kd);
+  message.data[config_frame_type_byte] = frame_type;
+  message.data[CaterpillarPidParametersBytePosition::kp_caterpillar_first_byte] = extractFirstByte(kp);
+  message.data[CaterpillarPidParametersBytePosition::kp_caterpillar_first_byte + 1] = extractSecondByte(kp);
+  message.data[CaterpillarPidParametersBytePosition::ki_caterpillar_first_byte] = extractFirstByte(ki);
+  message.data[CaterpillarPidParametersBytePosition::ki_caterpillar_first_byte + 1] = extractSecondByte(ki);
+  message.data[CaterpillarPidParametersBytePosition::kd_caterpillar_first_byte] = extractFirstByte(kd);
+  message.data[CaterpillarPidParametersBytePosition::kd_caterpillar_first_byte + 1] = extractSecondByte(kd);
   // dont care byte
-  message.data[ConfigFrameBytePositions::kd_caterpillar_first_byte + 2] = 0xFF;
+  message.data[CaterpillarPidParametersBytePosition::kd_caterpillar_first_byte + 2] = 0xFF;
   can_handler_->iSendFrame(&message);
 }
 
@@ -556,36 +569,35 @@ void TTCommControl::sendCaterpillarBaseSignal(const uint32_t forward_base, const
   can_frame message;
   message.can_id = TransmitCanIds::config_frame;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
-  message.data[ConfigFrameBytePositions::config_frame_type_byte] = frame_type;
-  message.data[ConfigFrameBytePositions::forward_signal_base_first_byte] = extractFirstByte(forward_base);
-  message.data[ConfigFrameBytePositions::forward_signal_base_first_byte + 1] = extractSecondByte(forward_base);
-  message.data[ConfigFrameBytePositions::backward_signal_base_first_byte] = extractFirstByte(backward_base);
-  message.data[ConfigFrameBytePositions::backward_signal_base_first_byte + 1] = extractSecondByte(backward_base);
+  message.data[config_frame_type_byte] = frame_type;
+  message.data[SignalBaseBytePositions::forward_signal_base_first_byte] = extractFirstByte(forward_base);
+  message.data[SignalBaseBytePositions::forward_signal_base_first_byte + 1] = extractSecondByte(forward_base);
+  message.data[SignalBaseBytePositions::backward_signal_base_first_byte] = extractFirstByte(backward_base);
+  message.data[SignalBaseBytePositions::backward_signal_base_first_byte + 1] = extractSecondByte(backward_base);
   // dont care bytes
-  message.data[ConfigFrameBytePositions::backward_signal_base_first_byte + 2] = 0xFF;
-  message.data[ConfigFrameBytePositions::backward_signal_base_first_byte + 3] = 0xFF;
-  message.data[ConfigFrameBytePositions::backward_signal_base_first_byte + 4] = 0xFF;
+  message.data[SignalBaseBytePositions::backward_signal_base_first_byte + 2] = 0xFF;
+  message.data[SignalBaseBytePositions::backward_signal_base_first_byte + 3] = 0xFF;
+  message.data[SignalBaseBytePositions::backward_signal_base_first_byte + 4] = 0xFF;
   can_handler_->iSendFrame(&message);
 }
 
-void TTCommControl::sendOverrideLimits(const TtcontrolOverrideParameters params)
+void TTCommControl::sendOverrideLimits(const TtcontrolOverrideParameters& params)
 {
   can_frame message;
   message.can_id = TransmitCanIds::config_frame;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
-  message.data[ConfigFrameBytePositions::config_frame_type_byte] =
-      TTControlParameterType::override_speed_and_valve_limits;
-  message.data[ConfigFrameBytePositions::cart_rotation_limit_byte] = params.cart_rotation_limit;
-  message.data[ConfigFrameBytePositions::override_linear_velocity_byte] =
-      static_cast<uint8_t>(params.override_velocity_linear * 100);
-  message.data[ConfigFrameBytePositions::override_angular_velocity_byte] =
-      static_cast<uint8_t>(params.override_velocity_angular * 100);
-  message.data[ConfigFrameBytePositions::override_valves_limits_byte] = params.override_valves_limits;
-  message.data[ConfigFrameBytePositions::deltas_geometry_valves_push_limit_front_byte] =
+  message.data[config_frame_type_byte] = TTControlParameterType::override_speed_and_valve_limits;
+  message.data[OverrideAndValvesLimitsBytePositions::cart_rotation_limit_byte] = params.cart_rotation_limit;
+  message.data[OverrideAndValvesLimitsBytePositions::override_linear_velocity_byte] =
+      static_cast<uint8_t>(params.override_velocity_linear * OVERRIDE_VELOCITY_MULTIPLIER);
+  message.data[OverrideAndValvesLimitsBytePositions::override_angular_velocity_byte] =
+      static_cast<uint8_t>(params.override_velocity_angular * OVERRIDE_VELOCITY_MULTIPLIER);
+  message.data[OverrideAndValvesLimitsBytePositions::override_valves_limits_byte] = params.override_valves_limits;
+  message.data[OverrideAndValvesLimitsBytePositions::deltas_geometry_valves_push_limit_front_byte] =
       params.deltas_geometry_valves_push_limit_front;
-  message.data[ConfigFrameBytePositions::deltas_geometry_valves_push_limit_back_byte] =
+  message.data[OverrideAndValvesLimitsBytePositions::deltas_geometry_valves_push_limit_back_byte] =
       params.deltas_geometry_valves_push_limit_back;
-  message.data[ConfigFrameBytePositions::deltas_geometry_valves_pull_front_back_byte] =
+  message.data[OverrideAndValvesLimitsBytePositions::deltas_geometry_valves_pull_front_back_byte] =
       params.deltas_geometry_valves_pull_front_back;
   can_handler_->iSendFrame(&message);
 }
@@ -596,14 +608,17 @@ void TTCommControl::sendStabilizationParameters(const double stab_kp, const doub
   can_frame message;
   message.can_id = TransmitCanIds::config_frame;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
-  message.data[ConfigFrameBytePositions::config_frame_type_byte] = TTControlParameterType::stabilization;
-  message.data[ConfigFrameBytePositions::stabilization_kp_byte] = static_cast<uint8_t>(stab_kp * 10);
-  message.data[ConfigFrameBytePositions::stabilization_kd_byte] = static_cast<uint8_t>(stab_kd * 10);
-  message.data[ConfigFrameBytePositions::stabilization_ki_byte] = static_cast<uint8_t>(stab_ki * 10);
-  message.data[ConfigFrameBytePositions::stabilization_maximum_signal_byte] = stab_max_signal;
-  message.data[ConfigFrameBytePositions::stabilization_maximum_signal_byte + 1] = 0;
-  message.data[ConfigFrameBytePositions::stabilization_maximum_signal_byte + 2] = 0;
-  message.data[ConfigFrameBytePositions::stabilization_maximum_signal_byte + 3] = 0;
+  message.data[config_frame_type_byte] = TTControlParameterType::stabilization;
+  message.data[StabilizationBytePositions::stabilization_kp_byte] =
+      static_cast<uint8_t>(stab_kp * STABILIZATION_PID_PARAMETER_MULTIPLIER);
+  message.data[StabilizationBytePositions::stabilization_kd_byte] =
+      static_cast<uint8_t>(stab_kd * STABILIZATION_PID_PARAMETER_MULTIPLIER);
+  message.data[StabilizationBytePositions::stabilization_ki_byte] =
+      static_cast<uint8_t>(stab_ki * STABILIZATION_PID_PARAMETER_MULTIPLIER);
+  message.data[StabilizationBytePositions::stabilization_maximum_signal_byte] = stab_max_signal;
+  message.data[StabilizationBytePositions::stabilization_maximum_signal_byte + 1] = 0;
+  message.data[StabilizationBytePositions::stabilization_maximum_signal_byte + 2] = 0;
+  message.data[StabilizationBytePositions::stabilization_maximum_signal_byte + 3] = 0;
   can_handler_->iSendFrame(&message);
 }
 
@@ -615,14 +630,14 @@ void TTCommControl::sendOilAndEngineParams(const std::uint8_t max_oil_temperatur
   can_frame message;
   message.can_id = TransmitCanIds::config_frame;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
-  message.data[ConfigFrameBytePositions::config_frame_type_byte] = TTControlParameterType::oil_and_engine;
-  message.data[ConfigFrameBytePositions::max_oil_temperature_byte] = max_oil_temperature;
-  message.data[ConfigFrameBytePositions::min_oil_temperature_byte] = min_oil_temperature;
-  message.data[ConfigFrameBytePositions::histeresis_oil_temperature_byte] = histeresis_oil_temperature;
-  message.data[ConfigFrameBytePositions::rpm_max_byte] = extractFirstByte(rpm_max);
-  message.data[ConfigFrameBytePositions::rpm_max_byte + 1] = extractSecondByte(rpm_max);
-  message.data[ConfigFrameBytePositions::rpm_min_byte] = extractFirstByte(rpm_min);
-  message.data[ConfigFrameBytePositions::rpm_min_byte + 1] = extractSecondByte(rpm_min);
+  message.data[config_frame_type_byte] = TTControlParameterType::oil_and_engine;
+  message.data[OilAndEngineBytePositions::max_oil_temperature_byte] = max_oil_temperature;
+  message.data[OilAndEngineBytePositions::min_oil_temperature_byte] = min_oil_temperature;
+  message.data[OilAndEngineBytePositions::histeresis_oil_temperature_byte] = histeresis_oil_temperature;
+  message.data[OilAndEngineBytePositions::rpm_max_byte] = extractFirstByte(rpm_max);
+  message.data[OilAndEngineBytePositions::rpm_max_byte + 1] = extractSecondByte(rpm_max);
+  message.data[OilAndEngineBytePositions::rpm_min_byte] = extractFirstByte(rpm_min);
+  message.data[OilAndEngineBytePositions::rpm_min_byte + 1] = extractSecondByte(rpm_min);
   can_handler_->iSendFrame(&message);
 }
 

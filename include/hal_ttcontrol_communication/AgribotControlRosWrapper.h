@@ -23,29 +23,36 @@
 #include <memory>
 #include <string>
 
+
 constexpr uint WAIT_FOR_TTCONTROL = 100000;
-constexpr std::uint8_t CARTS_ENCODERS_INIT_TIMEOUT_LIMIT = 10;
-constexpr std::uint8_t ENGINE_SERVICE_TIMEOUT_LIMIT = 60;
+constexpr std::uint16_t CARTS_ENCODERS_INIT_TIMEOUT_LIMIT = 10;
+constexpr std::uint16_t ENGINE_SERVICE_TIMEOUT_LIMIT = 60;
+constexpr std::uint16_t DELTAS_EXTENSION_TIMEOUT_LIMIT = 150;
+
 constexpr bool READ_BACKUP_CARTS_ENCODERS_FILE = false;
 constexpr bool READ_REGULAR_CARTS_ENCODERS_FILE = true;
 constexpr std::string_view TTCONTROL_CONNECTION_MSG = "connected";
-constexpr bool TTCONTROL_CONNECTED = true;
-constexpr bool TTCONTROL_DISCONNECTED = false;
 
-enum RobotsCarts : std::uint8_t
+enum TtcontrolConnectionStatus : bool
 {
-  front_cart = 1,
-  back_cart = 0
+    connected = true,
+    disconnected = false
+};
+
+enum Cart : std::uint8_t
+{
+  front = 1,
+  back = 0
 };
 
 enum TTControlParameterFlag : std::uint32_t
 {
   lowest_flag_value = 0x01,
   signal_params = 0x01,
-  front_pid_t_params = 0x02,
-  front_pid_r_params = 0x04,
-  back_pid_t_params = 0x08,
-  back_pid_r_params = 0x10,
+  front_pid_translation_params = 0x02,
+  front_pid_rotation_params = 0x04,
+  back_pid_translation_params = 0x08,
+  back_pid_rotation_params = 0x10,
   front_left_caterpillar_pid_params = 0x20,
   front_left_caterpillar_signals_base = 0x40,
   front_right_caterpillar_pid_params = 0x80,
@@ -61,24 +68,8 @@ enum TTControlParameterFlag : std::uint32_t
   every_flag_set = 0xFFFFFFFF
 };
 
-class Rosinit
-{
-  int is_inited = 0;
-
-public:
-  Rosinit(int argc, char** argv, const char* node_name)
-  {
-    if (!is_inited)
-    {
-      ros::init(argc, argv, node_name);
-      is_inited = 1;
-    }
-  }
-};
-
 class AgribotControlRosWrapper
 {
-  Rosinit init;
   std::unique_ptr<ros::NodeHandle> nh_;
   std::unique_ptr<TTCommControl> ttcontrol_communication_handler_;
   std_msgs::Float32 front_angle_msg_;
@@ -87,20 +78,20 @@ class AgribotControlRosWrapper
   agribot_msgs::AgribotCaterpillarWheelsRotation encoder_sum_msg_;
   std::string path_to_carts_encoders_file_;
 
-  ros::Subscriber sub_caterpillar_;
-  ros::Subscriber sub_connection_state_;
+  ros::Subscriber caterpillar_sub_;
+  ros::Subscriber connection_state_sub_;
   ros::Subscriber tpl_front_control_sub_;
   ros::Subscriber tpl_back_control_sub_;
   ros::Publisher carts_status_publisher_;
   ros::Publisher track_encoder_sum_publisher_;
   ros::Publisher front_cart_angle_publisher_;
   ros::Publisher back_cart_angle_publisher_;
-  dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig> parameter_server_;
+  std::unique_ptr<dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>> parameter_server_handler_;
   dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>::CallbackType callback_function_object_;
-  ros::ServiceServer service_front_;
-  ros::ServiceServer service_back_;
-  ros::ServiceServer service_engine_start_;
-  ros::ServiceServer service_engine_stop_;
+  ros::ServiceServer change_delta_front_service_;
+  ros::ServiceServer change_delta_back_service_;
+  ros::ServiceServer engine_start_service_;
+  ros::ServiceServer engine_stop_service_;
 
   bool readEncodersDataFile();
   void ttcontrolConnectionState(const std_msgs::String& msg);
@@ -117,12 +108,12 @@ class AgribotControlRosWrapper
   bool
   deltasChangeGeometryServiceExecution(const agribot_msgs::ChangeDeltasGeometry::Request& req,
                                        agribot_msgs::ChangeDeltasGeometry::Response& res,  // NOLINT(runtime/references)
-                                       const RobotsCarts selected_cart);
+                                       const Cart selected_cart);
   void setDeltasGeometryResult(agribot_msgs::ChangeDeltasGeometry::Response& res,  // NOLINT(runtime/references)
                                const agribot_msgs::ChangeDeltasGeometry::Request& req);
-  void waitTillDeltasGeometryIsSet(const RobotsCarts selected_cart,
+  bool waitTillDeltasGeometryIsSet(const Cart selected_cart,
                                    const agribot_msgs::ChangeDeltasGeometry::Request& req);
-  bool sendDeltasGeometryCommand(const RobotsCarts selected_cart,
+  bool sendDeltasGeometryCommand(const Cart selected_cart,
                                  const agribot_msgs::ChangeDeltasGeometry::Request& req);
   void backTplControlCallback(const agribot_msgs::AgribotTool& msg);
   void frontTplControlCallback(const agribot_msgs::AgribotTool& msg);
@@ -133,7 +124,7 @@ class AgribotControlRosWrapper
   void sendAllParameterGroups(const hal_agribot_control::TTControlParametersConfig& config);
   TtcontrolOverrideParameters
   parseConfigToOverrideParameters(const hal_agribot_control::TTControlParametersConfig& config);
-  TplControl tpl_control_msg_to_tpl_control_struct(const agribot_msgs::AgribotTool& msg);
+  TplControl agribotToolMsgToTplControlStruct(const agribot_msgs::AgribotTool& msg);
   void registerSubscribers();
   void registerPublishers();
   void registerServices();

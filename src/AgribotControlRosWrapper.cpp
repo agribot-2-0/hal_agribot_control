@@ -14,9 +14,9 @@ using std::uint8_t;
 
 void AgribotControlRosWrapper::registerSubscribers()
 {
-  sub_caterpillar_ =
+  caterpillar_sub_ =
       nh_->subscribe("/agribot/control/caterpillar", 1, &AgribotControlRosWrapper::caterpillarsControlCallback, this);
-  sub_connection_state_ = nh_->subscribe("/agribot/ttcontrol/connection_state", 1,
+  connection_state_sub_ = nh_->subscribe("/agribot/ttcontrol/connection_state", 1,
                                          &AgribotControlRosWrapper::ttcontrolConnectionState, this);
   tpl_front_control_sub_ =
       nh_->subscribe("/agribot/control/tool/front/valves", 1, &AgribotControlRosWrapper::frontTplControlCallback, this);
@@ -27,45 +27,49 @@ void AgribotControlRosWrapper::registerSubscribers()
 void AgribotControlRosWrapper::registerPublishers()
 {
   carts_status_publisher_ = nh_->advertise<agribot_msgs::AgribotCaterpillar>("/agribot/encoder/caterpillar", 1);
-  track_encoder_sum_publisher_ = nh_->advertise<agribot_msgs::AgribotCaterpillarWheelsRotation>("/agribot/encoder/"
-                                                                                                "caterpillar/rotations/"
-                                                                                                "impulses",
-                                                                                                1);
+  track_encoder_sum_publisher_ =  //
+      nh_->advertise<agribot_msgs::AgribotCaterpillarWheelsRotation>("/agribot/encoder/caterpillar/rotations/impulses",
+                                                                     1);
   front_cart_angle_publisher_ = nh_->advertise<std_msgs::Float32>("/agribot/encoder/cart/front", 1);
   back_cart_angle_publisher_ = nh_->advertise<std_msgs::Float32>("/agribot/encoder/cart/back", 1);
 }
 
 void AgribotControlRosWrapper::registerServices()
 {
-  service_front_ = nh_->advertiseService("/agribot/cart/caterpillar/front/change_deltas_geometry",
-                                         &AgribotControlRosWrapper::frontDeltasGeometryServiceCallback, this);
-  service_back_ = nh_->advertiseService("/agribot/cart/caterpillar/back/change_deltas_geometry",
-                                        &AgribotControlRosWrapper::backDeltasGeometryServiceCallback, this);
-  service_engine_start_ =
+  change_delta_front_service_ =
+      nh_->advertiseService("/agribot/cart/caterpillar/front/change_deltas_geometry",
+                            &AgribotControlRosWrapper::frontDeltasGeometryServiceCallback, this);
+  change_delta_back_service_ =
+      nh_->advertiseService("/agribot/cart/caterpillar/back/change_deltas_geometry",
+                            &AgribotControlRosWrapper::backDeltasGeometryServiceCallback, this);
+  engine_start_service_ =
       nh_->advertiseService("/agribot/engine_start", &AgribotControlRosWrapper::engineStartService, this);
-  service_engine_stop_ =
+  engine_stop_service_ =
       nh_->advertiseService("/agribot/engine_stop", &AgribotControlRosWrapper::engineStopService, this);
+  parameter_server_handler_ =
+      std::make_unique<dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>>();
   callback_function_object_ = boost::bind(&AgribotControlRosWrapper::callbackDynamicReconfigure, this, _1, _2);
-  parameter_server_.setCallback(callback_function_object_);
+  parameter_server_handler_->setCallback(callback_function_object_);
 }
 
 AgribotControlRosWrapper::AgribotControlRosWrapper(int argc, char** argv, const char* node_name)
-  : init(argc, argv, node_name)
 {
+  // init ros
+  ros::init(argc, argv, node_name);
   nh_ = std::make_unique<ros::NodeHandle>();
+  // create TTControl communication handler
   ttcontrol_communication_handler_ = std::make_unique<TTCommControl>();
   // can initialization
   std::string selected_can;
   selected_can = ros_common_functions::getRosParam<std::string>("/hal_agribot_control/can_bus_name");
-  std::unique_ptr<Can> can_handler = std::make_unique<Can>();
-  can_handler->iInitialize(selected_can.c_str());
-  ttcontrol_communication_handler_->initializeCanHandler(std::move(can_handler));
+  ttcontrol_communication_handler_->initializeCanHandler(selected_can);
   // register to ros topics and services
   registerSubscribers();
   registerPublishers();
   registerServices();
   // encoder initialization reading
-  nh_->getParam("path_to_encoder_file", path_to_carts_encoders_file_);
+  path_to_carts_encoders_file_ = ros_common_functions::getRosParam<std::string>("path_to_encoder_file");
+  //nh_->getParam("path_to_encoder_file", path_to_carts_encoders_file_);
   ttcontrol_communication_handler_->setPathToCartsEncodersDataFile(path_to_carts_encoders_file_);
   if (!readEncodersDataFile())
   {
@@ -145,10 +149,10 @@ void AgribotControlRosWrapper::execute()
     {
       if (!readEncodersDataFile())
       {
-        throw std::invalid_argument("Failed to read carts angle data file content ! Robots carts encoders values are "
-                                    "not "
-                                    "inited! \nAttempted path: " +
-                                    path_to_carts_encoders_file_);
+        throw std::invalid_argument(  //
+            "Failed to read carts angle data file content ! Robots carts encoders values are not inited!"
+            "\nAttempted path: " +
+            path_to_carts_encoders_file_);
       }
       ttcontrol_communication_handler_->sendCartsEncodersInitialization();
     }
@@ -178,7 +182,7 @@ void AgribotControlRosWrapper::execute()
   }
 }
 
-TplControl AgribotControlRosWrapper::tpl_control_msg_to_tpl_control_struct(const agribot_msgs::AgribotTool& msg)
+TplControl AgribotControlRosWrapper::agribotToolMsgToTplControlStruct(const agribot_msgs::AgribotTool& msg)
 {
   TplControl control_values;
   control_values.angle_actuator = static_cast<std::int16_t>(msg.tpl_angle);
@@ -207,8 +211,6 @@ AgribotControlRosWrapper::parseConfigToOverrideParameters(const hal_agribot_cont
 void AgribotControlRosWrapper::callbackDynamicReconfigure(const hal_agribot_control::TTControlParametersConfig& config,
                                                           uint32_t level)
 {
-  // maximum number of queed msg to read in TTControl for a given CAN_ID is 10, so we need to send the msgs
-  // in turns
   if (level == TTControlParameterFlag::every_flag_set)
   {
     sendAllParameterGroups(config);
@@ -235,22 +237,22 @@ void AgribotControlRosWrapper::sendParameterGroup(const uint32_t parameter_group
       ttcontrol_communication_handler_->sendSignalsParameters(config.ditter_period_int, config.ditter_amplitude_int,
                                                               config.encoder_period_int);
       break;
-    case TTControlParameterFlag::front_pid_t_params:
+    case TTControlParameterFlag::front_pid_translation_params:
       ttcontrol_communication_handler_->sendCartsPidParameters(config.front_kp_t_double, config.front_ki_t_double,
                                                                config.front_kd_t_double, config.front_acc_t_double,
                                                                TTControlParameterType::front_pid_t);
       break;
-    case TTControlParameterFlag::front_pid_r_params:
+    case TTControlParameterFlag::front_pid_rotation_params:
       ttcontrol_communication_handler_->sendCartsPidParameters(config.front_kp_r_double, config.front_ki_r_double,
                                                                config.front_kd_r_double, config.front_acc_r_double,
                                                                TTControlParameterType::front_pid_r);
       break;
-    case TTControlParameterFlag::back_pid_t_params:
+    case TTControlParameterFlag::back_pid_translation_params:
       ttcontrol_communication_handler_->sendCartsPidParameters(config.back_kp_t_double, config.back_ki_t_double,
                                                                config.back_kd_t_double, config.back_acc_t_double,
                                                                TTControlParameterType::back_pid_t);
       break;
-    case TTControlParameterFlag::back_pid_r_params:
+    case TTControlParameterFlag::back_pid_rotation_params:
       ttcontrol_communication_handler_->sendCartsPidParameters(config.back_kp_r_double, config.back_ki_r_double,
                                                                config.back_kd_r_double, config.back_acc_r_double,
                                                                TTControlParameterType::back_pid_r);
@@ -299,8 +301,9 @@ void AgribotControlRosWrapper::sendParameterGroup(const uint32_t parameter_group
       ttcontrol_communication_handler_->sendOverrideLimits(parseConfigToOverrideParameters(config));
       break;
     case TTControlParameterFlag::stabilization_params:
-      ttcontrol_communication_handler_->sendStabilizationParameters(config.stab_pid_kp, config.stab_pid_kd,
-                                                                    config.stab_pid_ki, config.stab_pid_max_signal);
+      ttcontrol_communication_handler_->sendStabilizationParameters(
+          config.chassis_stabilization_pid_kp, config.chassis_stabilization_pid_kd, config.chassis_stabilization_pid_ki,
+          config.chassis_stabilization_pid_max_signal);
       break;
     case TTControlParameterFlag::oil_and_engine_params:
       ttcontrol_communication_handler_->sendOilAndEngineParams(config.max_oil_temperature, config.min_oil_temperature,
@@ -314,54 +317,25 @@ void AgribotControlRosWrapper::sendParameterGroup(const uint32_t parameter_group
 
 void AgribotControlRosWrapper::sendAllParameterGroups(const hal_agribot_control::TTControlParametersConfig& config)
 {
-  ttcontrol_communication_handler_->sendSignalsParameters(config.ditter_period_int, config.ditter_amplitude_int,
-                                                          config.encoder_period_int);
-  ttcontrol_communication_handler_->sendCartsPidParameters(config.front_kp_t_double, config.front_ki_t_double,
-                                                           config.front_kd_t_double, config.front_acc_t_double,
-                                                           TTControlParameterType::front_pid_t);
-  ttcontrol_communication_handler_->sendCartsPidParameters(config.front_kp_r_double, config.front_ki_r_double,
-                                                           config.front_kd_r_double, config.front_acc_r_double,
-                                                           TTControlParameterType::front_pid_r);
-  ttcontrol_communication_handler_->sendCartsPidParameters(config.back_kp_t_double, config.back_ki_t_double,
-                                                           config.back_kd_t_double, config.back_acc_t_double,
-                                                           TTControlParameterType::back_pid_t);
-  ttcontrol_communication_handler_->sendCartsPidParameters(config.back_kp_r_double, config.back_ki_r_double,
-                                                           config.back_kd_r_double, config.back_acc_r_double,
-                                                           TTControlParameterType::back_pid_r);
-  ttcontrol_communication_handler_->sendCaterpillarPidParameters(
-      config.front_left_caterpillar_kp, config.front_left_caterpillar_ki, config.front_left_caterpillar_kd,
-      TTControlParameterType::front_left_caterpillar_pid);
+  // maximum number of queued msg to read in TTControl for a given CAN_ID is 10, so we need to send the msgs
+  // in turns of arbitratry number of frames lower than 10
+  uint8_t arbitrary_group_count = 6;
+  uint8_t group_delay_counter = 0;
 
-  ros::Duration(0.5).sleep();  // sleep for half a second, to give TTControl time to read and save the parameters
-  ttcontrol_communication_handler_->sendCaterpillarBaseSignal(
-      config.front_left_caterpillar_signal_base_forward, config.front_left_caterpillar_signal_base_backward,
-      TTControlParameterType::front_left_caterpillar_signal_base);
-  ttcontrol_communication_handler_->sendCaterpillarPidParameters(
-      config.front_right_caterpillar_kp, config.front_right_caterpillar_ki, config.front_right_caterpillar_kd,
-      TTControlParameterType::front_right_caterpillar_pid);
-  ttcontrol_communication_handler_->sendCaterpillarBaseSignal(
-      config.front_right_caterpillar_signal_base_forward, config.front_right_caterpillar_signal_base_backward,
-      TTControlParameterType::front_right_caterpillar_signal_base);
-  ttcontrol_communication_handler_->sendCaterpillarPidParameters(
-      config.back_left_caterpillar_kp, config.back_left_caterpillar_ki, config.back_left_caterpillar_kd,
-      TTControlParameterType::back_left_caterpillar_pid);
-  ttcontrol_communication_handler_->sendCaterpillarBaseSignal(
-      config.back_left_caterpillar_signal_base_forward, config.back_left_caterpillar_signal_base_backward,
-      TTControlParameterType::back_left_caterpillar_signal_base);
-  ttcontrol_communication_handler_->sendCaterpillarPidParameters(
-      config.back_right_caterpillar_kp, config.back_right_caterpillar_ki, config.back_right_caterpillar_kd,
-      TTControlParameterType::back_right_caterpillar_pid);
-  ttcontrol_communication_handler_->sendCaterpillarBaseSignal(
-      config.back_right_caterpillar_signal_base_forward, config.back_right_caterpillar_signal_base_backward,
-      TTControlParameterType::back_right_caterpillar_signal_base);
-
-  ros::Duration(0.5).sleep();  // sleep for half a second, to give TTControl time to read and save the parameters
-  ttcontrol_communication_handler_->sendOverrideLimits(std::move(parseConfigToOverrideParameters(config)));
-  ttcontrol_communication_handler_->sendStabilizationParameters(config.stab_pid_kp, config.stab_pid_kd,
-                                                                config.stab_pid_ki, config.stab_pid_max_signal);
-  ttcontrol_communication_handler_->sendOilAndEngineParams(config.max_oil_temperature, config.min_oil_temperature,
-                                                           config.histeresis_oil_temperature, config.engine_rpm_max,
-                                                           config.engine_rpm_min);
+  for (uint64_t bit_flag_iterator = TTControlParameterFlag::lowest_flag_value;
+       bit_flag_iterator < TTControlParameterFlag::highest_flag_value; bit_flag_iterator = bit_flag_iterator << 1)
+  {
+    if (TTControlParameterFlag::every_flag_set & bit_flag_iterator)
+    {
+      sendParameterGroup(bit_flag_iterator, config);
+    }
+    // delay procedure to give ttcontrol time to process
+    group_delay_counter++;
+    if (group_delay_counter % arbitrary_group_count == 0)
+    {
+      ros::Duration(0.5).sleep();  // sleep for half a second, to give TTControl time to read and save the parameters
+    }
+  }
 }
 
 void AgribotControlRosWrapper::caterpillarsControlCallback(const agribot_msgs::AgribotCaterpillar& msg)
@@ -373,22 +347,21 @@ void AgribotControlRosWrapper::caterpillarsControlCallback(const agribot_msgs::A
 void AgribotControlRosWrapper::frontTplControlCallback(const agribot_msgs::AgribotTool& msg)
 {
   ttcontrol_communication_handler_->sendTplValveControlViaCan(SelectedTpl::front,
-                                                              tpl_control_msg_to_tpl_control_struct(msg));
+                                                              agribotToolMsgToTplControlStruct(msg));
 }
 
 void AgribotControlRosWrapper::backTplControlCallback(const agribot_msgs::AgribotTool& msg)
 {
-  ttcontrol_communication_handler_->sendTplValveControlViaCan(SelectedTpl::back,
-                                                              tpl_control_msg_to_tpl_control_struct(msg));
+  ttcontrol_communication_handler_->sendTplValveControlViaCan(SelectedTpl::back, agribotToolMsgToTplControlStruct(msg));
 }
 
-bool AgribotControlRosWrapper::sendDeltasGeometryCommand(const RobotsCarts selected_cart,
+bool AgribotControlRosWrapper::sendDeltasGeometryCommand(const Cart selected_cart,
                                                          const agribot_msgs::ChangeDeltasGeometry::Request& req)
 {
   if (req.cart_delta_command == agribot_msgs::ChangeDeltasGeometry::Request::ELEVATED_CATERPILLAR_GEOMETRY ||
       req.cart_delta_command == agribot_msgs::ChangeDeltasGeometry::Request::NORMAL_CATERPILLAR_GEOMETRY)
   {
-    if (selected_cart == RobotsCarts::front_cart)
+    if (selected_cart == Cart::front)
     {
       ttcontrol_communication_handler_->sendDeltasGeometryCommand(
           req.cart_delta_command, agribot_msgs::ChangeDeltasGeometry::Request::UNKNOWN_CATERPILLAR_GEOMETRY);
@@ -407,26 +380,39 @@ bool AgribotControlRosWrapper::sendDeltasGeometryCommand(const RobotsCarts selec
   }
 }
 
-void AgribotControlRosWrapper::waitTillDeltasGeometryIsSet(const RobotsCarts selected_cart,
+bool AgribotControlRosWrapper::waitTillDeltasGeometryIsSet(const Cart selected_cart,
                                                            const agribot_msgs::ChangeDeltasGeometry::Request& req)
 {
   const CartsStatus& cartsStatus = ttcontrol_communication_handler_->getCartsStatus();
   uint8_t cart_state = agribot_msgs::ChangeDeltasGeometry::Response::UNKNOWN_CATERPILLAR_GEOMETRY;
-  if (selected_cart == RobotsCarts::front_cart)
+  uint16_t request_timeout_limit_counter = 0;
+  if (selected_cart == Cart::front)
   {
     while (cart_state != req.cart_delta_command)
     {
+      if (request_timeout_limit_counter == DELTAS_EXTENSION_TIMEOUT_LIMIT)
+      {
+        return false;
+      }
       cart_state = cartsStatus.getFrontCartGeometryState();
       ros::Duration(0.1).sleep();
+      request_timeout_limit_counter++;
     }
+    return true;
   }
   else
   {
     while (cart_state != req.cart_delta_command)
     {
+      if (request_timeout_limit_counter == DELTAS_EXTENSION_TIMEOUT_LIMIT)
+      {
+        return false;
+      }
       cart_state = cartsStatus.getBackCartGeometryState();
       ros::Duration(0.1).sleep();
+      request_timeout_limit_counter++;
     }
+    return true;
   }
 }
 
@@ -451,11 +437,15 @@ void AgribotControlRosWrapper::setDeltasGeometryResult(
 bool AgribotControlRosWrapper::deltasChangeGeometryServiceExecution(
     const agribot_msgs::ChangeDeltasGeometry::Request& req,
     agribot_msgs::ChangeDeltasGeometry::Response& res,  // NOLINT(runtime/references)
-    const RobotsCarts selected_cart)
+    const Cart selected_cart)
 {
   if (sendDeltasGeometryCommand(selected_cart, req))
   {
-    waitTillDeltasGeometryIsSet(selected_cart, req);
+    if (!waitTillDeltasGeometryIsSet(selected_cart, req))
+    {
+      res.result = res.UNKNOWN_CATERPILLAR_GEOMETRY;
+      return false;
+    }
     setDeltasGeometryResult(res, req);
     return true;
   }
@@ -470,14 +460,14 @@ bool AgribotControlRosWrapper::frontDeltasGeometryServiceCallback(
     agribot_msgs::ChangeDeltasGeometry::Request& req,   // NOLINT(runtime/references)
     agribot_msgs::ChangeDeltasGeometry::Response& res)  // NOLINT(runtime/references)
 {
-  return deltasChangeGeometryServiceExecution(req, res, RobotsCarts::front_cart);
+  return deltasChangeGeometryServiceExecution(req, res, Cart::front);
 }
 
 bool AgribotControlRosWrapper::backDeltasGeometryServiceCallback(
     agribot_msgs::ChangeDeltasGeometry::Request& req,   // NOLINT(runtime/references)
     agribot_msgs::ChangeDeltasGeometry::Response& res)  // NOLINT(runtime/references)
 {
-  return deltasChangeGeometryServiceExecution(req, res, RobotsCarts::back_cart);
+  return deltasChangeGeometryServiceExecution(req, res, Cart::back);
 }
 
 bool AgribotControlRosWrapper::engineStartService(std_srvs::Trigger::Request& req,   // NOLINT(runtime/references)
@@ -533,11 +523,11 @@ void AgribotControlRosWrapper::ttcontrolConnectionState(const std_msgs::String& 
 {
   if (msg.data == TTCONTROL_CONNECTION_MSG)
   {
-    ttcontrol_communication_handler_->setTtcontrolConnectionStatus(TTCONTROL_CONNECTED);
+    ttcontrol_communication_handler_->setTtcontrolConnectionStatus(TtcontrolConnectionStatus::connected);
   }
   else
   {
-    ttcontrol_communication_handler_->setTtcontrolConnectionStatus(TTCONTROL_DISCONNECTED);
+    ttcontrol_communication_handler_->setTtcontrolConnectionStatus(TtcontrolConnectionStatus::disconnected);
   }
 }
 
