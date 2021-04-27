@@ -69,7 +69,7 @@ AgribotControlRosWrapper::AgribotControlRosWrapper(int argc, char** argv, const 
   registerServices();
   // encoder initialization reading
   path_to_carts_encoders_file_ = ros_common_functions::getRosParam<std::string>("path_to_encoder_file");
-  //nh_->getParam("path_to_encoder_file", path_to_carts_encoders_file_);
+  // nh_->getParam("path_to_encoder_file", path_to_carts_encoders_file_);
   ttcontrol_communication_handler_->setPathToCartsEncodersDataFile(path_to_carts_encoders_file_);
   if (!readEncodersDataFile())
   {
@@ -119,7 +119,7 @@ void AgribotControlRosWrapper::execute()
     {
       // TODO(Michal/Adam): Implement some diagnostics
       ROS_INFO("[AgribotControlNode] Received automatic mode request");
-      usleep(WAIT_FOR_TTCONTROL);
+      usleep(TimeoutsLimits::wait_for_ttcontrol);
       ttcontrol_communication_handler_->confirmAdvantechReadiness();
       ttcontrol_communication_handler_->clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::automatic_state_request);
     }
@@ -168,7 +168,7 @@ void AgribotControlRosWrapper::execute()
     }
     else
     {
-      if (encoder_init_timeout_counter >= CARTS_ENCODERS_INIT_TIMEOUT_LIMIT)
+      if (encoder_init_timeout_counter >= TimeoutsLimits::carts_encoders_init_timeout_limit)
       {
         ROS_ERROR("[AgribotControlNode] Carts encoders not inited!");
         encoder_init_timeout_counter = 0;
@@ -390,7 +390,7 @@ bool AgribotControlRosWrapper::waitTillDeltasGeometryIsSet(const Cart selected_c
   {
     while (cart_state != req.cart_delta_command)
     {
-      if (request_timeout_limit_counter == DELTAS_EXTENSION_TIMEOUT_LIMIT)
+      if (request_timeout_limit_counter == TimeoutsLimits::deltas_extension_timeout_limit)
       {
         return false;
       }
@@ -404,7 +404,7 @@ bool AgribotControlRosWrapper::waitTillDeltasGeometryIsSet(const Cart selected_c
   {
     while (cart_state != req.cart_delta_command)
     {
-      if (request_timeout_limit_counter == DELTAS_EXTENSION_TIMEOUT_LIMIT)
+      if (request_timeout_limit_counter == TimeoutsLimits::deltas_extension_timeout_limit)
       {
         return false;
       }
@@ -481,7 +481,7 @@ bool AgribotControlRosWrapper::engineStartService(std_srvs::Trigger::Request& re
   {
     ros::Duration(0.1).sleep();
     timeout_counter++;
-    if (timeout_counter > ENGINE_SERVICE_TIMEOUT_LIMIT)
+    if (timeout_counter > TimeoutsLimits::engine_service_timeout_limit)
     {
       // send the msg to stop engine to prevent its sudden start when resolving problems causing the failure
       ttcontrol_communication_handler_->sendEngineCommand(TTControlEngineCommands::stop_engine);
@@ -507,7 +507,7 @@ bool AgribotControlRosWrapper::engineStopService(std_srvs::Trigger::Request& req
   {
     ros::Duration(0.1).sleep();
     timeout_counter++;
-    if (timeout_counter > ENGINE_SERVICE_TIMEOUT_LIMIT)
+    if (timeout_counter > TimeoutsLimits::engine_service_timeout_limit)
     {
       res.success = false;
       res.message = "Couldnt stop engine, please check: \n- can interface connection";
@@ -533,9 +533,10 @@ void AgribotControlRosWrapper::ttcontrolConnectionState(const std_msgs::String& 
 
 bool AgribotControlRosWrapper::readEncodersDataFile()
 {
-  if (!ttcontrol_communication_handler_->readCartsEncodersDataFile(READ_REGULAR_CARTS_ENCODERS_FILE))
+  if (!ttcontrol_communication_handler_->readCartsEncodersDataFile(EncodersFileState::read_regular_carts_encoders_file))
   {
-    return ttcontrol_communication_handler_->readCartsEncodersDataFile(READ_BACKUP_CARTS_ENCODERS_FILE);
+    return ttcontrol_communication_handler_->readCartsEncodersDataFile(
+        EncodersFileState::read_backup_carts_encoders_file);
   }
   return true;
 }

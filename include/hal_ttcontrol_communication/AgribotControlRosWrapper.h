@@ -23,20 +23,26 @@
 #include <memory>
 #include <string>
 
-
-constexpr uint WAIT_FOR_TTCONTROL = 100000;
-constexpr std::uint16_t CARTS_ENCODERS_INIT_TIMEOUT_LIMIT = 10;
-constexpr std::uint16_t ENGINE_SERVICE_TIMEOUT_LIMIT = 60;
-constexpr std::uint16_t DELTAS_EXTENSION_TIMEOUT_LIMIT = 150;
-
-constexpr bool READ_BACKUP_CARTS_ENCODERS_FILE = false;
-constexpr bool READ_REGULAR_CARTS_ENCODERS_FILE = true;
 constexpr std::string_view TTCONTROL_CONNECTION_MSG = "connected";
+
+enum TimeoutsLimits : uint
+{
+  wait_for_ttcontrol = 100000,
+  carts_encoders_init_timeout_limit = 10,
+  engine_service_timeout_limit = 60,
+  deltas_extension_timeout_limit = 150
+};
+
+enum EncodersFileState : bool
+{
+  read_backup_carts_encoders_file = false,
+  read_regular_carts_encoders_file = true
+};
 
 enum TtcontrolConnectionStatus : bool
 {
-    connected = true,
-    disconnected = false
+  connected = true,
+  disconnected = false
 };
 
 enum Cart : std::uint8_t
@@ -86,7 +92,8 @@ class AgribotControlRosWrapper
   ros::Publisher track_encoder_sum_publisher_;
   ros::Publisher front_cart_angle_publisher_;
   ros::Publisher back_cart_angle_publisher_;
-  std::unique_ptr<dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>> parameter_server_handler_;
+  std::unique_ptr<dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>>
+      parameter_server_handler_;
   dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>::CallbackType callback_function_object_;
   ros::ServiceServer change_delta_front_service_;
   ros::ServiceServer change_delta_back_service_;
@@ -111,10 +118,8 @@ class AgribotControlRosWrapper
                                        const Cart selected_cart);
   void setDeltasGeometryResult(agribot_msgs::ChangeDeltasGeometry::Response& res,  // NOLINT(runtime/references)
                                const agribot_msgs::ChangeDeltasGeometry::Request& req);
-  bool waitTillDeltasGeometryIsSet(const Cart selected_cart,
-                                   const agribot_msgs::ChangeDeltasGeometry::Request& req);
-  bool sendDeltasGeometryCommand(const Cart selected_cart,
-                                 const agribot_msgs::ChangeDeltasGeometry::Request& req);
+  bool waitTillDeltasGeometryIsSet(const Cart selected_cart, const agribot_msgs::ChangeDeltasGeometry::Request& req);
+  bool sendDeltasGeometryCommand(const Cart selected_cart, const agribot_msgs::ChangeDeltasGeometry::Request& req);
   void backTplControlCallback(const agribot_msgs::AgribotTool& msg);
   void frontTplControlCallback(const agribot_msgs::AgribotTool& msg);
   void caterpillarsControlCallback(const agribot_msgs::AgribotCaterpillar& msg);
