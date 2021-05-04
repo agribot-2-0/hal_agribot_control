@@ -392,6 +392,9 @@ bool AgribotControlRosWrapper::waitTillDeltasGeometryIsSet(const Cart selected_c
     {
       if (request_timeout_limit_counter == TimeoutsLimits::deltas_extension_timeout_limit)
       {
+        ttcontrol_communication_handler_->sendDeltasGeometryCommand(
+            agribot_msgs::ChangeDeltasGeometry::Request::NORMAL_CATERPILLAR_GEOMETRY,
+            agribot_msgs::ChangeDeltasGeometry::Request::UNKNOWN_CATERPILLAR_GEOMETRY);
         return false;
       }
       cart_state = cartsStatus.getFrontCartGeometryState();
@@ -406,6 +409,9 @@ bool AgribotControlRosWrapper::waitTillDeltasGeometryIsSet(const Cart selected_c
     {
       if (request_timeout_limit_counter == TimeoutsLimits::deltas_extension_timeout_limit)
       {
+        ttcontrol_communication_handler_->sendDeltasGeometryCommand(
+            agribot_msgs::ChangeDeltasGeometry::Request::UNKNOWN_CATERPILLAR_GEOMETRY,
+            agribot_msgs::ChangeDeltasGeometry::Request::NORMAL_CATERPILLAR_GEOMETRY);
         return false;
       }
       cart_state = cartsStatus.getBackCartGeometryState();
@@ -444,7 +450,7 @@ bool AgribotControlRosWrapper::deltasChangeGeometryServiceExecution(
     if (!waitTillDeltasGeometryIsSet(selected_cart, req))
     {
       res.result = res.UNKNOWN_CATERPILLAR_GEOMETRY;
-      return false;
+      return true;
     }
     setDeltasGeometryResult(res, req);
     return true;
@@ -452,7 +458,7 @@ bool AgribotControlRosWrapper::deltasChangeGeometryServiceExecution(
   else
   {
     res.result = res.UNKNOWN_CATERPILLAR_GEOMETRY;
-    return false;
+    return true;
   }
 }
 
