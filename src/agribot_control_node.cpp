@@ -14,6 +14,6 @@ int main(int argc, char** argv)
   }
   catch (const std::exception& ex)
   {
-    ROS_ERROR_STREAM("[HAL_AGRIBOT_CONTROL] " << ex.what());
+    ROS_ERROR_STREAM("[HalAgribotControl] " << ex.what());
   }
 }

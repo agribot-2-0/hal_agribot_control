@@ -31,139 +31,138 @@ struct TtcontrolOverrideParameters
 
 enum ProtocolFrameBytesValues : std::uint8_t
 {
-  ttc_ok = 0x01,
-  ttc_automatic_mode_request = 0x20,
-  ttc_carts_encoders_initialization = 0x30,
-  ttc_start_stop_engine = 0x40
+  TtcOk = 0x01,
+  TtcAutomaticModeRequest = 0x20,
+  TtcCartsEncodersInitialization = 0x30,
+  TtcStartStopEngine = 0x40
 };
 
 enum ReceivedFramesRegisterMask : std::uint32_t
 {
-  velocities = 0x01,
-  front_angle = 0x02,
-  back_angle = 0x04,
-  automatic_state_request = 0x10,
-  automatic_state_request_error = 0x20,
-  geometry_feedback = 0x40,
-  track_encoder_sum = 0x80
+  Velocities = 0x01,
+  FrontAngle = 0x02,
+  BackAngle = 0x04,
+  AutomaticStateRequest = 0x10,
+  AutomaticStateRequestError = 0x20,
+  GeometryFeedback = 0x40,
+  TrackEncoderSum = 0x80
 };
 
 enum SignalsParametersBytePosition : std::uint8_t
 {
-  ditter_period_byte = 1,
-  ditter_amplitude_first_byte = 2,
-  encoder_period_byte = 4
+  DitterPeriodByte = 1,
+  DitterAmplitudeFirstByte = 2,
+  EncoderPeriodByte = 4
 };
 
 enum CaterpillarPidParametersBytePosition : std::uint8_t
 {
-  kp_caterpillar_first_byte = 1,
-  ki_caterpillar_first_byte = 3,
-  kd_caterpillar_first_byte = 5
+  KpCaterpillarFirstByte = 1,
+  KiCaterpillarFirstByte = 3,
+  KdCaterpillarFirstByte = 5
 };
 
 enum CartsPidParametersBytePositions : std::uint8_t
 {
-  kp_first_byte = 1,
-  ki_first_byte = 3,
-  kd_first_byte = 5,
-  acceleration_first_byte = 6
+  KpFirstByte = 1,
+  KiFirstByte = 3,
+  KdFirstByte = 5,
+  AccelerationFirstByte = 6
 };
 
 enum SignalBaseBytePositions : std::uint8_t
 {
-  forward_signal_base_first_byte = 1,
-  backward_signal_base_first_byte = 3
+  ForwardSignalBaseFirstByte = 1,
+  BackwardSignalBaseFirstByte = 3
 };
 
 enum OverrideAndValvesLimitsBytePositions : std::uint8_t
 {
-  cart_rotation_limit_byte = 1,
-  override_linear_velocity_byte = 2,
-  override_angular_velocity_byte = 3,
-  override_valves_limits_byte = 4,
-  deltas_geometry_valves_push_limit_front_byte = 5,
-  deltas_geometry_valves_push_limit_back_byte = 6,
-  deltas_geometry_valves_pull_front_back_byte = 7
+  CartRotationLimitByte = 1,
+  OverrideLinearVelocityByte = 2,
+  OverrideAngularVelocityByte = 3,
+  OverrideValvesLimitsByte = 4,
+  DeltasGeometryValvesPushLimitFrontByte = 5,
+  DeltasGeometryValvesPushLimitBackByte = 6,
+  DeltasGeometryValvesPullFrontBackByte = 7
 };
 
 enum StabilizationBytePositions : std::uint8_t
 {
-  stabilization_kp_byte = 1,
-  stabilization_kd_byte = 2,
-  stabilization_ki_byte = 3,
-  stabilization_maximum_signal_byte = 4
+  StabilizationKpByte = 1,
+  StabilizationKdByte = 2,
+  StabilizationKiByte = 3,
+  StabilizationMaximumSignalByte = 4
 };
 
 enum OilAndEngineBytePositions : std::uint8_t
 {
-  max_oil_temperature_byte = 1,
-  min_oil_temperature_byte = 2,
-  histeresis_oil_temperature_byte = 3,
-  rpm_max_byte = 4,
-  rpm_min_byte = 6
+  MaxOilTemperatureByte = 1,
+  MinOilTemperatureByte = 2,
+  HisteresisOilTemperatureByte = 3,
+  RpmMaxByte = 4,
+  RpmMinByte = 6
 };
 
 enum TransmitCanIds : std::uint32_t
 {
-  protocol_response_frame = 0x00EF64C8,
-  deltas_geometry_command_frame = 0x00FFDCC8,
-  engine_command_frame = 0x00FFD4C8,
-  velocity_control_frame = 0x00FFD0C8,
-  config_frame = 0x00FFDBC8,
-  tpl_control_front = 0x00FFD1C8,
-  tpl_control_back = 0x00FFD2C8
+  ProtocolResponseFrame = 0x00EF64C8,
+  DeltasGeometryCommandFrame = 0x00FFDCC8,
+  VelocityControlFrame = 0x00FFD0C8,
+  ConfigFrame = 0x00FFDBC8,
+  TplControlFront = 0x00FFD1C8,
+  TplControlBack = 0x00FFD2C8
 };
 
 enum ReceiveCanIds : std::uint32_t
 {
-  front_angle_frame = 0xAA20,
-  back_angle_frame = 0xAA21,
-  velocity_frame = 0x00FFD064,
-  deltas_geometry_feedback_frame = 0x00FFDC64,
-  engine_feedback_frame = 0x00FFD664,
-  protocol_frame = 0x00EFC864,
-  track_encoder_sum_frame = 0x00FFD364
+  FrontAngleFrame = 0xAA20,
+  BackAngleFrame = 0xAA21,
+  VelocityFrame = 0x00FFD064,
+  DeltasGeometryFeedbackFrame = 0x00FFDC64,
+  EngineFeedbackFrame = 0x00FFD664,
+  ProtocolFrame = 0x00EFC864,
+  TrackEncoderSumFrame = 0x00FFD364
 };
 
 enum TTControlParameterType : std::uint8_t
 {
-  signals = 0,
-  front_pid_t = 1,
-  front_pid_r = 2,
-  back_pid_t = 3,
-  back_pid_r = 4,
-  front_left_caterpillar_pid = 5,
-  front_left_caterpillar_signal_base = 6,
-  front_right_caterpillar_pid = 7,
-  front_right_caterpillar_signal_base = 8,
-  back_left_caterpillar_pid = 9,
-  back_left_caterpillar_signal_base = 10,
-  back_right_caterpillar_pid = 11,
-  back_right_caterpillar_signal_base = 12,
-  override_speed_and_valve_limits = 13,
-  stabilization = 14,
-  oil_and_engine = 15
+  Signals = 0,
+  FrontPidT = 1,
+  FrontPidR = 2,
+  BackPidT = 3,
+  BackPidR = 4,
+  FrontLeftCaterpillarPid = 5,
+  FrontLeftCaterpillarSignalBase = 6,
+  FrontRightCaterpillarPid = 7,
+  FrontRightCaterpillarSignalBase = 8,
+  BackLeftCaterpillarPid = 9,
+  BackLeftCaterpillarSignalBase = 10,
+  BackRightCaterpillarPid = 11,
+  BackRightCaterpillarSignalBase = 12,
+  OverrideSpeedAndValveLimits = 13,
+  Stabilization = 14,
+  OilAndEngine = 15
 };
 
 enum VelocityType
 {
-  front_linear = 0,
-  front_angular = 2,
-  back_linear = 4,
-  back_angular = 6
+  FrontLinear = 0,
+  FrontAngular = 2,
+  BackLinear = 4,
+  BackAngular = 6
 };
 
 enum TTControlEngineCommands : std::uint8_t
 {
-  stop_engine = 0,
-  start_engine = 1
+  StopEngine = 0,
+  StartEngine = 1
 };
 
 enum class SelectedTpl
 {
-  front,
-  back
+  Front,
+  Back
 };
 
 class TTCommControl
@@ -180,7 +179,7 @@ class TTCommControl
   std::uint32_t init_back_cart_encoder_value_;
   std::uint32_t back_cart_encoder_value_;
   bool back_cart_encoder_unread_;
-  std::uint8_t err_code_ = ProtocolFrameBytesValues::ttc_ok;
+  std::uint8_t err_code_ = ProtocolFrameBytesValues::TtcOk;
   std::string path_to_encoder_file_;
   std::string file_name_ = "/carts_encoder_state_files/carts_encoder_state_data.txt";
   std::string file_name_backup_ = "/carts_encoder_state_files/carts_encoder_state_data_backup.txt";
@@ -216,7 +215,7 @@ public:
   TTCommControl();
   ~TTCommControl();
   void initializeCanHandler(std::unique_ptr<ICan> can_handler);
-  void initializeCanHandler(std::string selected_can);
+  void initializeCanHandler(const std::string& selected_can);
   void update();
   void receiveCanFrames();
   void parseCanFrames();

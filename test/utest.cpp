@@ -39,7 +39,7 @@ TEST(TestTplControl, sendTplValveControlViaCan__When_prepare_tpl_control_frame__
   can_test_->iInitialize("can0");
   TTCommControl ttcontrol_communication_handler;
   ttcontrol_communication_handler.initializeCanHandler(std::move(can_test_));
-  SelectedTpl selection = SelectedTpl::front;
+  SelectedTpl selection = SelectedTpl::Front;
 
   // Test:
   ttcontrol_communication_handler.prepareTplControlFrame(selection, control_values_to_send, frame);

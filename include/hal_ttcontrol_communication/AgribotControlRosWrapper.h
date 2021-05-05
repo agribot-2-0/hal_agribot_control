@@ -23,55 +23,55 @@
 #include <memory>
 #include <string>
 
-constexpr std::string_view TTCONTROL_CONNECTION_MSG = "connected";
+constexpr std::string_view TTCONTROL_CONNECTION_MSG = "Connected";
 
 enum TimeoutsLimits : uint
 {
-  wait_for_ttcontrol = 100000,
-  carts_encoders_init_timeout_limit = 10,
-  engine_service_timeout_limit = 60,
-  deltas_extension_timeout_limit = 150
+  WaitForTtcontrol = 100000,
+  CartsEncodersInitTimeoutLimit = 10,
+  EngineServiceTimeoutLimit = 60,
+  DeltasExtensionTimeoutLimit = 150
 };
 
 enum EncodersFileState : bool
 {
-  read_backup_carts_encoders_file = false,
-  read_regular_carts_encoders_file = true
+  ReadBackupCartsEncodersFile = false,
+  ReadRegularCartsEncodersFile = true
 };
 
 enum TtcontrolConnectionStatus : bool
 {
-  connected = true,
-  disconnected = false
+  Connected = true,
+  Disconnected = false
 };
 
 enum Cart : std::uint8_t
 {
-  front = 1,
-  back = 0
+  Front = 1,
+  Back = 0
 };
 
 enum TTControlParameterFlag : std::uint32_t
 {
-  lowest_flag_value = 0x01,
-  signal_params = 0x01,
-  front_pid_translation_params = 0x02,
-  front_pid_rotation_params = 0x04,
-  back_pid_translation_params = 0x08,
-  back_pid_rotation_params = 0x10,
-  front_left_caterpillar_pid_params = 0x20,
-  front_left_caterpillar_signals_base = 0x40,
-  front_right_caterpillar_pid_params = 0x80,
-  front_right_caterpillar_signals_base = 0x100,
-  back_left_caterpillar_pid_params = 0x200,
-  back_left_caterpillar_signals_base = 0x400,
-  back_right_caterpillar_pid_params = 0x800,
-  back_right_caterpillar_signals_base = 0x1000,
-  override_speed_and_valve_limits_params = 0x2000,
-  stabilization_params = 0x4000,
-  oil_and_engine_params = 0x8000,
-  highest_flag_value = 0x80000000,
-  every_flag_set = 0xFFFFFFFF
+  LowestFlagValue = 0x01,
+  SignalParams = 0x01,
+  FrontPidTranslationParams = 0x02,
+  FrontPidRotationParams = 0x04,
+  BackPidTranslationParams = 0x08,
+  BackPidRotationParams = 0x10,
+  FrontLeftCaterpillarPidParams = 0x20,
+  FrontLeftCaterpillarSignalsBase = 0x40,
+  FrontRightCaterpillarPidParams = 0x80,
+  FrontRightCaterpillarSignalsBase = 0x100,
+  BackLeftCaterpillarPidParams = 0x200,
+  BackLeftCaterpillarSignalsBase = 0x400,
+  BackRightCaterpillarPidParams = 0x800,
+  BackRightCaterpillarSignalsBase = 0x1000,
+  OverrideSpeedAndValveLimitsParams = 0x2000,
+  StabilizationParams = 0x4000,
+  OilAndEngineParams = 0x8000,
+  HighestFlagValue = 0x80000000,
+  EveryFlagSet = 0xFFFFFFFF
 };
 
 class AgribotControlRosWrapper
