@@ -71,16 +71,16 @@ void CartsStatus::setTrackEncoderSum(const EncoderTrackId track_id, const int32_
 {
   switch (track_id)
   {
-    case EncoderTrackId::front_left:
+    case EncoderTrackId::FrontLeft:
       front_left_track_encoder_sum_ = encoder_sum;
       break;
-    case EncoderTrackId::front_right:
+    case EncoderTrackId::FrontRight:
       front_right_track_encoder_sum_ = encoder_sum;
       break;
-    case EncoderTrackId::back_left:
+    case EncoderTrackId::BackLeft:
       back_left_track_encoder_sum_ = encoder_sum;
       break;
-    case EncoderTrackId::back_right:
+    case EncoderTrackId::BackRight:
       back_right_track_encoder_sum_ = encoder_sum;
       break;
     default:
@@ -92,13 +92,13 @@ int32_t CartsStatus::getTrackEncoderSum(const EncoderTrackId track_id) const
 {
   switch (track_id)
   {
-    case EncoderTrackId::front_left:
+    case EncoderTrackId::FrontLeft:
       return front_left_track_encoder_sum_;
-    case EncoderTrackId::front_right:
+    case EncoderTrackId::FrontRight:
       return front_right_track_encoder_sum_;
-    case EncoderTrackId::back_left:
+    case EncoderTrackId::BackLeft:
       return back_left_track_encoder_sum_;
-    case EncoderTrackId::back_right:
+    case EncoderTrackId::BackRight:
       return back_right_track_encoder_sum_;
     default:
       break;

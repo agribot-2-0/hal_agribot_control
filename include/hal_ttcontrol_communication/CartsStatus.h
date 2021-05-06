@@ -7,10 +7,10 @@
 
 enum class EncoderTrackId
 {
-  front_left = 0x01,
-  front_right = 0x02,
-  back_left = 0x04,
-  back_right = 0x08
+  FrontLeft = 0x01,
+  FrontRight = 0x02,
+  BackLeft = 0x04,
+  BackRight = 0x08
 };
 
 class CartsStatus
