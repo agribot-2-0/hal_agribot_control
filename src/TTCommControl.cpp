@@ -296,7 +296,7 @@ void TTCommControl::initializeCanHandler(std::unique_ptr<ICan> can_handler)
 void TTCommControl::initializeCanHandler(const std::string& selected_can)
 {
   can_handler_ = std::make_unique<Can>();
-  can_handler->iInitialize(selected_can.c_str());
+  can_handler_->iInitialize(selected_can.c_str());
 }
 
 void TTCommControl::receiveCanFrames()
