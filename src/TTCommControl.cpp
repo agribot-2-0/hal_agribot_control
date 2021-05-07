@@ -209,6 +209,12 @@ inline int32_t TTCommControl::checkTrackEncoderSumSignBit(const uint8_t bit_mask
   }
 }
 
+inline void TTCommControl::decodeTtcontrolState(const can_frame& frame)
+{
+  ttcontrol_current_state_.automatic_state = static_cast<TtcontrolPossibleStates>(frame.data[0]);
+  ttcontrol_current_state_.manual_state = static_cast<TtcontrolPossibleStates>(frame.data[1]);
+}
+
 void TTCommControl::decodeTrackEncoderSumValue(const can_frame& frame)
 {
   // get the encoder sum
@@ -282,10 +288,17 @@ bool TTCommControl::getEncodersConfirmedStatus() const
   return ttcontrol_carts_angle_confirmed_;
 }
 
+TtcontrolStates TTCommControl::getTtcontrolCurrentState() const
+{
+  return ttcontrol_current_state_;
+}
+
 TTCommControl::TTCommControl()
 {
   ttcontrol_carts_angle_confirmed_ = false;
   ttcontrol_is_connected_ = false;
+  ttcontrol_current_state_.automatic_state = TtcontrolPossibleStates::Initialization;
+  ttcontrol_current_state_.manual_state = TtcontrolPossibleStates::Initialization;
 }
 
 void TTCommControl::initializeCanHandler(std::unique_ptr<ICan> can_handler)
@@ -388,6 +401,11 @@ void TTCommControl::parseCanFrames()
     {
       decodeEngineFeedback(message);
     }
+    if (checkIfCanBusIdsMatch(ReceiveCanIds::TtcontrolStateFrame, message.can_id))
+    {
+      decodeTtcontrolState(message);
+      setReceivedCanBusIdsBitMask(ReceivedFramesRegisterMask::TtcontrolState);
+    }
     if (checkIfCanBusIdsMatch(ReceiveCanIds::ProtocolFrame, message.can_id))
     {
       // if TTControl confirms angle receiving
@@ -431,14 +449,30 @@ void TTCommControl::sendEngineCommand(const TTControlEngineCommands command)
   can_handler_->iSendFrame(&message);
 }
 
-void TTCommControl::confirmAdvantechReadiness()
+void TTCommControl::requestAutonomousControl()
 {
   can_frame message;
   message.can_id = TransmitCanIds::ProtocolResponseFrame;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[0] = ProtocolFrameBytesValues::TtcAutomaticModeRequest;
-  message.data[1] = TTCONTROL_J1939_NODE_ID;  // INFO byte, send the TTControl node ID to confirm readiness
-  message.data[2] = 0;
+  message.data[1] = TTCONTROL_J1939_NODE_ID;
+  message.data[2] = TtcAutomaticModeRequestByteValues::EnterAutomaticSteering;
+  message.data[3] = 0;
+  message.data[4] = 0;
+  message.data[5] = 0;
+  message.data[6] = 0;
+  message.data[7] = 0;
+  can_handler_->iSendFrame(&message);
+}
+
+void TTCommControl::requestSafeState()
+{
+  can_frame message;
+  message.can_id = TransmitCanIds::ProtocolResponseFrame;
+  message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
+  message.data[0] = ProtocolFrameBytesValues::TtcAutomaticModeRequest;
+  message.data[1] = TTCONTROL_J1939_NODE_ID;
+  message.data[2] = TtcAutomaticModeRequestByteValues::EnterSafeStateRequest;
   message.data[3] = 0;
   message.data[4] = 0;
   message.data[5] = 0;

@@ -37,6 +37,12 @@ enum ProtocolFrameBytesValues : std::uint8_t
   TtcStartStopEngine = 0x40
 };
 
+enum TtcAutomaticModeRequestByteValues : std::uint8_t
+{
+  EnterAutomaticSteering = 0x01,
+  EnterSafeStateRequest = 0x00
+};
+
 enum ReceivedFramesRegisterMask : std::uint32_t
 {
   Velocities = 0x01,
@@ -45,7 +51,8 @@ enum ReceivedFramesRegisterMask : std::uint32_t
   AutomaticStateRequest = 0x10,
   AutomaticStateRequestError = 0x20,
   GeometryFeedback = 0x40,
-  TrackEncoderSum = 0x80
+  TrackEncoderSum = 0x80,
+  TtcontrolState = 0x100
 };
 
 enum SignalsParametersBytePosition : std::uint8_t
@@ -121,6 +128,7 @@ enum ReceiveCanIds : std::uint32_t
   VelocityFrame = 0x00FFD064,
   DeltasGeometryFeedbackFrame = 0x00FFDC64,
   EngineFeedbackFrame = 0x00FFD664,
+  TtcontrolStateFrame = 0x00FFD764,
   ProtocolFrame = 0x00EFC864,
   TrackEncoderSumFrame = 0x00FFD364
 };
@@ -165,6 +173,20 @@ enum class SelectedTpl
   Back
 };
 
+enum TtcontrolPossibleStates : std::uint8_t
+{
+  Initialization = 0,
+  WaitingForHandshake = 1,
+  CommunicationActive = 2,
+  SteeringActive = 3
+};
+
+struct TtcontrolStates
+{
+  TtcontrolPossibleStates automatic_state;
+  TtcontrolPossibleStates manual_state;
+};
+
 class TTCommControl
 {
   std::unique_ptr<ICan> can_handler_;
@@ -185,6 +207,7 @@ class TTCommControl
   std::string file_name_backup_ = "/carts_encoder_state_files/carts_encoder_state_data_backup.txt";
   std::ifstream encoder_data_file_input_;
   std::ofstream encoder_data_file_output_;
+  TtcontrolStates ttcontrol_current_state_;
   bool ttcontrol_is_connected_;
   bool ttcontrol_carts_angle_confirmed_;
   bool ttcontrol_engine_is_ready_;
@@ -193,6 +216,7 @@ class TTCommControl
   float decodeVelocitiy(const std::uint8_t start_byte, const can_frame& frame) const;
   float decodeAngle(const can_frame& frame) const;
   std::uint32_t decodeEncoderValue(const can_frame& frame) const;
+  void decodeTtcontrolState(const can_frame& frame);
   void decodeCartsGeometryState(const can_frame& frame);
   void decodeTrackEncoderSumValue(const can_frame& frame);
   void decodeEngineFeedback(const can_frame& frame);
@@ -223,7 +247,8 @@ public:
   bool getTtcontrolConnectionStatus() const;
   bool getEncodersConfirmedStatus() const;
   bool getEngineStatus() const;
-  void confirmAdvantechReadiness();
+  void requestAutonomousControl();
+  void requestSafeState();
   void setPathToCartsEncodersDataFile(const std::string& path_to_file);
   bool readCartsEncodersDataFile(const bool backup_file);
   std::uint32_t extractEncoderInitValueFromFile(std::ifstream& file_input) const;
@@ -249,6 +274,7 @@ public:
   const CartsStatus& getCartsStatus() const;
   float getFrontCartAngle() const;
   float getBackCartAngle() const;
+  TtcontrolStates getTtcontrolCurrentState() const;
   std::int32_t getErrorCode() const;
   void clearReceivedCanBusIdBit(const std::uint32_t mask_to_check);
   bool checkReceivedCanBusIdBit(const std::uint32_t mask_to_check) const;
