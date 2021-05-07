@@ -49,7 +49,7 @@ void AgribotControlRosWrapper::registerServices()
   set_autonomous_mode_service_ =
       nh_->advertiseService("/agribot/set_autonomous_mode", &AgribotControlRosWrapper::setAutonomousModeService, this);
   set_safe_state_service_ =
-      nh_->advertiseService("/agribot/set_safe_state", &AgribotControlRosWrapper::setAutonomousModeService, this);
+      nh_->advertiseService("/agribot/set_safe_state", &AgribotControlRosWrapper::setSafeStateService, this);
   parameter_server_handler_ =
       std::make_unique<dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>>();
   callback_function_object_ = boost::bind(&AgribotControlRosWrapper::callbackDynamicReconfigure, this, _1, _2);
@@ -604,6 +604,7 @@ bool AgribotControlRosWrapper::setSafeStateService(std_srvs::Trigger::Request& r
       return true;
     }
   }
+  res.success = true;
   return true;
 }
 
