@@ -107,30 +107,40 @@ Priority: 0x00, PGN: 0x0EF64, Source adres: 0x64 Interval: 200ms\\
 
 HB\_ID to aktualny indeks Hearbeat, sterownik który otrzymał HB\_ID o danym numerze powinien inkrementować jego wartość i przesłac z powrotem. Przykładowo, Advantech zaczyna od HB\_ID=0, wysyła HB i oczekuje HB\_ID=1, TTControl otrzymuje wiadomość, inkrementuje HB\_ID, wysyła wiadomość z HB\_ID=1 i oczekuje na wiadomość z wartością HB\_ID=2.
 
-\subsection{Procedura oddania kontroli do Advantech (Manual control -> Automatic routine) }
+\subsection{Wejscie w tryb automatic routine i powrot do stanu safe-state }
 
-Komputer TTControl po otrzymaniu ramki uruchomienia automatycznej pracy, wykonuje przygotowania do automatycznej kontroli i sygnalizuje Advantechowi zakończenie przygotowań i oczekiwanie na  dalsze instrukcjie sterowania. Ramka może zawierać informację o sukcesie (wszystkie czujniki sprawne, efektory nie zablokowane, krańcówki ok itp.), wtedy na drugim bajcie INFO znajduje się 0x01, lub że coś nie pozwala na automatyczne sterowanie Agribota, przyjmując wartość 0x00. Advantech ma 1 sekundę na wysłanie odpowiedzi potwierdzenia przejęcie kontroli nad TTControl.
-
-TTControl do Advantech\\
-Priority: 0x00, PGN: 0x0EFC8, Source adres: 0x64\\
-\begin{left}
-\begin{tabular}{ |p{2cm}|p{1.5cm}|p{1.5cm}|}  
- \hline
- CAN ID & BYTE 0 & BYTE 1 \\ \hline
- & &\\
- 0x00EFC864 & 0x20 & INFO\\ 
- \hline
-\end{tabular}
-\end{left}\\
+Komputer TTControl po otrzymaniu ramki uruchomienia automatycznej pracy, przechodzi w stan automatycznej kontroli pod warunkiem, ze agribot nie znajduje sie aktualnie w manualnym sterowaniu. Bajt command moze przyjac wartosci:
+\begin{itemize}
+\item 0 - wejdz w stan safe state
+\item 1 - wejdz w stan automatycznego sterowania
+\end{itemize}
 
 Advantech do TTControl\\
 Priority: 0x00, PGN: 0x0EF64, Source adres: 0xC8\\
 \begin{left}
-\begin{tabular}{ |p{2cm}|p{1.5cm}|p{1.5cm}|}   
+\begin{tabular}{ |p{2cm}|p{1.5cm}|p{2.0cm}|p{2.0cm}|}  
  \hline
- CAN ID & BYTE 0 & BYTE 1\\ \hline
- & &\\
- 0x00EF64C8 & 0x20 & 0x64\\ 
+ CAN ID & BYTE 0 & BYTE 1 & BYTE 2\\ \hline
+ & & &\\
+ 0x00EFC864 & 0x20 & 0x64 & Command\\ 
+ \hline
+\end{tabular}
+\end{left}\\
+
+Mozliwe wartosci resultatu:
+\begin{itemize}
+\item 0 - robot wszedl w stan automatyczny
+\item 255 - stan automatyczny niemozliwy, gdyz robot znajduje sie w stanie manual
+\end{itemize}
+
+Advantech do TTControl\\
+Priority: 0x00, PGN: 0x0EFC8, Source adres: 0x64\\
+\begin{left}
+\begin{tabular}{ |p{2cm}|p{1.5cm}|p{2.0cm}|p{2.0cm}|}   
+ \hline
+ CAN ID & BYTE 0 & BYTE 1 & BYTE 2 \\ \hline
+ & & &\\
+ 0x00EF64C8 & 0x20 & 0x64 & Result\\ 
  \hline
 \end{tabular}
 \end{left}\\
@@ -139,7 +149,6 @@ Priority: 0x00, PGN: 0x0EF64, Source adres: 0xC8\\
 \subsection{Sygnały sterowania}
 Wszystkie sygnały sterowania posiadają time-out rozkazu. Jeśli przez 300 ms TTControl nie otrzyma sygnału sterowania, TTControl przestaje podawać sygnał na wyjścia i efektory zatrzymują się. 
 \subsubsection{Sterowanie wózkami}
-Ramka zawiera prędkości wózków: od Advantech do TTControl -- prędkości pożądane, a od TTControl do Advantech -- aktualne zmierzone z użyciem enkoderów. Prędkości wysyłane są w formacie $X\_LIN_H, X\_LIN_L$ $\frac{m}{s}$, oraz predkości kątowe $X\_ANG_H, X\_ANG_L$ $\frac{\deg}{s}$, gdzie X to symbol wózka (F przedni, B tylni), a H i L oznaczają starszy i młodszy bajt liczby. Prędkość jest pomnożona razy 1000 i zapisywana jest w formacie 16 bitowym, w którym najstarszy bit opisuje znak liczby (1 to minus 0 to plus). Dla przykładu, prędkość $-3,34 \frac{m}{s}$ zapisywana jest jako 0b1000110100001100 (-1*(3340/1000).\\
 
 Advantech do TTControl\\
 Priority: 0x00, PGN: 0x0FFD0, Source adres: 0xC8, Interval: 200ms\\
@@ -388,8 +397,29 @@ Priority: 0x00, PGN: 0x0FFD1, Source adres: 0xC8, Interval: 200ms\\
 \end{tabular}
 \end{center}
 
-\subsection{Stan silnika i czujników analogowych}
+\subsection{Stan silnika, czujników analogowych i sterownika PLC}
 TTControl obsługuje silnik spalinowy diesla, a także odczytuje czujniki analogowe, a następnie przesyła odczytywane dane do Advantecha. Dane te są przekazywane Advantechowi, ze stałym interwałem i nie wymagają potwierdzenia odbioru.
+
+
+\subsubsection{Stan TTControl}
+Ramka informuje, w jakim stanie znajduje sie aktualnie TTControl. Stan automatycznego sterowania znajduje sie na bajcie pierwszym, a stan manualnego na bajcie drugim. Mozliwe wartosci stanow to:\\
+\begin{itemize}
+\item inicjalizacja = 0,
+\item oczekiwanie na handshake = 1,
+\item komunikacja aktywna = 2,
+\item sterowanie aktywne = 3
+\end{itemize}
+TTControl do Advantech\\
+Priority: 0x00, PGN: 0x0FFD7, Source adres: 0x64, Interval: 200ms\\
+\begin{left}
+\begin{tabular}{ |p{2cm}|p{2.8cm}|p{2.8cm}|} 
+ \hline
+ CAN ID & BYTE 0 & BYTE 1  \\ \hline
+ & & \\
+0x00FFD764 & AUTO\_STATE & MANUAL\_STATE \\
+ \hline
+\end{tabular}
+\end{left}\\
 
 \subsubsection{Dane silnika}
 Silnik Deutz zwraca informację o prędkości obrotowej wału, obciążeniu wału i aktualnym spalaniu. Obroty silnika wynoszą od 900 do 3000 RPM, obciążenie wału jest wyrażone w procencie maksymalnego momentu obrotowego wału (od 0 do 100\%), a spalanie w litrach na godzinę (pomnożone razy 10).\\
