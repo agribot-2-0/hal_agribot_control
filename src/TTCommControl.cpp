@@ -72,6 +72,9 @@ constexpr uint8_t SIGN_BYTE_FRAME_POSITION = 0x10;
 constexpr uint8_t TRACK_ENCODER_ID_BYTE_POSITION = 0;
 constexpr uint8_t TRACK_ENCODER_SIGN_BIT_MASK = 0x10;
 constexpr uint8_t TRACK_ENCODER_SUM_LOW_BYTE_POSITION = 1;
+// byte positions of the ttcontrol state frame
+constexpr uint8_t AUTOMATIC_STATE_BYTE = 0x00;
+constexpr uint8_t MANUAL_STATE_BYTE = 0x01;
 
 constexpr uint8_t tpl_parse_constant = 110;
 constexpr uint8_t engine_ready_flag_value = 1;
@@ -211,8 +214,8 @@ inline int32_t TTCommControl::checkTrackEncoderSumSignBit(const uint8_t bit_mask
 
 inline void TTCommControl::decodeTtcontrolState(const can_frame& frame)
 {
-  ttcontrol_current_state_.automatic_state = static_cast<TtcontrolPossibleStates>(frame.data[0]);
-  ttcontrol_current_state_.manual_state = static_cast<TtcontrolPossibleStates>(frame.data[1]);
+  ttcontrol_current_state_.automatic_state = static_cast<TtcontrolPossibleStates>(frame.data[AUTOMATIC_STATE_BYTE]);
+  ttcontrol_current_state_.manual_state = static_cast<TtcontrolPossibleStates>(frame.data[MANUAL_STATE_BYTE]);
 }
 
 void TTCommControl::decodeTrackEncoderSumValue(const can_frame& frame)
@@ -454,9 +457,10 @@ void TTCommControl::requestAutonomousControl()
   can_frame message;
   message.can_id = TransmitCanIds::ProtocolResponseFrame;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
-  message.data[0] = ProtocolFrameBytesValues::TtcAutomaticModeRequest;
-  message.data[1] = TTCONTROL_J1939_NODE_ID;
-  message.data[2] = TtcAutomaticModeRequestByteValues::EnterAutomaticSteering;
+  message.data[ProtocolFrameBytePositions::FrameTypeByte] = ProtocolFrameBytesValues::TtcAutomaticModeRequest;
+  message.data[ProtocolFrameBytePositions::TtcontrolIDByte] = TTCONTROL_J1939_NODE_ID;
+  message.data[ProtocolFrameBytePositions::RequestTtcontrolStateByte] =
+      TtcAutomaticModeRequestByteValues::EnterAutomaticSteering;
   message.data[3] = 0;
   message.data[4] = 0;
   message.data[5] = 0;
@@ -470,9 +474,10 @@ void TTCommControl::requestSafeState()
   can_frame message;
   message.can_id = TransmitCanIds::ProtocolResponseFrame;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
-  message.data[0] = ProtocolFrameBytesValues::TtcAutomaticModeRequest;
-  message.data[1] = TTCONTROL_J1939_NODE_ID;
-  message.data[2] = TtcAutomaticModeRequestByteValues::EnterSafeStateRequest;
+  message.data[ProtocolFrameBytePositions::FrameTypeByte] = ProtocolFrameBytesValues::TtcAutomaticModeRequest;
+  message.data[ProtocolFrameBytePositions::TtcontrolIDByte] = TTCONTROL_J1939_NODE_ID;
+  message.data[ProtocolFrameBytePositions::RequestTtcontrolStateByte] =
+      TtcAutomaticModeRequestByteValues::EnterSafeStateRequest;
   message.data[3] = 0;
   message.data[4] = 0;
   message.data[5] = 0;

@@ -37,6 +37,12 @@ enum ProtocolFrameBytesValues : std::uint8_t
   TtcStartStopEngine = 0x40
 };
 
+enum TtcAutomaticModeRequestBytePositions : std::uint8_t
+{
+  ProtocolFrameTypeByte = 0x00,
+  ProtocolFrame
+};
+
 enum TtcAutomaticModeRequestByteValues : std::uint8_t
 {
   EnterAutomaticSteering = 0x01,
