@@ -42,7 +42,6 @@ enum ProtocolFrameBytePositions : std::uint8_t
   FrameTypeByte = 0x00,
   TtcontrolIDByte = 0x01,
   RequestTtcontrolStateByte = 0x02,
-  
 };
 
 enum TtcAutomaticModeRequestByteValues : std::uint8_t
