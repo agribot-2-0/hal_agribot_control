@@ -44,7 +44,7 @@ enum ProtocolFrameBytePositions : std::uint8_t
   RequestTtcontrolStateByte = 0x02,
 };
 
-enum TtcAutomaticModeRequestByteValues : std::uint8_t
+enum TtcontrolAutomaticModeRequestByteValues : std::uint8_t
 {
   EnterAutomaticSteering = 0x01,
   EnterSafeStateRequest = 0x00
@@ -59,7 +59,7 @@ enum ReceivedFramesRegisterMask : std::uint32_t
   AutomaticStateRequestError = 0x20,
   GeometryFeedback = 0x40,
   TrackEncoderSum = 0x80,
-  TtcontrolState = 0x100
+  TtcontrolStates = 0x100
 };
 
 enum SignalsParametersBytePosition : std::uint8_t
@@ -180,7 +180,7 @@ enum class SelectedTpl
   Back
 };
 
-enum TtcontrolPossibleStates : std::uint8_t
+enum TtcontrolState : std::uint8_t
 {
   Initialization = 0,
   WaitingForHandshake = 1,
@@ -188,10 +188,10 @@ enum TtcontrolPossibleStates : std::uint8_t
   SteeringActive = 3
 };
 
-struct TtcontrolStates
+struct TtcontrolCurrentStates
 {
-  TtcontrolPossibleStates automatic_state;
-  TtcontrolPossibleStates manual_state;
+  TtcontrolState automatic_state;
+  TtcontrolState manual_state;
 };
 
 class TTCommControl
@@ -214,7 +214,7 @@ class TTCommControl
   std::string file_name_backup_ = "/carts_encoder_state_files/carts_encoder_state_data_backup.txt";
   std::ifstream encoder_data_file_input_;
   std::ofstream encoder_data_file_output_;
-  TtcontrolStates ttcontrol_current_state_;
+  TtcontrolCurrentStates ttcontrol_current_state_;
   bool ttcontrol_is_connected_;
   bool ttcontrol_carts_angle_confirmed_;
   bool ttcontrol_engine_is_ready_;
@@ -281,7 +281,7 @@ public:
   const CartsStatus& getCartsStatus() const;
   float getFrontCartAngle() const;
   float getBackCartAngle() const;
-  TtcontrolStates getTtcontrolCurrentState() const;
+  TtcontrolCurrentStates getTtcontrolCurrentState() const;
   std::int32_t getErrorCode() const;
   void clearReceivedCanBusIdBit(const std::uint32_t mask_to_check);
   bool checkReceivedCanBusIdBit(const std::uint32_t mask_to_check) const;

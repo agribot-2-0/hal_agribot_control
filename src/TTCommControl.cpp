@@ -214,8 +214,8 @@ inline int32_t TTCommControl::checkTrackEncoderSumSignBit(const uint8_t bit_mask
 
 inline void TTCommControl::decodeTtcontrolState(const can_frame& frame)
 {
-  ttcontrol_current_state_.automatic_state = static_cast<TtcontrolPossibleStates>(frame.data[AUTOMATIC_STATE_BYTE]);
-  ttcontrol_current_state_.manual_state = static_cast<TtcontrolPossibleStates>(frame.data[MANUAL_STATE_BYTE]);
+  ttcontrol_current_state_.automatic_state = static_cast<TtcontrolState>(frame.data[AUTOMATIC_STATE_BYTE]);
+  ttcontrol_current_state_.manual_state = static_cast<TtcontrolState>(frame.data[MANUAL_STATE_BYTE]);
 }
 
 void TTCommControl::decodeTrackEncoderSumValue(const can_frame& frame)
@@ -291,7 +291,7 @@ bool TTCommControl::getEncodersConfirmedStatus() const
   return ttcontrol_carts_angle_confirmed_;
 }
 
-TtcontrolStates TTCommControl::getTtcontrolCurrentState() const
+TtcontrolCurrentStates TTCommControl::getTtcontrolCurrentState() const
 {
   return ttcontrol_current_state_;
 }
@@ -300,8 +300,8 @@ TTCommControl::TTCommControl()
 {
   ttcontrol_carts_angle_confirmed_ = false;
   ttcontrol_is_connected_ = false;
-  ttcontrol_current_state_.automatic_state = TtcontrolPossibleStates::Initialization;
-  ttcontrol_current_state_.manual_state = TtcontrolPossibleStates::Initialization;
+  ttcontrol_current_state_.automatic_state = TtcontrolState::Initialization;
+  ttcontrol_current_state_.manual_state = TtcontrolState::Initialization;
 }
 
 void TTCommControl::initializeCanHandler(std::unique_ptr<ICan> can_handler)
@@ -407,7 +407,7 @@ void TTCommControl::parseCanFrames()
     if (checkIfCanBusIdsMatch(ReceiveCanIds::TtcontrolStateFrame, message.can_id))
     {
       decodeTtcontrolState(message);
-      setReceivedCanBusIdsBitMask(ReceivedFramesRegisterMask::TtcontrolState);
+      setReceivedCanBusIdsBitMask(ReceivedFramesRegisterMask::TtcontrolStates);
     }
     if (checkIfCanBusIdsMatch(ReceiveCanIds::ProtocolFrame, message.can_id))
     {
@@ -460,7 +460,7 @@ void TTCommControl::requestAutonomousControl()
   message.data[ProtocolFrameBytePositions::FrameTypeByte] = ProtocolFrameBytesValues::TtcAutomaticModeRequest;
   message.data[ProtocolFrameBytePositions::TtcontrolIDByte] = TTCONTROL_J1939_NODE_ID;
   message.data[ProtocolFrameBytePositions::RequestTtcontrolStateByte] =
-      TtcAutomaticModeRequestByteValues::EnterAutomaticSteering;
+      TtcontrolAutomaticModeRequestByteValues::EnterAutomaticSteering;
   message.data[3] = 0;
   message.data[4] = 0;
   message.data[5] = 0;
@@ -477,7 +477,7 @@ void TTCommControl::requestSafeState()
   message.data[ProtocolFrameBytePositions::FrameTypeByte] = ProtocolFrameBytesValues::TtcAutomaticModeRequest;
   message.data[ProtocolFrameBytePositions::TtcontrolIDByte] = TTCONTROL_J1939_NODE_ID;
   message.data[ProtocolFrameBytePositions::RequestTtcontrolStateByte] =
-      TtcAutomaticModeRequestByteValues::EnterSafeStateRequest;
+      TtcontrolAutomaticModeRequestByteValues::EnterSafeStateRequest;
   message.data[3] = 0;
   message.data[4] = 0;
   message.data[5] = 0;

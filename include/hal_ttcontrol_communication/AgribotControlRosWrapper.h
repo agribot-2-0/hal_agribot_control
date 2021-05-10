@@ -30,7 +30,7 @@ enum TimeoutsLimits : uint
 {
   WaitForTtcontrol = 100000,
   CartsEncodersInitTimeoutLimit = 10,
-  AutomaticRequestTimeoutLimit = 20,
+  ChangeTtcontrolStateRequestTimeoutLimit = 20,
   EngineServiceTimeoutLimit = 60,
   DeltasExtensionTimeoutLimit = 150
 };
