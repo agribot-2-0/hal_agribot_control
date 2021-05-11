@@ -75,6 +75,8 @@ constexpr uint8_t TRACK_ENCODER_SUM_LOW_BYTE_POSITION = 1;
 // byte positions of the ttcontrol state frame
 constexpr uint8_t AUTOMATIC_STATE_BYTE = 0x00;
 constexpr uint8_t MANUAL_STATE_BYTE = 0x01;
+constexpr uint8_t ENCODERS_INITED_BYTE = 0x02;
+constexpr uint8_t encoders_inited_flag_value = 0x01;
 
 constexpr uint8_t tpl_parse_constant = 110;
 constexpr uint8_t engine_ready_flag_value = 1;
@@ -216,7 +218,7 @@ inline void TTCommControl::decodeTtcontrolState(const can_frame& frame)
 {
   ttcontrol_current_state_.automatic_state = static_cast<TtcontrolState>(frame.data[AUTOMATIC_STATE_BYTE]);
   ttcontrol_current_state_.manual_state = static_cast<TtcontrolState>(frame.data[MANUAL_STATE_BYTE]);
-  if (frame.data[2] == 1)
+  if (frame.data[ENCODERS_INITED_BYTE] == encoders_inited_flag_value)
   {
     ttcontrol_carts_angle_confirmed_ = true;
   }
@@ -765,12 +767,12 @@ bool TTCommControl::readCartsEncodersDataFile(const bool regular_file)
 
 bool TTCommControl::writeEncodersDataFile()
 {
-  // check if angle data is complete
   // during ttcontrol programming when communication is active, from undefined reason 0, 0 values are send BEFORE
-  // the can bus connection is severed, this is a counter measure against this behaviour, 
+  // the can bus connection is severed, this is a counter measure against this behaviour,
   // to protect file from being corrupted
-  if( front_cart_encoder_value_ != 0 && back_cart_encoder_value_ != 0)
+  if (front_cart_encoder_value_ != 0 && back_cart_encoder_value_ != 0)
   {
+    // check if angle data is complete
     if (front_cart_encoder_unread_ && back_cart_encoder_unread_)
     {
       // save the proper file

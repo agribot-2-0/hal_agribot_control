@@ -119,8 +119,18 @@ void AgribotControlRosWrapper::execute()
     }
     if (ttcontrol_communication_handler_->checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::TtcontrolStates))
     {
-      ttcontrol_states_msg_.automatic_state = static_cast<uint8_t>(ttcontrol_communication_handler_->getTtcontrolCurrentState().automatic_state);
-      ttcontrol_states_msg_.manual_state = static_cast<uint8_t>(ttcontrol_communication_handler_->getTtcontrolCurrentState().manual_state);
+      ttcontrol_states_msg_.automatic_state =
+          static_cast<uint8_t>(ttcontrol_communication_handler_->getTtcontrolCurrentState().automatic_state);
+      ttcontrol_states_msg_.manual_state =
+          static_cast<uint8_t>(ttcontrol_communication_handler_->getTtcontrolCurrentState().manual_state);
+      if (ttcontrol_communication_handler_->getEncodersConfirmedStatus())
+      {
+        ttcontrol_states_msg_.encoders_inited = agribot_msgs::AgribotTtcontrolState::ENCODERS_INITED;
+      }
+      else
+      {
+        ttcontrol_states_msg_.encoders_inited = agribot_msgs::AgribotTtcontrolState::ENCODERS_NOT_INITED;
+      }
       ttcontrol_state_publisher_.publish(ttcontrol_states_msg_);
       ttcontrol_communication_handler_->clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::TtcontrolStates);
     }
