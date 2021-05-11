@@ -87,7 +87,6 @@ class AgribotControlRosWrapper
   std::string path_to_carts_encoders_file_;
 
   ros::Subscriber caterpillar_sub_;
-  ros::Subscriber connection_state_sub_;
   ros::Subscriber tpl_front_control_sub_;
   ros::Subscriber tpl_back_control_sub_;
   ros::Publisher carts_status_publisher_;
@@ -106,7 +105,6 @@ class AgribotControlRosWrapper
   ros::ServiceServer set_safe_state_service_;
 
   bool readEncodersDataFile();
-  void ttcontrolConnectionState(const std_msgs::String& msg);
   bool engineStopService(std_srvs::Trigger::Request& req,     // NOLINT(runtime/references)
                          std_srvs::Trigger::Response& res);   // NOLINT(runtime/references)
   bool engineStartService(std_srvs::Trigger::Request& req,    // NOLINT(runtime/references)

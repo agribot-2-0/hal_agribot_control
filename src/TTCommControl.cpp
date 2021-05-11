@@ -216,6 +216,14 @@ inline void TTCommControl::decodeTtcontrolState(const can_frame& frame)
 {
   ttcontrol_current_state_.automatic_state = static_cast<TtcontrolState>(frame.data[AUTOMATIC_STATE_BYTE]);
   ttcontrol_current_state_.manual_state = static_cast<TtcontrolState>(frame.data[MANUAL_STATE_BYTE]);
+  if (frame.data[2] == 1)
+  {
+    ttcontrol_carts_angle_confirmed_ = true;
+  }
+  else
+  {
+    ttcontrol_carts_angle_confirmed_ = false;
+  }
 }
 
 void TTCommControl::decodeTrackEncoderSumValue(const can_frame& frame)
@@ -267,18 +275,17 @@ void TTCommControl::setVelocity(const VelocityType velocity_specification, const
   }
 }
 
-void TTCommControl::setTtcontrolConnectionStatus(const bool& connected)
-{
-  if (!connected)
-  {
-    ttcontrol_carts_angle_confirmed_ = false;
-  }
-  ttcontrol_is_connected_ = connected;
-}
-
 bool TTCommControl::getTtcontrolConnectionStatus() const
 {
-  return ttcontrol_is_connected_;
+  if (ttcontrol_current_state_.automatic_state == TtcontrolState::CommunicationActive ||
+      ttcontrol_current_state_.automatic_state == TtcontrolState::SteeringActive)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
 }
 
 bool TTCommControl::getEngineStatus() const

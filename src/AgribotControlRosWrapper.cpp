@@ -16,8 +16,6 @@ void AgribotControlRosWrapper::registerSubscribers()
 {
   caterpillar_sub_ =
       nh_->subscribe("/agribot/control/caterpillar", 1, &AgribotControlRosWrapper::caterpillarsControlCallback, this);
-  connection_state_sub_ = nh_->subscribe("/agribot/ttcontrol/connection_state", 1,
-                                         &AgribotControlRosWrapper::ttcontrolConnectionState, this);
   tpl_front_control_sub_ =
       nh_->subscribe("/agribot/control/tool/front/valves", 1, &AgribotControlRosWrapper::frontTplControlCallback, this);
   tpl_back_control_sub_ =
@@ -606,18 +604,6 @@ bool AgribotControlRosWrapper::setSafeStateService(std_srvs::Trigger::Request& r
   }
   res.success = true;
   return true;
-}
-
-void AgribotControlRosWrapper::ttcontrolConnectionState(const std_msgs::String& msg)
-{
-  if (msg.data == TTCONTROL_CONNECTION_MSG)
-  {
-    ttcontrol_communication_handler_->setTtcontrolConnectionStatus(TtcontrolConnectionStatus::Connected);
-  }
-  else
-  {
-    ttcontrol_communication_handler_->setTtcontrolConnectionStatus(TtcontrolConnectionStatus::Disconnected);
-  }
 }
 
 bool AgribotControlRosWrapper::readEncodersDataFile()

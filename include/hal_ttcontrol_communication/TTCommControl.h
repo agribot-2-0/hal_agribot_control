@@ -250,7 +250,6 @@ public:
   void update();
   void receiveCanFrames();
   void parseCanFrames();
-  void setTtcontrolConnectionStatus(const bool& connected);
   bool getTtcontrolConnectionStatus() const;
   bool getEncodersConfirmedStatus() const;
   bool getEngineStatus() const;
