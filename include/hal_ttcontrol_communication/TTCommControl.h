@@ -254,8 +254,7 @@ public:
   bool getTtcontrolConnectionStatus() const;
   bool getEncodersConfirmedStatus() const;
   bool getEngineStatus() const;
-  void requestAutonomousControl();
-  void requestSafeState();
+  void requestChangeOfControlState(TtcontrolAutomaticModeRequestByteValues request);
   void setPathToCartsEncodersDataFile(const std::string& path_to_file);
   bool readCartsEncodersDataFile(const bool backup_file);
   std::uint32_t extractEncoderInitValueFromFile(std::ifstream& file_input) const;

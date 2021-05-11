@@ -452,32 +452,14 @@ void TTCommControl::sendEngineCommand(const TTControlEngineCommands command)
   can_handler_->iSendFrame(&message);
 }
 
-void TTCommControl::requestAutonomousControl()
+void TTCommControl::requestChangeOfControlState(TtcontrolAutomaticModeRequestByteValues request)
 {
   can_frame message;
   message.can_id = TransmitCanIds::ProtocolResponseFrame;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
   message.data[ProtocolFrameBytePositions::FrameTypeByte] = ProtocolFrameBytesValues::TtcAutomaticModeRequest;
   message.data[ProtocolFrameBytePositions::TtcontrolIDByte] = TTCONTROL_J1939_NODE_ID;
-  message.data[ProtocolFrameBytePositions::RequestTtcontrolStateByte] =
-      TtcontrolAutomaticModeRequestByteValues::EnterAutomaticSteering;
-  message.data[3] = 0;
-  message.data[4] = 0;
-  message.data[5] = 0;
-  message.data[6] = 0;
-  message.data[7] = 0;
-  can_handler_->iSendFrame(&message);
-}
-
-void TTCommControl::requestSafeState()
-{
-  can_frame message;
-  message.can_id = TransmitCanIds::ProtocolResponseFrame;
-  message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
-  message.data[ProtocolFrameBytePositions::FrameTypeByte] = ProtocolFrameBytesValues::TtcAutomaticModeRequest;
-  message.data[ProtocolFrameBytePositions::TtcontrolIDByte] = TTCONTROL_J1939_NODE_ID;
-  message.data[ProtocolFrameBytePositions::RequestTtcontrolStateByte] =
-      TtcontrolAutomaticModeRequestByteValues::EnterSafeStateRequest;
+  message.data[ProtocolFrameBytePositions::RequestTtcontrolStateByte] = request;
   message.data[3] = 0;
   message.data[4] = 0;
   message.data[5] = 0;

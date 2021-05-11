@@ -538,15 +538,13 @@ bool AgribotControlRosWrapper::setAutonomousModeService(std_srvs::Trigger::Reque
                                                         std_srvs::Trigger::Response& res)  // NOLINT(runtime/references)
 {
   static_cast<void>(req);
-  if (ttcontrol_communication_handler_->getTtcontrolCurrentState().manual_state ==
-      TtcontrolState::SteeringActive)
+  if (ttcontrol_communication_handler_->getTtcontrolCurrentState().manual_state == TtcontrolState::SteeringActive)
   {
     res.success = false;
     res.message = "Couldn't start the autonomous steering, because manual steering is still active ";
     return true;
   }
-  if (ttcontrol_communication_handler_->getTtcontrolCurrentState().automatic_state ==
-      TtcontrolState::SteeringActive)
+  if (ttcontrol_communication_handler_->getTtcontrolCurrentState().automatic_state == TtcontrolState::SteeringActive)
   {
     res.success = false;
     res.message = "Couldn't start the autonomous steering, because its already active ";
@@ -565,7 +563,8 @@ bool AgribotControlRosWrapper::setAutonomousModeService(std_srvs::Trigger::Reque
            TtcontrolState::CommunicationActive)
   {
     uint8_t timeout_counter = 0;
-    ttcontrol_communication_handler_->requestAutonomousControl();
+    ttcontrol_communication_handler_->requestChangeOfControlState(
+        TtcontrolAutomaticModeRequestByteValues::EnterAutomaticSteering);
     while (ttcontrol_communication_handler_->getTtcontrolCurrentState().automatic_state !=
            TtcontrolState::SteeringActive)
     {
@@ -574,7 +573,8 @@ bool AgribotControlRosWrapper::setAutonomousModeService(std_srvs::Trigger::Reque
       if (timeout_counter > TimeoutsLimits::ChangeTtcontrolStateRequestTimeoutLimit)
       {
         // withdraw the previous request
-        ttcontrol_communication_handler_->requestSafeState();
+        ttcontrol_communication_handler_->requestChangeOfControlState(
+            TtcontrolAutomaticModeRequestByteValues::EnterSafeStateRequest);
         res.success = false;
         res.message = "Couldn't start the autonomous steerings, request timeout";
         return true;
@@ -591,11 +591,11 @@ bool AgribotControlRosWrapper::setSafeStateService(std_srvs::Trigger::Request& r
   static_cast<void>(req);
   uint8_t timeout_counter = 0;
   // send safe state request till the steering is active
-  while (ttcontrol_communication_handler_->getTtcontrolCurrentState().automatic_state ==
-         TtcontrolState::SteeringActive)
+  while (ttcontrol_communication_handler_->getTtcontrolCurrentState().automatic_state == TtcontrolState::SteeringActive)
   {
     ros::Duration(0.1).sleep();
-    ttcontrol_communication_handler_->requestSafeState();
+    ttcontrol_communication_handler_->requestChangeOfControlState(
+        TtcontrolAutomaticModeRequestByteValues::EnterSafeStateRequest);
     timeout_counter++;
     if (timeout_counter > TimeoutsLimits::ChangeTtcontrolStateRequestTimeoutLimit)
     {
