@@ -766,34 +766,39 @@ bool TTCommControl::readCartsEncodersDataFile(const bool regular_file)
 bool TTCommControl::writeEncodersDataFile()
 {
   // check if angle data is complete
-  if (front_cart_encoder_unread_ && back_cart_encoder_unread_)
+  // during ttcontrol programming when communication is active, from undefined reason 0, 0 values are send BEFORE
+  // the can bus connection is severed, this is a counter measure against this behaviour, 
+  // to protect file from being corrupted
+  if( front_cart_encoder_value_ != 0 && back_cart_encoder_value_ != 0)
   {
-    // save the proper file
-    encoder_data_file_output_.open((path_to_encoder_file_ + file_name_), std::ios::trunc);
-    if (!encoder_data_file_output_.is_open())
+    if (front_cart_encoder_unread_ && back_cart_encoder_unread_)
     {
+      // save the proper file
+      encoder_data_file_output_.open((path_to_encoder_file_ + file_name_), std::ios::trunc);
+      if (!encoder_data_file_output_.is_open())
+      {
+        encoder_data_file_output_.close();
+        return false;
+      }
+      encoder_data_file_output_ << "front:" << front_cart_encoder_value_ << ";\n";
+      encoder_data_file_output_ << "back:" << back_cart_encoder_value_ << ";";
       encoder_data_file_output_.close();
-      return false;
-    }
-    encoder_data_file_output_ << "front:" << front_cart_encoder_value_ << ";\n";
-    encoder_data_file_output_ << "back:" << back_cart_encoder_value_ << ";";
-    encoder_data_file_output_.close();
 
-    // save the backup file
-    encoder_data_file_output_.open((path_to_encoder_file_ + file_name_backup_), std::ios::trunc);
-    if (!encoder_data_file_output_.is_open())
-    {
+      // save the backup file
+      encoder_data_file_output_.open((path_to_encoder_file_ + file_name_backup_), std::ios::trunc);
+      if (!encoder_data_file_output_.is_open())
+      {
+        encoder_data_file_output_.close();
+        return false;
+      }
+      encoder_data_file_output_ << "front:" << front_cart_encoder_value_ << ";\n";
+      encoder_data_file_output_ << "back:" << back_cart_encoder_value_ << ";";
       encoder_data_file_output_.close();
-      return false;
+      // reset flags
+      front_cart_encoder_unread_ = false;
+      back_cart_encoder_unread_ = false;
     }
-    encoder_data_file_output_ << "front:" << front_cart_encoder_value_ << ";\n";
-    encoder_data_file_output_ << "back:" << back_cart_encoder_value_ << ";";
-    encoder_data_file_output_.close();
-    // reset flags
-    front_cart_encoder_unread_ = false;
-    back_cart_encoder_unread_ = false;
   }
-
   return true;
 }
 

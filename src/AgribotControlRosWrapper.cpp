@@ -117,6 +117,13 @@ void AgribotControlRosWrapper::execute()
       back_cart_angle_publisher_.publish(back_angle_msg_);
       ttcontrol_communication_handler_->clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::BackAngle);
     }
+    if (ttcontrol_communication_handler_->checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::TtcontrolStates))
+    {
+      ttcontrol_states_msg_.automatic_state = static_cast<uint8_t>(ttcontrol_communication_handler_->getTtcontrolCurrentState().automatic_state);
+      ttcontrol_states_msg_.manual_state = static_cast<uint8_t>(ttcontrol_communication_handler_->getTtcontrolCurrentState().manual_state);
+      ttcontrol_state_publisher_.publish(ttcontrol_states_msg_);
+      ttcontrol_communication_handler_->clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::TtcontrolStates);
+    }
     if (ttcontrol_communication_handler_->checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::AutomaticStateRequest))
     {
       // TODO(Michal/Adam): Implement some diagnostics

@@ -82,6 +82,7 @@ class AgribotControlRosWrapper
   std::unique_ptr<TTCommControl> ttcontrol_communication_handler_;
   std_msgs::Float32 front_angle_msg_;
   std_msgs::Float32 back_angle_msg_;
+  agribot_msgs::AgribotTtcontrolState ttcontrol_states_msg_;
   agribot_msgs::AgribotCaterpillar agribot_caterpillar_msg_;
   agribot_msgs::AgribotCaterpillarWheelsRotation encoder_sum_msg_;
   std::string path_to_carts_encoders_file_;
