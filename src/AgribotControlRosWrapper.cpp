@@ -16,8 +16,6 @@ void AgribotControlRosWrapper::registerSubscribers()
 {
   caterpillar_sub_ =
       nh_->subscribe("/agribot/control/caterpillar", 1, &AgribotControlRosWrapper::caterpillarsControlCallback, this);
-  connection_state_sub_ = nh_->subscribe("/agribot/ttcontrol/connection_state", 1,
-                                         &AgribotControlRosWrapper::ttcontrolConnectionState, this);
   tpl_front_control_sub_ =
       nh_->subscribe("/agribot/control/tool/front/valves", 1, &AgribotControlRosWrapper::frontTplControlCallback, this);
   tpl_back_control_sub_ =
@@ -31,6 +29,7 @@ void AgribotControlRosWrapper::registerPublishers()
       "/agribot/encoder/caterpillar/rotations/impulses", 1);
   front_cart_angle_publisher_ = nh_->advertise<std_msgs::Float32>("/agribot/encoder/cart/front", 1);
   back_cart_angle_publisher_ = nh_->advertise<std_msgs::Float32>("/agribot/encoder/cart/back", 1);
+  ttcontrol_state_publisher_ = nh_->advertise<agribot_msgs::AgribotTtcontrolState>("/agribot/ttcontrol_state", 1);
 }
 
 void AgribotControlRosWrapper::registerServices()
@@ -45,6 +44,10 @@ void AgribotControlRosWrapper::registerServices()
       nh_->advertiseService("/agribot/engine_start", &AgribotControlRosWrapper::engineStartService, this);
   engine_stop_service_ =
       nh_->advertiseService("/agribot/engine_stop", &AgribotControlRosWrapper::engineStopService, this);
+  set_autonomous_mode_service_ =
+      nh_->advertiseService("/agribot/set_autonomous_mode", &AgribotControlRosWrapper::setAutonomousModeService, this);
+  set_safe_state_service_ =
+      nh_->advertiseService("/agribot/set_safe_state", &AgribotControlRosWrapper::setSafeStateService, this);
   parameter_server_handler_ =
       std::make_unique<dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>>();
   callback_function_object_ = boost::bind(&AgribotControlRosWrapper::callbackDynamicReconfigure, this, _1, _2);
@@ -114,12 +117,28 @@ void AgribotControlRosWrapper::execute()
       back_cart_angle_publisher_.publish(back_angle_msg_);
       ttcontrol_communication_handler_->clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::BackAngle);
     }
+    if (ttcontrol_communication_handler_->checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::TtcontrolStates))
+    {
+      ttcontrol_states_msg_.automatic_state =
+          static_cast<uint8_t>(ttcontrol_communication_handler_->getTtcontrolCurrentState().automatic_state);
+      ttcontrol_states_msg_.manual_state =
+          static_cast<uint8_t>(ttcontrol_communication_handler_->getTtcontrolCurrentState().manual_state);
+      if (ttcontrol_communication_handler_->getEncodersConfirmedStatus())
+      {
+        ttcontrol_states_msg_.encoders_inited = agribot_msgs::AgribotTtcontrolState::ENCODERS_INITED;
+      }
+      else
+      {
+        ttcontrol_states_msg_.encoders_inited = agribot_msgs::AgribotTtcontrolState::ENCODERS_NOT_INITED;
+      }
+      ttcontrol_state_publisher_.publish(ttcontrol_states_msg_);
+      ttcontrol_communication_handler_->clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::TtcontrolStates);
+    }
     if (ttcontrol_communication_handler_->checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::AutomaticStateRequest))
     {
       // TODO(Michal/Adam): Implement some diagnostics
       ROS_INFO("[HalAgribotControl] Received automatic mode request");
       usleep(TimeoutsLimits::WaitForTtcontrol);
-      ttcontrol_communication_handler_->confirmAdvantechReadiness();
       ttcontrol_communication_handler_->clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::AutomaticStateRequest);
     }
     if (ttcontrol_communication_handler_->checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::TrackEncoderSum))
@@ -133,6 +152,12 @@ void AgribotControlRosWrapper::execute()
       encoder_sum_msg_.back_right = cart_status.getTrackEncoderSum(EncoderTrackId::BackRight);
       track_encoder_sum_publisher_.publish(encoder_sum_msg_);
       ttcontrol_communication_handler_->clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::TrackEncoderSum);
+    }
+    if (ttcontrol_communication_handler_->checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::TtcontrolStates))
+    {
+      ttcontrol_communication_handler_->getTtcontrolCurrentState().automatic_state;
+      ttcontrol_communication_handler_->getTtcontrolCurrentState().manual_state;
+      ttcontrol_communication_handler_->clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::TtcontrolStates);
     }
     if (ttcontrol_communication_handler_->checkReceivedCanBusIdBit(
             ReceivedFramesRegisterMask::AutomaticStateRequestError))
@@ -524,24 +549,85 @@ bool AgribotControlRosWrapper::engineStopService(std_srvs::Trigger::Request& req
   return true;
 }
 
-void AgribotControlRosWrapper::ttcontrolConnectionState(const std_msgs::String& msg)
+bool AgribotControlRosWrapper::setAutonomousModeService(std_srvs::Trigger::Request& req,   // NOLINT(runtime/references)
+                                                        std_srvs::Trigger::Response& res)  // NOLINT(runtime/references)
 {
-  if (msg.data == TTCONTROL_CONNECTION_MSG)
+  static_cast<void>(req);
+  if (ttcontrol_communication_handler_->getTtcontrolCurrentState().manual_state == TtcontrolState::SteeringActive)
   {
-    ttcontrol_communication_handler_->setTtcontrolConnectionStatus(TtcontrolConnectionStatus::Connected);
+    res.success = false;
+    res.message = "Couldn't start the autonomous steering, because manual steering is still active ";
+    return true;
   }
-  else
+  if (ttcontrol_communication_handler_->getTtcontrolCurrentState().automatic_state == TtcontrolState::SteeringActive)
   {
-    ttcontrol_communication_handler_->setTtcontrolConnectionStatus(TtcontrolConnectionStatus::Disconnected);
+    res.success = false;
+    res.message = "Couldn't start the autonomous steering, because its already active ";
+    return true;
   }
+  else if (ttcontrol_communication_handler_->getTtcontrolCurrentState().automatic_state ==
+               TtcontrolState::Initialization ||
+           ttcontrol_communication_handler_->getTtcontrolCurrentState().automatic_state ==
+               TtcontrolState::WaitingForHandshake)
+  {
+    res.success = false;
+    res.message = "Couldn't start the autonomous steering, because there is no connection with TTControl";
+    return true;
+  }
+  else if (ttcontrol_communication_handler_->getTtcontrolCurrentState().automatic_state ==
+           TtcontrolState::CommunicationActive)
+  {
+    uint8_t timeout_counter = 0;
+    ttcontrol_communication_handler_->requestChangeOfControlState(
+        TtcontrolAutomaticModeRequestByteValues::EnterAutomaticSteering);
+    while (ttcontrol_communication_handler_->getTtcontrolCurrentState().automatic_state !=
+           TtcontrolState::SteeringActive)
+    {
+      ros::Duration(0.1).sleep();
+      timeout_counter++;
+      if (timeout_counter > TimeoutsLimits::ChangeTtcontrolStateRequestTimeoutLimit)
+      {
+        // withdraw the previous request
+        ttcontrol_communication_handler_->requestChangeOfControlState(
+            TtcontrolAutomaticModeRequestByteValues::EnterSafeStateRequest);
+        res.success = false;
+        res.message = "Couldn't start the autonomous steerings, request timeout";
+        return true;
+      }
+    }
+  }
+  res.success = true;
+  return true;
+}
+
+bool AgribotControlRosWrapper::setSafeStateService(std_srvs::Trigger::Request& req,   // NOLINT(runtime/references)
+                                                   std_srvs::Trigger::Response& res)  // NOLINT(runtime/references)
+{
+  static_cast<void>(req);
+  uint8_t timeout_counter = 0;
+  // send safe state request till the steering is active
+  while (ttcontrol_communication_handler_->getTtcontrolCurrentState().automatic_state == TtcontrolState::SteeringActive)
+  {
+    ros::Duration(0.1).sleep();
+    ttcontrol_communication_handler_->requestChangeOfControlState(
+        TtcontrolAutomaticModeRequestByteValues::EnterSafeStateRequest);
+    timeout_counter++;
+    if (timeout_counter > TimeoutsLimits::ChangeTtcontrolStateRequestTimeoutLimit)
+    {
+      res.success = false;
+      res.message = "Couldn't stop the autonomous steerings, request timeout";
+      return true;
+    }
+  }
+  res.success = true;
+  return true;
 }
 
 bool AgribotControlRosWrapper::readEncodersDataFile()
 {
   if (!ttcontrol_communication_handler_->readCartsEncodersDataFile(EncodersFileState::ReadRegularCartsEncodersFile))
   {
-    return ttcontrol_communication_handler_->readCartsEncodersDataFile(
-        EncodersFileState::ReadBackupCartsEncodersFile);
+    return ttcontrol_communication_handler_->readCartsEncodersDataFile(EncodersFileState::ReadBackupCartsEncodersFile);
   }
   return true;
 }

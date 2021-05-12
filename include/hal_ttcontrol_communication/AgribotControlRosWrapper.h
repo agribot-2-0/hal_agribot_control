@@ -7,6 +7,7 @@
 #include <agribot_msgs/AgribotCaterpillarWheelsRotation.h>
 #include <agribot_msgs/ChangeDeltasGeometry.h>
 #include <agribot_msgs/AgribotTool.h>
+#include <agribot_msgs/AgribotTtcontrolState.h>
 #include <hal_ttcontrol_communication/TTCommControl.h>
 #include <hal_ttcontrol_communication/TplControl.h>
 #include <dynamic_reconfigure/server.h>
@@ -29,6 +30,7 @@ enum TimeoutsLimits : uint
 {
   WaitForTtcontrol = 100000,
   CartsEncodersInitTimeoutLimit = 10,
+  ChangeTtcontrolStateRequestTimeoutLimit = 20,
   EngineServiceTimeoutLimit = 60,
   DeltasExtensionTimeoutLimit = 150
 };
@@ -80,18 +82,19 @@ class AgribotControlRosWrapper
   std::unique_ptr<TTCommControl> ttcontrol_communication_handler_;
   std_msgs::Float32 front_angle_msg_;
   std_msgs::Float32 back_angle_msg_;
+  agribot_msgs::AgribotTtcontrolState ttcontrol_states_msg_;
   agribot_msgs::AgribotCaterpillar agribot_caterpillar_msg_;
   agribot_msgs::AgribotCaterpillarWheelsRotation encoder_sum_msg_;
   std::string path_to_carts_encoders_file_;
 
   ros::Subscriber caterpillar_sub_;
-  ros::Subscriber connection_state_sub_;
   ros::Subscriber tpl_front_control_sub_;
   ros::Subscriber tpl_back_control_sub_;
   ros::Publisher carts_status_publisher_;
   ros::Publisher track_encoder_sum_publisher_;
   ros::Publisher front_cart_angle_publisher_;
   ros::Publisher back_cart_angle_publisher_;
+  ros::Publisher ttcontrol_state_publisher_;
   std::unique_ptr<dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>>
       parameter_server_handler_;
   dynamic_reconfigure::Server<hal_agribot_control::TTControlParametersConfig>::CallbackType callback_function_object_;
@@ -99,9 +102,10 @@ class AgribotControlRosWrapper
   ros::ServiceServer change_delta_back_service_;
   ros::ServiceServer engine_start_service_;
   ros::ServiceServer engine_stop_service_;
+  ros::ServiceServer set_autonomous_mode_service_;
+  ros::ServiceServer set_safe_state_service_;
 
   bool readEncodersDataFile();
-  void ttcontrolConnectionState(const std_msgs::String& msg);
   bool engineStopService(std_srvs::Trigger::Request& req,     // NOLINT(runtime/references)
                          std_srvs::Trigger::Response& res);   // NOLINT(runtime/references)
   bool engineStartService(std_srvs::Trigger::Request& req,    // NOLINT(runtime/references)
@@ -112,6 +116,10 @@ class AgribotControlRosWrapper
   bool
   frontDeltasGeometryServiceCallback(agribot_msgs::ChangeDeltasGeometry::Request& req,    // NOLINT(runtime/references)
                                      agribot_msgs::ChangeDeltasGeometry::Response& res);  // NOLINT(runtime/references)
+  bool setAutonomousModeService(std_srvs::Trigger::Request& req,                          // NOLINT(runtime/references)
+                                std_srvs::Trigger::Response& res);                        // NOLINT(runtime/references)
+  bool setSafeStateService(std_srvs::Trigger::Request& req,                               // NOLINT(runtime/references)
+                           std_srvs::Trigger::Response& res);                             // NOLINT(runtime/references)
   bool
   deltasChangeGeometryServiceExecution(const agribot_msgs::ChangeDeltasGeometry::Request& req,
                                        agribot_msgs::ChangeDeltasGeometry::Response& res,  // NOLINT(runtime/references)

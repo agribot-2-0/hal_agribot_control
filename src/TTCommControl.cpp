@@ -72,10 +72,15 @@ constexpr uint8_t SIGN_BYTE_FRAME_POSITION = 0x10;
 constexpr uint8_t TRACK_ENCODER_ID_BYTE_POSITION = 0;
 constexpr uint8_t TRACK_ENCODER_SIGN_BIT_MASK = 0x10;
 constexpr uint8_t TRACK_ENCODER_SUM_LOW_BYTE_POSITION = 1;
+// byte positions of the ttcontrol state frame
+constexpr uint8_t AUTOMATIC_STATE_BYTE = 0x00;
+constexpr uint8_t MANUAL_STATE_BYTE = 0x01;
+constexpr uint8_t ENCODERS_INITED_BYTE = 0x02;
+constexpr uint8_t ENCODERS_INITED_FLAG_VALUE = 0x01;
 
-constexpr uint8_t tpl_parse_constant = 110;
-constexpr uint8_t engine_ready_flag_value = 1;
-constexpr uint8_t engine_ready_byte = 7;
+constexpr uint8_t TPL_PARSE_CONSTANT = 110;
+constexpr uint8_t ENGINE_READY_FLAG_VALUE = 1;
+constexpr uint8_t ENGINE_READY_BYTE = 7;
 
 inline uint8_t TTCommControl::extractFourthByte(const uint32_t four_byte_number) const
 {
@@ -169,7 +174,7 @@ uint32_t TTCommControl::decodeEncoderValue(const can_frame& frame) const
 
 void TTCommControl::decodeEngineFeedback(const can_frame& frame)
 {
-  if (static_cast<uint16_t>(frame.data[engine_ready_byte]) == engine_ready_flag_value)
+  if (static_cast<uint16_t>(frame.data[ENGINE_READY_BYTE]) == ENGINE_READY_FLAG_VALUE)
   {
     ttcontrol_engine_is_ready_ = true;
   }
@@ -206,6 +211,20 @@ inline int32_t TTCommControl::checkTrackEncoderSumSignBit(const uint8_t bit_mask
   else
   {
     return 1;
+  }
+}
+
+inline void TTCommControl::decodeTtcontrolState(const can_frame& frame)
+{
+  ttcontrol_current_state_.automatic_state = static_cast<TtcontrolState>(frame.data[AUTOMATIC_STATE_BYTE]);
+  ttcontrol_current_state_.manual_state = static_cast<TtcontrolState>(frame.data[MANUAL_STATE_BYTE]);
+  if (frame.data[ENCODERS_INITED_BYTE] == ENCODERS_INITED_FLAG_VALUE)
+  {
+    ttcontrol_carts_angle_confirmed_ = true;
+  }
+  else
+  {
+    ttcontrol_carts_angle_confirmed_ = false;
   }
 }
 
@@ -258,18 +277,17 @@ void TTCommControl::setVelocity(const VelocityType velocity_specification, const
   }
 }
 
-void TTCommControl::setTtcontrolConnectionStatus(const bool& connected)
-{
-  if (!connected)
-  {
-    ttcontrol_carts_angle_confirmed_ = false;
-  }
-  ttcontrol_is_connected_ = connected;
-}
-
 bool TTCommControl::getTtcontrolConnectionStatus() const
 {
-  return ttcontrol_is_connected_;
+  if (ttcontrol_current_state_.automatic_state == TtcontrolState::CommunicationActive ||
+      ttcontrol_current_state_.automatic_state == TtcontrolState::SteeringActive)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
 }
 
 bool TTCommControl::getEngineStatus() const
@@ -282,10 +300,17 @@ bool TTCommControl::getEncodersConfirmedStatus() const
   return ttcontrol_carts_angle_confirmed_;
 }
 
+TtcontrolCurrentStates TTCommControl::getTtcontrolCurrentState() const
+{
+  return ttcontrol_current_state_;
+}
+
 TTCommControl::TTCommControl()
 {
   ttcontrol_carts_angle_confirmed_ = false;
   ttcontrol_is_connected_ = false;
+  ttcontrol_current_state_.automatic_state = TtcontrolState::Initialization;
+  ttcontrol_current_state_.manual_state = TtcontrolState::Initialization;
 }
 
 void TTCommControl::initializeCanHandler(std::unique_ptr<ICan> can_handler)
@@ -388,6 +413,11 @@ void TTCommControl::parseCanFrames()
     {
       decodeEngineFeedback(message);
     }
+    if (checkIfCanBusIdsMatch(ReceiveCanIds::TtcontrolStateFrame, message.can_id))
+    {
+      decodeTtcontrolState(message);
+      setReceivedCanBusIdsBitMask(ReceivedFramesRegisterMask::TtcontrolStates);
+    }
     if (checkIfCanBusIdsMatch(ReceiveCanIds::ProtocolFrame, message.can_id))
     {
       // if TTControl confirms angle receiving
@@ -431,14 +461,14 @@ void TTCommControl::sendEngineCommand(const TTControlEngineCommands command)
   can_handler_->iSendFrame(&message);
 }
 
-void TTCommControl::confirmAdvantechReadiness()
+void TTCommControl::requestChangeOfControlState(TtcontrolAutomaticModeRequestByteValues request)
 {
   can_frame message;
   message.can_id = TransmitCanIds::ProtocolResponseFrame;
   message.can_dlc = FULL_CAN_FRAME_BYTE_NUMBER;
-  message.data[0] = ProtocolFrameBytesValues::TtcAutomaticModeRequest;
-  message.data[1] = TTCONTROL_J1939_NODE_ID;  // INFO byte, send the TTControl node ID to confirm readiness
-  message.data[2] = 0;
+  message.data[ProtocolFrameBytePositions::FrameTypeByte] = ProtocolFrameBytesValues::TtcAutomaticModeRequest;
+  message.data[ProtocolFrameBytePositions::TtcontrolIDByte] = TTCONTROL_J1939_NODE_ID;
+  message.data[ProtocolFrameBytePositions::RequestTtcontrolStateByte] = request;
   message.data[3] = 0;
   message.data[4] = 0;
   message.data[5] = 0;
@@ -737,35 +767,40 @@ bool TTCommControl::readCartsEncodersDataFile(const bool regular_file)
 
 bool TTCommControl::writeEncodersDataFile()
 {
-  // check if angle data is complete
-  if (front_cart_encoder_unread_ && back_cart_encoder_unread_)
+  // during ttcontrol programming when communication is active, from undefined reason 0, 0 values are send BEFORE
+  // the can bus connection is severed, this is a counter measure against this behaviour,
+  // to protect file from being corrupted
+  if (front_cart_encoder_value_ != 0 && back_cart_encoder_value_ != 0)
   {
-    // save the proper file
-    encoder_data_file_output_.open((path_to_encoder_file_ + file_name_), std::ios::trunc);
-    if (!encoder_data_file_output_.is_open())
+    // check if angle data is complete
+    if (front_cart_encoder_unread_ && back_cart_encoder_unread_)
     {
+      // save the proper file
+      encoder_data_file_output_.open((path_to_encoder_file_ + file_name_), std::ios::trunc);
+      if (!encoder_data_file_output_.is_open())
+      {
+        encoder_data_file_output_.close();
+        return false;
+      }
+      encoder_data_file_output_ << "front:" << front_cart_encoder_value_ << ";\n";
+      encoder_data_file_output_ << "back:" << back_cart_encoder_value_ << ";";
       encoder_data_file_output_.close();
-      return false;
-    }
-    encoder_data_file_output_ << "front:" << front_cart_encoder_value_ << ";\n";
-    encoder_data_file_output_ << "back:" << back_cart_encoder_value_ << ";";
-    encoder_data_file_output_.close();
 
-    // save the backup file
-    encoder_data_file_output_.open((path_to_encoder_file_ + file_name_backup_), std::ios::trunc);
-    if (!encoder_data_file_output_.is_open())
-    {
+      // save the backup file
+      encoder_data_file_output_.open((path_to_encoder_file_ + file_name_backup_), std::ios::trunc);
+      if (!encoder_data_file_output_.is_open())
+      {
+        encoder_data_file_output_.close();
+        return false;
+      }
+      encoder_data_file_output_ << "front:" << front_cart_encoder_value_ << ";\n";
+      encoder_data_file_output_ << "back:" << back_cart_encoder_value_ << ";";
       encoder_data_file_output_.close();
-      return false;
+      // reset flags
+      front_cart_encoder_unread_ = false;
+      back_cart_encoder_unread_ = false;
     }
-    encoder_data_file_output_ << "front:" << front_cart_encoder_value_ << ";\n";
-    encoder_data_file_output_ << "back:" << back_cart_encoder_value_ << ";";
-    encoder_data_file_output_.close();
-    // reset flags
-    front_cart_encoder_unread_ = false;
-    back_cart_encoder_unread_ = false;
   }
-
   return true;
 }
 
@@ -782,12 +817,12 @@ void TTCommControl::prepareTplControlFrame(const SelectedTpl selection, const Tp
       break;
   }
   message.can_dlc = TPL_CONTROL_FRAME_SIZE;
-  message.data[0] = control_values.pto_valve + tpl_parse_constant;
-  message.data[1] = control_values.red_qcf_valve + tpl_parse_constant;
-  message.data[2] = control_values.green_qcf_valve + tpl_parse_constant;
-  message.data[3] = control_values.blue_qcf_valve + tpl_parse_constant;
-  message.data[4] = control_values.height_actuator + tpl_parse_constant;
-  message.data[5] = control_values.angle_actuator + tpl_parse_constant;
+  message.data[0] = control_values.pto_valve + TPL_PARSE_CONSTANT;
+  message.data[1] = control_values.red_qcf_valve + TPL_PARSE_CONSTANT;
+  message.data[2] = control_values.green_qcf_valve + TPL_PARSE_CONSTANT;
+  message.data[3] = control_values.blue_qcf_valve + TPL_PARSE_CONSTANT;
+  message.data[4] = control_values.height_actuator + TPL_PARSE_CONSTANT;
+  message.data[5] = control_values.angle_actuator + TPL_PARSE_CONSTANT;
 }
 
 void TTCommControl::sendTplValveControlViaCan(const SelectedTpl selection, const TplControl& control_values) const
