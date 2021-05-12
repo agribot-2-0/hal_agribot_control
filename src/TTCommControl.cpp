@@ -76,11 +76,11 @@ constexpr uint8_t TRACK_ENCODER_SUM_LOW_BYTE_POSITION = 1;
 constexpr uint8_t AUTOMATIC_STATE_BYTE = 0x00;
 constexpr uint8_t MANUAL_STATE_BYTE = 0x01;
 constexpr uint8_t ENCODERS_INITED_BYTE = 0x02;
-constexpr uint8_t encoders_inited_flag_value = 0x01;
+constexpr uint8_t ENCODERS_INITED_FLAG_VALUE = 0x01;
 
-constexpr uint8_t tpl_parse_constant = 110;
-constexpr uint8_t engine_ready_flag_value = 1;
-constexpr uint8_t engine_ready_byte = 7;
+constexpr uint8_t TPL_PARSE_CONSTANT = 110;
+constexpr uint8_t ENGINE_READY_FLAG_VALUE = 1;
+constexpr uint8_t ENGINE_READY_BYTE = 7;
 
 inline uint8_t TTCommControl::extractFourthByte(const uint32_t four_byte_number) const
 {
@@ -174,7 +174,7 @@ uint32_t TTCommControl::decodeEncoderValue(const can_frame& frame) const
 
 void TTCommControl::decodeEngineFeedback(const can_frame& frame)
 {
-  if (static_cast<uint16_t>(frame.data[engine_ready_byte]) == engine_ready_flag_value)
+  if (static_cast<uint16_t>(frame.data[ENGINE_READY_BYTE]) == ENGINE_READY_FLAG_VALUE)
   {
     ttcontrol_engine_is_ready_ = true;
   }
@@ -218,7 +218,7 @@ inline void TTCommControl::decodeTtcontrolState(const can_frame& frame)
 {
   ttcontrol_current_state_.automatic_state = static_cast<TtcontrolState>(frame.data[AUTOMATIC_STATE_BYTE]);
   ttcontrol_current_state_.manual_state = static_cast<TtcontrolState>(frame.data[MANUAL_STATE_BYTE]);
-  if (frame.data[ENCODERS_INITED_BYTE] == encoders_inited_flag_value)
+  if (frame.data[ENCODERS_INITED_BYTE] == ENCODERS_INITED_FLAG_VALUE)
   {
     ttcontrol_carts_angle_confirmed_ = true;
   }
@@ -817,12 +817,12 @@ void TTCommControl::prepareTplControlFrame(const SelectedTpl selection, const Tp
       break;
   }
   message.can_dlc = TPL_CONTROL_FRAME_SIZE;
-  message.data[0] = control_values.pto_valve + tpl_parse_constant;
-  message.data[1] = control_values.red_qcf_valve + tpl_parse_constant;
-  message.data[2] = control_values.green_qcf_valve + tpl_parse_constant;
-  message.data[3] = control_values.blue_qcf_valve + tpl_parse_constant;
-  message.data[4] = control_values.height_actuator + tpl_parse_constant;
-  message.data[5] = control_values.angle_actuator + tpl_parse_constant;
+  message.data[0] = control_values.pto_valve + TPL_PARSE_CONSTANT;
+  message.data[1] = control_values.red_qcf_valve + TPL_PARSE_CONSTANT;
+  message.data[2] = control_values.green_qcf_valve + TPL_PARSE_CONSTANT;
+  message.data[3] = control_values.blue_qcf_valve + TPL_PARSE_CONSTANT;
+  message.data[4] = control_values.height_actuator + TPL_PARSE_CONSTANT;
+  message.data[5] = control_values.angle_actuator + TPL_PARSE_CONSTANT;
 }
 
 void TTCommControl::sendTplValveControlViaCan(const SelectedTpl selection, const TplControl& control_values) const
