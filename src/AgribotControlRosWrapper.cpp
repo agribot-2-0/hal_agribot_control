@@ -107,7 +107,8 @@ void AgribotControlRosWrapper::execute()
     }
     if (ttcontrol_communication_handler_->checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::FrontAngle))
     {
-      front_angle_msg_.data = ttcontrol_communication_handler_->getFrontCartAngle();
+      // TODO(l.chojnacki) Remove 2 * multiplication when cart encoder is changed
+      front_angle_msg_.data = 2 * ttcontrol_communication_handler_->getFrontCartAngle();
       front_cart_angle_publisher_.publish(front_angle_msg_);
       ttcontrol_communication_handler_->clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::FrontAngle);
     }
