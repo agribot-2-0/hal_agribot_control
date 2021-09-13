@@ -92,6 +92,9 @@ class AgribotControlRosWrapper
   ros::Subscriber tpl_back_control_sub_;
   ros::Publisher carts_status_publisher_;
   ros::Publisher track_encoder_sum_publisher_;
+  ros::Publisher track_encoder_speed_publisher_;
+  ros::Publisher track_encoder_speed_desired_publisher_;
+  ros::Publisher track_control_publisher_;
   ros::Publisher front_cart_angle_publisher_;
   ros::Publisher back_cart_angle_publisher_;
   ros::Publisher ttcontrol_state_publisher_;

@@ -130,6 +130,13 @@ float TTCommControl::decodeVelocitiy(const uint8_t start_byte, const can_frame& 
          VELOCITY_FRAME_DECODE_CONST;
 }
 
+double TTCommControl::decodeSpeedDesired(const uint8_t start_byte, const can_frame& frame) const
+{
+  return (static_cast<float>((static_cast<int16_t>(frame.data[start_byte] & DATA_BITS)) << 8 |
+                             frame.data[start_byte + 1])) *
+         0.01;
+}
+
 void TTCommControl::decodeCartsGeometryState(const can_frame& frame)
 {
   switch (frame.data[FRONT_DELTA_GEOMETRY_BYTE])
@@ -236,6 +243,40 @@ void TTCommControl::decodeTrackEncoderSumValue(const can_frame& frame)
   uint8_t track_id = getLowerHalfOfByte(frame.data[TRACK_ENCODER_ID_BYTE_POSITION]);
   // set the decoded encoder sum value
   cart_.setTrackEncoderSum(
+      static_cast<EncoderTrackId>(track_id),
+      static_cast<int32_t>(encoder_sum_without_sign) *
+          checkTrackEncoderSumSignBit(frame.data[TRACK_ENCODER_ID_BYTE_POSITION], TRACK_ENCODER_SIGN_BIT_MASK));
+}
+
+void TTCommControl::decodeTrackEncoderSpeedValue(const can_frame& frame)
+{
+  uint32_t encoder_sum_without_sign = parseBytesToU32Lsb(TRACK_ENCODER_SUM_LOW_BYTE_POSITION, frame);
+  uint8_t track_id = getLowerHalfOfByte(frame.data[TRACK_ENCODER_ID_BYTE_POSITION]);
+  cart_.setTrackEncoderSpeed(
+      static_cast<EncoderTrackId>(track_id),
+      static_cast<int32_t>(encoder_sum_without_sign) *
+          checkTrackEncoderSumSignBit(frame.data[TRACK_ENCODER_ID_BYTE_POSITION], TRACK_ENCODER_SIGN_BIT_MASK));
+}
+
+void TTCommControl::decodeTrackEncoderSpeedDesiredValue(const can_frame& frame)
+{
+  if (frame.data[0] == 0 && frame.data[3] == 1)
+  {
+    cart_.setTrackEncoderSpeedDesired(EncoderTrackId::FrontLeft, decodeSpeedDesired(1, frame));
+    cart_.setTrackEncoderSpeedDesired(EncoderTrackId::FrontRight, decodeSpeedDesired(4, frame));
+  }
+  else if (frame.data[0] == 2 && frame.data[3] == 3)
+  {
+    cart_.setTrackEncoderSpeedDesired(EncoderTrackId::BackLeft, decodeSpeedDesired(1, frame));
+    cart_.setTrackEncoderSpeedDesired(EncoderTrackId::BackRight, decodeSpeedDesired(4, frame));
+  }
+}
+
+void TTCommControl::decodeTrackControl(const can_frame& frame)
+{
+  uint32_t encoder_sum_without_sign = parseBytesToU32Lsb(TRACK_ENCODER_SUM_LOW_BYTE_POSITION, frame);
+  uint8_t track_id = getLowerHalfOfByte(frame.data[TRACK_ENCODER_ID_BYTE_POSITION]);
+  cart_.setTrackControl(
       static_cast<EncoderTrackId>(track_id),
       static_cast<int32_t>(encoder_sum_without_sign) *
           checkTrackEncoderSumSignBit(frame.data[TRACK_ENCODER_ID_BYTE_POSITION], TRACK_ENCODER_SIGN_BIT_MASK));
@@ -403,6 +444,21 @@ void TTCommControl::parseCanFrames()
     {
       decodeTrackEncoderSumValue(message);
       setReceivedCanBusIdsBitMask(ReceivedFramesRegisterMask::TrackEncoderSum);
+    }
+    if (checkIfCanBusIdsMatch(ReceiveCanIds::TrackEncoderSpeedFrame, message.can_id))
+    {
+      decodeTrackEncoderSpeedValue(message);
+      setReceivedCanBusIdsBitMask(ReceivedFramesRegisterMask::TrackEncoderSpeed);
+    }
+    if (checkIfCanBusIdsMatch(ReceiveCanIds::TrackControlFrame, message.can_id))
+    {
+      decodeTrackControl(message);
+      setReceivedCanBusIdsBitMask(ReceivedFramesRegisterMask::TrackControl);
+    }
+    if (checkIfCanBusIdsMatch(ReceiveCanIds::TrackEncoderSpeedDesiredFrame, message.can_id))
+    {
+      decodeTrackEncoderSpeedDesiredValue(message);
+      setReceivedCanBusIdsBitMask(ReceivedFramesRegisterMask::TrackEncoderSpeedDesired);
     }
     if (checkIfCanBusIdsMatch(ReceiveCanIds::DeltasGeometryFeedbackFrame, message.can_id))
     {

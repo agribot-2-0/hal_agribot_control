@@ -27,6 +27,12 @@ void AgribotControlRosWrapper::registerPublishers()
   carts_status_publisher_ = nh_->advertise<agribot_msgs::AgribotCaterpillar>("/agribot/encoder/caterpillar", 1);
   track_encoder_sum_publisher_ = nh_->advertise<agribot_msgs::AgribotCaterpillarWheelsRotation>(
       "/agribot/encoder/caterpillar/rotations/impulses", 1);
+  track_encoder_speed_publisher_ =
+      nh_->advertise<agribot_msgs::AgribotCaterpillarWheelsRotation>("/agribot/encoder/caterpillar/speed", 1);
+  track_encoder_speed_desired_publisher_ =
+      nh_->advertise<agribot_msgs::AgribotCaterpillarWheelsRotation>("/agribot/encoder/caterpillar/speed_desired", 1);
+  track_control_publisher_ =
+      nh_->advertise<agribot_msgs::AgribotCaterpillarWheelsRotation>("/agribot/encoder/caterpillar/controls", 1);
   front_cart_angle_publisher_ = nh_->advertise<std_msgs::Float32>("/agribot/encoder/cart/front", 1);
   back_cart_angle_publisher_ = nh_->advertise<std_msgs::Float32>("/agribot/encoder/cart/back", 1);
   ttcontrol_state_publisher_ = nh_->advertise<agribot_msgs::AgribotTtcontrolState>("/agribot/ttcontrol_state", 1);
@@ -153,6 +159,52 @@ void AgribotControlRosWrapper::execute()
       encoder_sum_msg_.back_right = cart_status.getTrackEncoderSum(EncoderTrackId::BackRight);
       track_encoder_sum_publisher_.publish(encoder_sum_msg_);
       ttcontrol_communication_handler_->clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::TrackEncoderSum);
+    }
+    if (ttcontrol_communication_handler_->checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::TrackEncoderSpeed))
+    {
+      track_encoder_speed_publisher_.publish([this] {
+        auto cart_status = ttcontrol_communication_handler_->getCartsStatus();
+        agribot_msgs::AgribotCaterpillarWheelsRotation msg;
+        msg.header.stamp = ros::Time::now();
+        msg.header.frame_id = "base_footprint";
+        msg.front_left = cart_status.getTrackEncoderSpeed(EncoderTrackId::FrontLeft);
+        msg.front_right = cart_status.getTrackEncoderSpeed(EncoderTrackId::FrontRight);
+        msg.back_left = cart_status.getTrackEncoderSpeed(EncoderTrackId::BackLeft);
+        msg.back_right = cart_status.getTrackEncoderSpeed(EncoderTrackId::BackRight);
+        return msg;
+      }());
+      ttcontrol_communication_handler_->clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::TrackEncoderSpeed);
+    }
+    if (ttcontrol_communication_handler_->checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::TrackControl))
+    {
+      track_control_publisher_.publish([this] {
+        auto cart_status = ttcontrol_communication_handler_->getCartsStatus();
+        agribot_msgs::AgribotCaterpillarWheelsRotation msg;
+        msg.header.stamp = ros::Time::now();
+        msg.header.frame_id = "base_footprint";
+        msg.front_left = cart_status.getTrackControl(EncoderTrackId::FrontLeft);
+        msg.front_right = cart_status.getTrackControl(EncoderTrackId::FrontRight);
+        msg.back_left = cart_status.getTrackControl(EncoderTrackId::BackLeft);
+        msg.back_right = cart_status.getTrackControl(EncoderTrackId::BackRight);
+        return msg;
+      }());
+      ttcontrol_communication_handler_->clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::TrackControl);
+    }
+    if (ttcontrol_communication_handler_->checkReceivedCanBusIdBit(
+            ReceivedFramesRegisterMask::TrackEncoderSpeedDesired))
+    {
+      track_encoder_speed_desired_publisher_.publish([this] {
+        auto cart_status = ttcontrol_communication_handler_->getCartsStatus();
+        agribot_msgs::AgribotCaterpillarWheelsRotation msg;
+        msg.header.stamp = ros::Time::now();
+        msg.header.frame_id = "base_footprint";
+        msg.front_left = cart_status.getTrackEncoderSpeedDesired(EncoderTrackId::FrontLeft);
+        msg.front_right = cart_status.getTrackEncoderSpeedDesired(EncoderTrackId::FrontRight);
+        msg.back_left = cart_status.getTrackEncoderSpeedDesired(EncoderTrackId::BackLeft);
+        msg.back_right = cart_status.getTrackEncoderSpeedDesired(EncoderTrackId::BackRight);
+        return msg;
+      }());
+      ttcontrol_communication_handler_->clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::TrackEncoderSpeedDesired);
     }
     if (ttcontrol_communication_handler_->checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::TtcontrolStates))
     {

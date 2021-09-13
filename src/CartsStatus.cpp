@@ -105,3 +105,120 @@ int32_t CartsStatus::getTrackEncoderSum(const EncoderTrackId track_id) const
   }
   return 0;
 }
+
+void CartsStatus::setTrackEncoderSpeed(const EncoderTrackId track_id, const int32_t encoder_speed)
+{
+  switch (track_id)
+  {
+    case EncoderTrackId::FrontLeft:
+      front_left_track_encoder_speed_ = encoder_speed;
+      break;
+    case EncoderTrackId::FrontRight:
+      front_right_track_encoder_speed_ = encoder_speed;
+      break;
+    case EncoderTrackId::BackLeft:
+      back_left_track_encoder_speed_ = encoder_speed;
+      break;
+    case EncoderTrackId::BackRight:
+      back_right_track_encoder_speed_ = encoder_speed;
+      break;
+    default:
+      break;
+  }
+}
+
+int32_t CartsStatus::getTrackEncoderSpeed(const EncoderTrackId track_id) const
+{
+  switch (track_id)
+  {
+    case EncoderTrackId::FrontLeft:
+      return front_left_track_encoder_speed_;
+    case EncoderTrackId::FrontRight:
+      return front_right_track_encoder_speed_;
+    case EncoderTrackId::BackLeft:
+      return back_left_track_encoder_speed_;
+    case EncoderTrackId::BackRight:
+      return back_right_track_encoder_speed_;
+    default:
+      break;
+  }
+  return 0;
+}
+
+void CartsStatus::setTrackEncoderSpeedDesired(const EncoderTrackId track_id, const double encoder_speed)
+{
+  switch (track_id)
+  {
+    case EncoderTrackId::FrontLeft:
+      front_left_track_encoder_speed_desired_ = encoder_speed;
+      break;
+    case EncoderTrackId::FrontRight:
+      front_right_track_encoder_speed_desired_ = encoder_speed;
+      break;
+    case EncoderTrackId::BackLeft:
+      back_left_track_encoder_speed_desired_ = encoder_speed;
+      break;
+    case EncoderTrackId::BackRight:
+      back_right_track_encoder_speed_desired_ = encoder_speed;
+      break;
+    default:
+      break;
+  }
+}
+
+double CartsStatus::getTrackEncoderSpeedDesired(const EncoderTrackId track_id) const
+{
+  switch (track_id)
+  {
+    case EncoderTrackId::FrontLeft:
+      return front_left_track_encoder_speed_desired_;
+    case EncoderTrackId::FrontRight:
+      return front_right_track_encoder_speed_desired_;
+    case EncoderTrackId::BackLeft:
+      return back_left_track_encoder_speed_desired_;
+    case EncoderTrackId::BackRight:
+      return back_right_track_encoder_speed_desired_;
+    default:
+      break;
+  }
+  return 0.0;
+}
+
+void CartsStatus::setTrackControl(const EncoderTrackId track_id, const int32_t encoder_control)
+{
+  switch (track_id)
+  {
+    case EncoderTrackId::FrontLeft:
+      front_left_track_control_ = encoder_control;
+      break;
+    case EncoderTrackId::FrontRight:
+      front_right_track_control_ = encoder_control;
+      break;
+    case EncoderTrackId::BackLeft:
+      back_left_track_control_ = encoder_control;
+      break;
+    case EncoderTrackId::BackRight:
+      back_right_track_control_ = encoder_control;
+      break;
+    default:
+      break;
+  }
+}
+
+int32_t CartsStatus::getTrackControl(const EncoderTrackId track_id) const
+{
+  switch (track_id)
+  {
+    case EncoderTrackId::FrontLeft:
+      return front_left_track_control_;
+    case EncoderTrackId::FrontRight:
+      return front_right_track_control_;
+    case EncoderTrackId::BackLeft:
+      return back_left_track_control_;
+    case EncoderTrackId::BackRight:
+      return back_right_track_control_;
+    default:
+      break;
+  }
+  return 0;
+}

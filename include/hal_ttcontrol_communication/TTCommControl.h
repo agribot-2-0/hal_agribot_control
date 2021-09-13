@@ -52,14 +52,17 @@ enum TtcontrolAutomaticModeRequestByteValues : std::uint8_t
 
 enum ReceivedFramesRegisterMask : std::uint32_t
 {
-  Velocities = 0x01,
-  FrontAngle = 0x02,
-  BackAngle = 0x04,
-  AutomaticStateRequest = 0x10,
-  AutomaticStateRequestError = 0x20,
-  GeometryFeedback = 0x40,
-  TrackEncoderSum = 0x80,
-  TtcontrolStates = 0x100
+  Velocities = (0x00000001 << 0),
+  FrontAngle = (0x00000001 << 1),
+  BackAngle = (0x00000001 << 2),
+  AutomaticStateRequest = (0x00000001 << 4),
+  AutomaticStateRequestError = (0x00000001 << 5),
+  GeometryFeedback = (0x00000001 << 6),
+  TrackEncoderSum = (0x00000001 << 7),
+  TtcontrolStates = (0x00000001 << 8),
+  TrackEncoderSpeed = (0x00000001 << 9),
+  TrackControl = (0x00000001 << 10),
+  TrackEncoderSpeedDesired = (0x00000001 << 11)
 };
 
 enum SignalsParametersBytePosition : std::uint8_t
@@ -137,7 +140,10 @@ enum ReceiveCanIds : std::uint32_t
   EngineFeedbackFrame = 0x00FFD664,
   TtcontrolStateFrame = 0x00FFD764,
   ProtocolFrame = 0x00EFC864,
-  TrackEncoderSumFrame = 0x00FFD364
+  TrackEncoderSumFrame = 0x00FFD364,
+  TrackEncoderSpeedFrame = 0x00FFD864,
+  TrackEncoderSpeedDesiredFrame = 0x00FFDE64,
+  TrackControlFrame = 0x00FFDD64
 };
 
 enum TTControlParameterType : std::uint8_t
@@ -226,6 +232,10 @@ class TTCommControl
   void decodeTtcontrolState(const can_frame& frame);
   void decodeCartsGeometryState(const can_frame& frame);
   void decodeTrackEncoderSumValue(const can_frame& frame);
+  void decodeTrackEncoderSpeedValue(const can_frame& frame);
+  double decodeSpeedDesired(const uint8_t start_byte, const can_frame& frame) const;
+  void decodeTrackEncoderSpeedDesiredValue(const can_frame& frame);
+  void decodeTrackControl(const can_frame& frame);
   void decodeEngineFeedback(const can_frame& frame);
   void setVelocity(const VelocityType velocity_specification, const can_frame& frame);
   inline bool checkIfCanBusIdsMatch(const std::uint32_t id_to_check, const std::uint32_t msg_id) const;
