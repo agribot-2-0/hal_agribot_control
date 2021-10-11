@@ -208,7 +208,7 @@ inline uint32_t TTCommControl::parseBytesToU32Lsb(const uint8_t start_byte, cons
           (static_cast<uint32_t>(frame.data[start_byte + 1]) << 8) | (static_cast<uint32_t>(frame.data[start_byte])));
 }
 
-inline int32_t TTCommControl::checkTrackEncoderSumSignBit(const uint8_t bit_mask, const uint8_t byte_to_check) const
+inline int32_t TTCommControl::checkTrackEncoderSumSignBit(const uint8_t byte_to_check, const uint8_t bit_mask) const
 {
   // get the sign of the sum, if its on, then the sum is negative
   if (checkIfBitIsSet(static_cast<uint32_t>(byte_to_check), static_cast<uint32_t>(bit_mask)))
