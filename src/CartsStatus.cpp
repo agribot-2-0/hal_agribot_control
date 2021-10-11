@@ -67,39 +67,39 @@ uint8_t CartsStatus::getBackCartGeometryState() const
   return back_cart_geometry_state_;
 }
 
-void CartsStatus::setTrackEncoderSum(const EncoderTrackId track_id, const int32_t encoder_sum)
+void CartsStatus::setTrackEncoderTimeDiff(const EncoderTrackId track_id, const int32_t encoder_sum)
 {
   switch (track_id)
   {
     case EncoderTrackId::FrontLeft:
-      front_left_track_encoder_sum_ = encoder_sum;
+      front_left_track_encoder_time_diff_ = encoder_sum;
       break;
     case EncoderTrackId::FrontRight:
-      front_right_track_encoder_sum_ = encoder_sum;
+      front_right_track_encoder_time_diff_ = encoder_sum;
       break;
     case EncoderTrackId::BackLeft:
-      back_left_track_encoder_sum_ = encoder_sum;
+      back_left_track_encoder_time_diff_ = encoder_sum;
       break;
     case EncoderTrackId::BackRight:
-      back_right_track_encoder_sum_ = encoder_sum;
+      back_right_track_encoder_time_diff_ = encoder_sum;
       break;
     default:
       break;
   }
 }
 
-int32_t CartsStatus::getTrackEncoderSum(const EncoderTrackId track_id) const
+int32_t CartsStatus::getTrackEncoderTimeDiff(const EncoderTrackId track_id) const
 {
   switch (track_id)
   {
     case EncoderTrackId::FrontLeft:
-      return front_left_track_encoder_sum_;
+      return front_left_track_encoder_time_diff_;
     case EncoderTrackId::FrontRight:
-      return front_right_track_encoder_sum_;
+      return front_right_track_encoder_time_diff_;
     case EncoderTrackId::BackLeft:
-      return back_left_track_encoder_sum_;
+      return back_left_track_encoder_time_diff_;
     case EncoderTrackId::BackRight:
-      return back_right_track_encoder_sum_;
+      return back_right_track_encoder_time_diff_;
     default:
       break;
   }

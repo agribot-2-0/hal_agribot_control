@@ -58,7 +58,7 @@ enum ReceivedFramesRegisterMask : std::uint32_t
   AutomaticStateRequest = (0x00000001 << 4),
   AutomaticStateRequestError = (0x00000001 << 5),
   GeometryFeedback = (0x00000001 << 6),
-  TrackEncoderSum = (0x00000001 << 7),
+  TrackEncoderTimeDiff = (0x00000001 << 7),
   TtcontrolStates = (0x00000001 << 8),
   TrackEncoderSpeed = (0x00000001 << 9),
   TrackControl = (0x00000001 << 10),
@@ -140,7 +140,7 @@ enum ReceiveCanIds : std::uint32_t
   EngineFeedbackFrame = 0x00FFD664,
   TtcontrolStateFrame = 0x00FFD764,
   ProtocolFrame = 0x00EFC864,
-  TrackEncoderSumFrame = 0x00FFD364,
+  TrackEncoderTimeDiffFrame = 0x00FFD364,
   TrackEncoderSpeedFrame = 0x00FFD864,
   TrackEncoderSpeedDesiredFrame = 0x00FFDE64,
   TrackControlFrame = 0x00FFDD64
@@ -231,7 +231,7 @@ class TTCommControl
   std::uint32_t decodeEncoderValue(const can_frame& frame) const;
   void decodeTtcontrolState(const can_frame& frame);
   void decodeCartsGeometryState(const can_frame& frame);
-  void decodeTrackEncoderSumValue(const can_frame& frame);
+  void decodeTrackEncoderTimeDiffValue(const can_frame& frame);
   void decodeTrackEncoderSpeedValue(const can_frame& frame);
   double decodeSpeedDesired(const uint8_t start_byte, const can_frame& frame) const;
   void decodeTrackEncoderSpeedDesiredValue(const can_frame& frame);

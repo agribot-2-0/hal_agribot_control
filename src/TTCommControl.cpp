@@ -235,14 +235,14 @@ inline void TTCommControl::decodeTtcontrolState(const can_frame& frame)
   }
 }
 
-void TTCommControl::decodeTrackEncoderSumValue(const can_frame& frame)
+void TTCommControl::decodeTrackEncoderTimeDiffValue(const can_frame& frame)
 {
   // get the encoder sum
   uint32_t encoder_sum_without_sign = parseBytesToU32Lsb(TRACK_ENCODER_SUM_LOW_BYTE_POSITION, frame);
   // get the track ID
   uint8_t track_id = getLowerHalfOfByte(frame.data[TRACK_ENCODER_ID_BYTE_POSITION]);
   // set the decoded encoder sum value
-  cart_.setTrackEncoderSum(
+  cart_.setTrackEncoderTimeDiff(
       static_cast<EncoderTrackId>(track_id),
       static_cast<int32_t>(encoder_sum_without_sign) *
           checkTrackEncoderSumSignBit(frame.data[TRACK_ENCODER_ID_BYTE_POSITION], TRACK_ENCODER_SIGN_BIT_MASK));
@@ -440,10 +440,10 @@ void TTCommControl::parseCanFrames()
       back_cart_angle_ = decodeAngle(message) * DEG_TO_RAD;
       setReceivedCanBusIdsBitMask(ReceivedFramesRegisterMask::BackAngle);
     }
-    if (checkIfCanBusIdsMatch(ReceiveCanIds::TrackEncoderSumFrame, message.can_id))
+    if (checkIfCanBusIdsMatch(ReceiveCanIds::TrackEncoderTimeDiffFrame, message.can_id))
     {
-      decodeTrackEncoderSumValue(message);
-      setReceivedCanBusIdsBitMask(ReceivedFramesRegisterMask::TrackEncoderSum);
+      decodeTrackEncoderTimeDiffValue(message);
+      setReceivedCanBusIdsBitMask(ReceivedFramesRegisterMask::TrackEncoderTimeDiff);
     }
     if (checkIfCanBusIdsMatch(ReceiveCanIds::TrackEncoderSpeedFrame, message.can_id))
     {

@@ -22,10 +22,10 @@ private:
   float back_angular_velocity_;
   std::uint8_t front_cart_geometry_state_;
   std::uint8_t back_cart_geometry_state_;
-  std::int32_t front_left_track_encoder_sum_ = 0.0;
-  std::int32_t front_right_track_encoder_sum_ = 0.0;
-  std::int32_t back_left_track_encoder_sum_ = 0.0;
-  std::int32_t back_right_track_encoder_sum_ = 0.0;
+  std::int32_t front_left_track_encoder_time_diff_ = 1.0;
+  std::int32_t front_right_track_encoder_time_diff_ = 1.0;
+  std::int32_t back_left_track_encoder_time_diff_ = 1.0;
+  std::int32_t back_right_track_encoder_time_diff_ = 1.0;
   std::int32_t front_left_track_encoder_speed_ = 0.0;
   std::int32_t front_right_track_encoder_speed_ = 0.0;
   std::int32_t back_left_track_encoder_speed_ = 0.0;
@@ -46,7 +46,7 @@ public:
   void setBackAngularVelocity(const float velocity);
   void setFrontCartGeometryState(const std::uint8_t geometry_state);
   void setBackCartGeometryState(const std::uint8_t geometry_state);
-  void setTrackEncoderSum(const EncoderTrackId track_id, const std::int32_t encoder_sum);
+  void setTrackEncoderTimeDiff(const EncoderTrackId track_id, const std::int32_t encoder_sum);
   void setTrackEncoderSpeed(const EncoderTrackId track_id, const std::int32_t encoder_speed);
   void setTrackEncoderSpeedDesired(const EncoderTrackId track_id, const double encoder_speed);
   void setTrackControl(const EncoderTrackId track_id, const std::int32_t encoder_control);
@@ -57,7 +57,7 @@ public:
   float getBackAngularVelocity() const;
   std::uint8_t getFrontCartGeometryState() const;
   std::uint8_t getBackCartGeometryState() const;
-  std::int32_t getTrackEncoderSum(const EncoderTrackId track_id) const;
+  std::int32_t getTrackEncoderTimeDiff(const EncoderTrackId track_id) const;
   std::int32_t getTrackEncoderSpeed(const EncoderTrackId track_id) const;
   double getTrackEncoderSpeedDesired(const EncoderTrackId track_id) const;
   std::int32_t getTrackControl(const EncoderTrackId track_id) const;

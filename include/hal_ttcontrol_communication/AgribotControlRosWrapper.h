@@ -3,26 +3,27 @@
  */
 
 #pragma once
+#include <agribot_common/CommonFunctions/ros_common_functions.h>
 #include <agribot_msgs/AgribotCaterpillar.h>
 #include <agribot_msgs/AgribotCaterpillarWheelsRotation.h>
-#include <agribot_msgs/ChangeDeltasGeometry.h>
 #include <agribot_msgs/AgribotTool.h>
 #include <agribot_msgs/AgribotTtcontrolState.h>
-#include <hal_ttcontrol_communication/TTCommControl.h>
-#include <hal_ttcontrol_communication/TplControl.h>
+#include <agribot_msgs/ChangeDeltasGeometry.h>
 #include <dynamic_reconfigure/server.h>
 #include <hal_agribot_control/TTControlParametersConfig.h>
-#include <agribot_common/CommonFunctions/ros_common_functions.h>
+#include <hal_ttcontrol_communication/TTCommControl.h>
+#include <hal_ttcontrol_communication/TplControl.h>
 #include <ros/console.h>
 #include <ros/ros.h>
-#include <std_srvs/Trigger.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/String.h>
-#include <string_view>
+#include <std_srvs/Trigger.h>
+
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <string_view>
 
 constexpr std::string_view TTCONTROL_CONNECTION_MSG = "Connected";
 
@@ -84,7 +85,7 @@ class AgribotControlRosWrapper
   std_msgs::Float32 back_angle_msg_;
   agribot_msgs::AgribotTtcontrolState ttcontrol_states_msg_;
   agribot_msgs::AgribotCaterpillar agribot_caterpillar_msg_;
-  agribot_msgs::AgribotCaterpillarWheelsRotation encoder_sum_msg_;
+  agribot_msgs::AgribotCaterpillarWheelsRotation encoder_time_diff_msg_;
   std::string path_to_carts_encoders_file_;
 
   ros::Subscriber caterpillar_sub_;
@@ -145,6 +146,8 @@ class AgribotControlRosWrapper
   void registerSubscribers();
   void registerPublishers();
   void registerServices();
+
+  double miliseconds_to_seconds(double miliseconds);
 
 public:
   AgribotControlRosWrapper(int argc, char** argv, const char* node_name);

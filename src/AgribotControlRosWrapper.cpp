@@ -150,34 +150,49 @@ void AgribotControlRosWrapper::execute()
       usleep(TimeoutsLimits::WaitForTtcontrol);
       ttcontrol_communication_handler_->clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::AutomaticStateRequest);
     }
-    if (ttcontrol_communication_handler_->checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::TrackEncoderSum))
+    if (ttcontrol_communication_handler_->checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::TrackEncoderTimeDiff))
     {
       CartsStatus cart_status = ttcontrol_communication_handler_->getCartsStatus();
-      encoder_sum_msg_.header.stamp = ros::Time::now();
-      encoder_sum_msg_.header.frame_id = "hal_tracks_encoders_sum_feedback";
-      encoder_sum_msg_.front_left = cart_status.getTrackEncoderSum(EncoderTrackId::FrontLeft);
-      encoder_sum_msg_.front_right = cart_status.getTrackEncoderSum(EncoderTrackId::FrontRight);
-      encoder_sum_msg_.back_left = cart_status.getTrackEncoderSum(EncoderTrackId::BackLeft);
-      encoder_sum_msg_.back_right = cart_status.getTrackEncoderSum(EncoderTrackId::BackRight);
-      track_encoder_sum_publisher_.publish(encoder_sum_msg_);
+      encoder_time_diff_msg_.header.stamp = ros::Time::now();
+      encoder_time_diff_msg_.header.frame_id = "hal_tracks_encoders_sum_feedback";
+      encoder_time_diff_msg_.front_left =
+          miliseconds_to_seconds(cart_status.getTrackEncoderTimeDiff(EncoderTrackId::FrontLeft));
+      encoder_time_diff_msg_.front_right =
+          miliseconds_to_seconds(cart_status.getTrackEncoderTimeDiff(EncoderTrackId::FrontRight));
+      encoder_time_diff_msg_.back_left =
+          miliseconds_to_seconds(cart_status.getTrackEncoderTimeDiff(EncoderTrackId::BackLeft));
+      encoder_time_diff_msg_.back_right =
+          miliseconds_to_seconds(cart_status.getTrackEncoderTimeDiff(EncoderTrackId::BackRight));
+      track_encoder_sum_publisher_.publish(encoder_time_diff_msg_);
 
       track_encoder_speed_measured_publisher_.publish([this] {
         auto cart_status = ttcontrol_communication_handler_->getCartsStatus();
         agribot_msgs::AgribotCaterpillarWheelsRotation msg;
         msg.header.stamp = ros::Time::now();
         msg.header.frame_id = "base_footprint";
-        msg.front_left = cart_status.getTrackEncoderSpeed(EncoderTrackId::FrontLeft) /
-                         cart_status.getTrackEncoderSum(EncoderTrackId::FrontLeft);
-        msg.front_right = cart_status.getTrackEncoderSpeed(EncoderTrackId::FrontRight) /
-                          cart_status.getTrackEncoderSum(EncoderTrackId::FrontRight);
-        msg.back_left = cart_status.getTrackEncoderSpeed(EncoderTrackId::BackLeft) /
-                        cart_status.getTrackEncoderSum(EncoderTrackId::BackLeft);
-        msg.back_right = cart_status.getTrackEncoderSpeed(EncoderTrackId::BackRight) /
-                         cart_status.getTrackEncoderSum(EncoderTrackId::BackRight);
+        if (encoder_time_diff_msg_.front_left != 0)
+        {
+          msg.front_left =
+              cart_status.getTrackEncoderSpeed(EncoderTrackId::FrontLeft) / encoder_time_diff_msg_.front_left;
+        }
+        if (encoder_time_diff_msg_.front_right != 0)
+        {
+          msg.front_right =
+              cart_status.getTrackEncoderSpeed(EncoderTrackId::FrontRight) / encoder_time_diff_msg_.front_right;
+        }
+        if (encoder_time_diff_msg_.back_left != 0)
+        {
+          msg.back_left = cart_status.getTrackEncoderSpeed(EncoderTrackId::BackLeft) / encoder_time_diff_msg_.back_left;
+        }
+        if (encoder_time_diff_msg_.back_right != 0)
+        {
+          msg.back_right =
+              cart_status.getTrackEncoderSpeed(EncoderTrackId::BackRight) / encoder_time_diff_msg_.back_right;
+        }
         return msg;
       }());
 
-      ttcontrol_communication_handler_->clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::TrackEncoderSum);
+      ttcontrol_communication_handler_->clearReceivedCanBusIdBit(ReceivedFramesRegisterMask::TrackEncoderTimeDiff);
     }
     if (ttcontrol_communication_handler_->checkReceivedCanBusIdBit(ReceivedFramesRegisterMask::TrackEncoderSpeed))
     {
@@ -702,4 +717,9 @@ bool AgribotControlRosWrapper::readEncodersDataFile()
     return ttcontrol_communication_handler_->readCartsEncodersDataFile(EncodersFileState::ReadBackupCartsEncodersFile);
   }
   return true;
+}
+
+double AgribotControlRosWrapper::miliseconds_to_seconds(double miliseconds)
+{
+  return miliseconds /= 1000;
 }
